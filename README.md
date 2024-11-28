@@ -16,9 +16,13 @@ Since v.0.51 an external tool "Ebrow" is needed to process the collected data.
 Links:
 
 Homepage:  https://www.gabb.it/echoes
+
 Forum:     https://sourceforge.net/p/echoes/discussion
+
 Downloads: https://sourceforge.net/projects/echoes/files/
+
 Facebook:  https://www.facebook.com/gmbertani/
+
 
 
 Releases:
