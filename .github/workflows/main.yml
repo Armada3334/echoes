@@ -20,18 +20,17 @@ jobs:
       - name: Clone SourceForge Repository
         run: |
           git clone --depth 1 https://git.code.sf.net/p/echoes/git sourceforge
-          cd sourceforge
-          # Remove README from SourceForge to preserve the custom one
-          rm -f README.md
 
-      # Step 3: Sync files from SourceForge to the GitHub repository
+      # Step 3: Move files from `trunk` to the repository root
       - name: Sync SourceForge Content
         run: |
-          rsync -a --exclude='.git' sourceforge/ .
+          rsync -a --exclude='.git' sourceforge/trunk/ . # Sync only the `trunk` folder's contents
           rm -rf sourceforge # Cleanup
 
       # Step 4: Commit and push changes to GitHub
       - name: Commit and Push Changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
