@@ -1,0 +1,1 @@
+dh_link /usr/bin/echoes /usr/bin/console_echoes

@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <author>Giuseppe Massimo Bertani</author>
+ <class>afDummy</class>
+ <widget class="QDialog" name="afDummy">
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>400</width>
+    <height>300</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">/******************************************************************************
+
+    Echoes Data Browser (Ebrow) is a data navigation and report generation
+    tool for Echoes.
+    Echoes is a RF spectrograph for SDR devices designed for meteor scatter.
+    
+    Both copyright (C) 2018-2023
+    Giuseppe Massimo Bertani gm_bertani(a)yahoo.it
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, version 3 of the License.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, http://www.gnu.org/copyleft/gpl.html
+
+
+********************************************************************************/
+
+/* default colors and font for all the widgets */
+QWindow {
+
+    border-radius: 6px; 
+    border: 1px solid rgb(127, 127, 127);
+} 
+
+QMessageBox {
+
+    border-radius: 6px; 
+    border: 0px solid rgb(127, 127, 127);
+} 
+
+QWidget, QWidget * {
+    background-color: rgb(40, 40, 40);
+    font: 87 8pt &quot;Gauge&quot;;
+    color:rgb(255, 255, 127);
+    border-radius: 6px; 
+    border: 0px solid rgb(40, 40, 40); /* invisible border */
+} 
+
+QWidget::disabled {
+    background-color: rgb(40, 40, 40);
+    font: 8pt &quot;Gauge&quot;;
+    color:rgb(127, 127, 127);
+    border-radius: 6px;
+    border: 1px solid rgb(127, 127, 127); /* visible border */
+}
+
+
+QTabWidget, QGroupBox {
+    background-color: rgb(40, 40, 40);
+    color:rgb(255, 255, 127);
+    border-radius: 6px; 
+    border: 1px solid rgb(148, 148, 0);  /* yellow border */
+    margin: 3px;
+}
+
+QListWidget, QListView, QTableView, QTableWidget, QScrollArea {
+    border: 1px solid rgb(148, 148, 0);  /* yellow border */
+     show-decoration-selected: 1; 		 /* make the selection span the entire width of the view */
+
+}
+
+QCheckBox:disabled {
+	border: none;
+}
+
+QCheckBox:enabled {
+	border: yellow;
+}
+
+QLabel {
+	margin: 0 0;
+}
+
+QLabel:disabled {
+	border: none;
+}
+
+
+QListWidget::item:selected:active {
+    color: black;
+	font-weight: bold;
+    background-color: yellow;
+}
+
+QListWidget::item:selected:!active  {
+    color:rgb(255, 255, 127);
+    background-color: green; /*rgb(40, 40, 40);*/
+	font-weight: normal;
+}
+
+QListWidget::item:normal  {
+    color:rgb(255, 255, 127);
+    background-color: rgb(40, 40, 40);
+	font-weight: normal;
+}
+
+
+QTableView, QTableWidget {
+    alternate-background-color: rgb(60, 60, 60);
+    color:rgb(255, 255, 127);
+    gridline-color:  rgb(156, 156, 156);
+    border-radius: 4px;
+}
+
+QGroupBox, QLabel {
+    margin-top: 10px;
+    
+}
+
+QTabBar::tab {
+    background: rgb(0, 96, 100);
+    min-width: 120px;
+}
+
+QTabBar::tab:disabled {
+    color: grey;
+    background: rgb(34, 34, 51);
+}
+
+QTabBar::tab:enabled {
+    background: rgb(34, 34, 51);
+}
+
+QTabBar::tab:selected {
+    background: rgb(0, 96, 250);
+}
+
+QHeaderView::section {
+     background-color:  rgb(230, 230, 230);
+     color: rgb(20, 20, 20);
+} 
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top center; /* position at the top center */
+    padding: 0 3px;
+}
+
+/* personalization for input widgets */
+QLineEdit, QPlainTextEdit, QDateTimeEdit, QAbstractSpinBox, QComboBox, QLCDNumber {
+    background-color: rgb(10, 10, 10); 
+    color: rgb(0, 255, 0);
+    selection-background-color: rgb(85, 85, 255);
+    selection-color: rgb(0, 255, 255);
+    border-radius: 6px; 
+
+}
+
+/* tooltips cannot be tuned by QtDesigner, it must be done explicitly by application */
+QToolTip {
+    background: blue;
+    color: yellow;
+    border: 1px;
+    font: 8pt &quot;Arial&quot;;
+}
+
+QPushButton {
+    background-color:  rgb(0, 96, 100);
+    min-height: 20px;
+    min-width: 60px;
+    text-align: center;
+}
+
+QToolButton {
+    background-color:  rgb(0, 96, 100);
+    min-height: 24px;
+    min-width: 32px
+}
+
+QPushButton::pressed {
+    background-color:  red;
+    min-height: 24px;
+    min-width: 32px
+}
+
+QToolButton::pressed {
+    background-color:  red;
+    min-height: 24px;
+    min-width: 32px
+}
+
+
+
+
+
+
+
+
+/*
+QSlider::groove:vertical {
+    background: black;
+    position: absolute;
+    left: 2px; right: 2px;
+}
+
+
+
+QSlider::handle:vertical {
+    height: 20px;
+    width: 30px;
+    background: qlineargradient(x1:0, y1:0, x2:3, y2:1, stop:0 grey, stop:1 white);
+    margin: 0 -20px; 
+    border: 2px  qlineargradient(x1:0, y1:0, x2:3, y2:1, stop:0 white, stop:1 grey);
+    border-radius: 4px;
+}
+
+QSlider::groove:horizontal {
+    background: black;
+    position: absolute;
+    top: 1px; bottom: 1px;
+}
+*/
+QSlider::handle:horizontal {
+    height: 30px;
+    width: 20px;
+    background: qlineargradient(x1:0, y1:0, x2:3, y2:1, stop:0 grey, stop:1 white);
+    margin: 0 -20px; /* expand outside the groove */
+    border: 2px  qlineargradient(x1:0, y1:0, x2:3, y2:1,  stop:0 white, stop:1 grey);
+    border-radius: 4px;
+}
+</string>
+  </property>
+  <property name="sizeGripEnabled">
+   <bool>true</bool>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="1,5,5">
+   <item>
+    <widget class="QLabel" name="label">
+     <property name="font">
+      <font>
+       <family>Gauge Heavy</family>
+       <pointsize>12</pointsize>
+       <weight>10</weight>
+       <italic>false</italic>
+       <bold>false</bold>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">font: 87 12pt &quot;Gauge Heavy&quot;;</string>
+     </property>
+     <property name="text">
+      <string>This is a prototype filter doing nothing</string>
+     </property>
+     <property name="scaledContents">
+      <bool>false</bool>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="chkEnabled">
+       <property name="toolTip">
+        <string>Enbling this filter will be uneffective</string>
+       </property>
+       <property name="text">
+        <string>Enabled</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="pbOk">
+       <property name="minimumSize">
+        <size>
+         <width>60</width>
+         <height>20</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>32</height>
+        </size>
+       </property>
+       <property name="toolTip">
+        <string>Press here to close the dialog</string>
+       </property>
+       <property name="text">
+        <string>&amp;Ok</string>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>resources/icons/mail-filters-apply.png</normaloff>resources/icons/mail-filters-apply.png</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+ <designerdata>
+  <property name="gridDeltaX">
+   <number>20</number>
+  </property>
+  <property name="gridDeltaY">
+   <number>20</number>
+  </property>
+  <property name="gridSnapX">
+   <bool>true</bool>
+  </property>
+  <property name="gridSnapY">
+   <bool>true</bool>
+  </property>
+  <property name="gridVisible">
+   <bool>true</bool>
+  </property>
+ </designerdata>
+</ui>

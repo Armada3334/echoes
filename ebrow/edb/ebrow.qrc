@@ -1,0 +1,77 @@
+<RCC>
+  <qresource prefix="/">
+        <file alias="mini-icon">resources/icons/ebrow_icon16.ico</file>
+        <file alias="icon32">resources/icons/ebrow_icon32.ico</file>
+        <file alias="icon64">resources/icons/ebrow_icon64.ico</file>
+        <file alias="logo">resources/icons/ebrow_logo.png</file>
+        <file alias="icon256">resources/icons/ebrow_icon256.ico</file>
+        <file alias="xpm32">resources/icons/ebrow_xpm32.xpm</file>
+        <file alias="xpm16">resources/icons/ebrow_xpm16.xpm</file>
+        <file alias="pdf">resources/icons/application-pdf.png</file>
+        <file alias="xlsx">resources/icons/application-vnd.ms-excel.png</file>
+        <file alias="db">resources/icons/db.png</file>
+        <file alias="dbup">resources/icons/db_comit.png</file>
+        <file alias="dbdn">resources/icons/db_update.png</file>
+        <file alias="forbidden">resources/icons/edit-delete-4.png</file>
+        <file alias="cancel">resources/icons/edit-delete-6.png</file>
+        <file alias="find">resources/icons/edit-find-3.png</file>
+        <file alias="filter">resources/icons/filter.png</file>
+        <file alias="format">resources/icons/format-text-underline-6.png</file>
+        <file alias="begin">resources/icons/go-first-view.png</file>
+        <file alias="end">resources/icons/go-last-view.png</file>
+        <file alias="next">resources/icons/go-next-7.png</file>
+        <file alias="previous">resources/icons/go-previous-7.png</file>
+        <file alias="forward">resources/icons/go-next-view.png</file>
+        <file alias="backward">resources/icons/go-previous-view.png</file>
+        <file alias="help">resources/icons/help.png</file>
+        <file alias="shots">resources/icons/image-x-canon-cr2.png</file>
+        <file alias="add">resources/icons/list-add-4.png</file>
+        <file alias="ok">resources/icons/mail-filters-apply.png</file>
+        <file alias="calendar">resources/icons/office-calendar.png</file>
+        <file alias="powerplots">resources/icons/office-chart-area.png</file>
+        <file alias="statplots">resources/icons/office-chart-bar.png</file>
+        <file alias="pie">resources/icons/office-chart-pie.png</file>
+        <file alias="exit">resources/icons/system-log-out-4.png</file>
+        <file alias="3dplots">resources/icons/cmap3D.png</file>
+        <file alias="html">resources/icons/text-html.png</file>
+        <file alias="mapplots">resources/icons/cmap2D.png</file>   
+        <file alias="prefs">resources/icons/system-settings-2.png</file>      
+        <file alias="open">resources/icons/document-open-5.png</file>        
+        <file alias="csv">resources/icons/text-csv.png</file>    
+        <file alias="thumbs">resources/icons/view-list-icons.png</file>    
+        <file alias="detail">resources/icons/zoom-fit-best-2.png</file>    
+        <file alias="table">resources/icons/view-process-all.png</file>         
+        <file alias="graph">resources/icons/view-object-histogram-linear.png</file>    
+        <file alias="save">resources/icons/document-export.png</file>  
+        <file alias="refresh">resources/icons/view-refresh.png</file>  
+        <file alias="text">resources/icons/applications-office-5.png</file>  
+        <file alias="dice">resources/icons/atlantik-2.png</file>  
+        <file alias="rts">resources/icons/echoes_logo.png</file>  
+        <file alias="echoes_transparent">resources/icons/echoes_logo_trans.png</file>  
+        <file alias="rmob">resources/icons/rmob.png</file>  
+        <file alias="saveas">resources/icons/document-save-as-5.png</file>  
+        <file alias="chrono">resources/icons/document-open-recent-3.png</file>
+        <file alias="config">resources/icons/configure-4.png</file>  
+        <file alias="cividis">resources/colormaps/cividis.png</file>
+        <file alias="viridis">resources/colormaps/viridis.png</file>
+        <file alias="inferno">resources/colormaps/inferno.png</file>
+        <file alias="magma">resources/colormaps/magma.png</file>
+        <file alias="plasma">resources/colormaps/plasma.png</file>
+        <file alias="echoes">resources/colormaps/echoes.png</file>
+        <file alias="gray">resources/colormaps/gray.png</file>
+        <file alias="colorgramme">resources/colormaps/colorgramme.png</file>
+        
+        <file>resources/fonts/Gauge-Heavy.otf</file>
+        <file>resources/fonts/Gauge-Heavy.ttf</file>
+        <file>resources/fonts/Gauge-Heavy.woff</file>
+        <file>resources/fonts/Gauge-Oblique.otf</file>
+        <file>resources/fonts/Gauge-Oblique.ttf</file>
+        <file>resources/fonts/Gauge-Oblique.woff</file>
+        <file>resources/fonts/Gauge-Regular.otf</file>
+        <file>resources/fonts/Gauge-Regular.ttf</file>
+        <file>resources/fonts/Gauge-Regular.woff</file>
+
+        <file alias="emptyDB">resources/auxfiles/echoes.sqlite3</file>
+   </qresource>
+   
+</RCC>
