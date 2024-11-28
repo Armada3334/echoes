@@ -1,0 +1,70 @@
+--------------------------------------------------------------------------
+	
+					B U I L D I N G   E C H O E S 
+
+--------------------------------------------------------------------------
+
+*** Windows (tested on Win7 and Win10) ***
+
+To build Echoes under Windows, you'll need to install the following 
+packages first (32 or 64 bit, depending of your system)
+
+1-MSVC 2019 for 64 bit to build Echoes for Win64.
+
+2-Qt5.12++ including Qt5Charts, Qt5Sql, Qt5Multimedia
+
+3-windeployqt.exe suited for the Qt version installed 
+		
+4-NSIS installer ( http://nsis.sourceforge.net/Download ) 
+	after installing, you should generate the FontRegAdv.nsh include file from here:
+	https://nsis.sourceforge.io/mediawiki/index.php?title=Advanced_Font_Installation&oldid=42
+	then download the plugin FontName.dll from
+	https://nsis.sourceforge.io/FontName_plug-in
+	and copy it under both the subdirs NSIS\Plugins\x86-ansi and NSIS\Plugins\x86-unicode.
+
+The batch file makewin64ms.bat  MUST be edited to adjust the paths before launch;
+my paths are based on D:\ drive that's not the best for most of you.
+
+Launch the batch file to prepare and compile everything. When build is successful, the
+Nsis window opens and creates the package. 
+
+--------------------------------------------------------------------------
+*** Linux ***
+
+Under Linux, build Echoes binaries is simpler, since all the packages needed
+to build and run it (g++, qt5, libusb-1.0, libliquid and librtlsdr) are already present 
+up to date in many distributions.
+
+
+*** RPM packages ***
+
+The Echoes source RPM provided have been generated under 
+OpenSuse Tumbleweed. You need to install it first, then enter as root in the
+/usr/src/rpmbuild folder. If it doesn't exist, you'll need to install
+the rpmbuild package first.
+
+Enter in the SPECS/ folder. the echoes.spec files should be there, since
+the source rpm has been just installed. Then build the binary RPM by typing:
+
+rpmbuild -bb echoes.spec
+
+at the end of the process, the binary RPM will be available under rpmbuild/RPMS/
+for the architecture chosen (the system's one by default).
+
+*** DEB packages ***
+
+
+
+*** XZ packages ***
+
+The script makexz.sh is provided to create a binary xz package with makepkg
+that can be later installed with pacman.
+ 
+
+--------------------------------------------------------------------------
+
+
+
+  
+
+

@@ -1,0 +1,125 @@
+/******************************************************************************
+
+    Echoes Data Browser (Ebrow) is a data navigation and report generation
+    tool for Echoes.
+    Echoes is a RF spectrograph for SDR devices designed for meteor scatter
+    Both copyright (C) 2018-2023
+    Giuseppe Massimo Bertani gm_bertani(a)yahoo.it
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, version 3 of the License.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, http://www.gnu.org/copyleft/gpl.html
+
+    Note:
+    This module derives from code by Ruben Giancarlo Elmo, still under GPL v.3   
+
+*******************************************************************************/
+/*
+@media print 
+{
+    @page
+    {
+        size: landscape;
+        size: portrait;
+        margin: 10%;
+    } 
+  
+    *
+    { 
+        page-break-inside: avoid;
+    }
+
+    table 
+    {
+        page-break-after: auto;
+    }
+
+}
+*/
+
+@media screen {
+
+    /* statistic table style */
+    table.blueTable {
+        width: 100%;
+        text-align: center;
+        border-collapse: collapse;
+        background-color: #FFFFFF;
+        margin-bottom: 10px;
+    }
+
+    table.blueTable td,
+    table.blueTable th {
+        border: 1px solid #fff;
+        padding: 3px 2px;
+    }
+
+    table.blueTable tr:nth-child(even) {
+        background: #efefef;
+    }
+
+    table.blueTable thead {
+        background: #ccc;
+    }
+
+    table.blueTable thead th {
+        font-size: 1.1em;
+        font-weight: bold;
+        text-align: center;
+        padding: 10px;
+    }
+
+    table.blueTable tbody  td {
+        font-size: 1em;
+        font-weight: normal;
+        text-align: center;
+    }
+
+    /* chronological table style */
+    table.dataframe {
+        width: 100%;
+        text-align: center;
+        border-collapse: collapse;
+        background-color: #FFFFFF;
+        margin-bottom: 10px;
+
+    }
+
+    table.dataframe td,
+    table.dataframe th {
+        border: 1px solid #fff;
+        padding: 3px 2px;
+    }
+
+    table.dataframe tr:nth-child(even) {
+        background: #efefef;
+    }
+
+    table.dataframe thead {
+        background: #ccc;
+    }
+
+    table.dataframe thead th {
+        font-size: 1.2em;
+        font-weight: bold;
+        text-align: center;
+        padding: 10px;
+    }
+
+    table.dataframe tbody  td {
+        font-size: 1em;
+        font-weight: normal;
+        text-align: center;
+    }
+
+
+
+}

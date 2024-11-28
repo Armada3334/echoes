@@ -1,0 +1,289 @@
+/******************************************************************************
+
+    Echoes Data Browser (Ebrow) is a data navigation and report generation
+    tool for Echoes.
+    Echoes is a RF spectrograph for SDR devices designed for meteor scatter
+    Both copyright (C) 2018-2023
+    Giuseppe Massimo Bertani gm_bertani(a)yahoo.it
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, version 3 of the License.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, http://www.gnu.org/copyleft/gpl.html
+
+    Note:
+    This module derives from code by Ruben Giancarlo Elmo, still under GPL v.3   
+
+*******************************************************************************/
+
+
+@media print {
+    @page {
+        size: landscape;
+        size: portrait;
+        margin: 10%;
+    }
+
+    * {
+        page-break-inside: avoid;
+    }
+
+    footer {
+        page-break-after: always;
+    }
+
+    h1,
+    h2 {
+        page-break-before: always;
+    }
+}
+
+
+@media screen {
+    body {
+        font-family: 'Titillium Web', sans-serif;
+        font-size: 16px;
+        margin: 0;
+        padding: 0;
+        background: #ddd
+    }
+
+    #container {
+        padding: 10px;
+    }
+
+    #sidebar {
+        float: left;
+        width: 25%;
+    }
+
+    #sidebar .box dt {
+        width: 200px
+    }
+
+    #content {
+        width: 74.3%;
+        float: right;
+        display: flex;
+        flex-flow: column;
+    }
+
+    #frametable {
+        width: 74.3%;
+        display: flex;
+        flex-flow: column;
+    }
+
+    #footer {
+        clear: both;
+    }
+
+    #content .box,
+    #footer .box {
+        background-color: #fff
+    }
+
+    .box {
+        display: flex;
+        flex-direction: column;
+        background-color: #eee;
+        border: #ddd solid 1px;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        -webkit-box-shadow: 0px 0px 6px 0px #ccc;
+        box-shadow: 0px 0px 6px 0px #ccc;
+    }
+
+    .box ol {
+        display: flex;
+        align-items: stretch;
+        width: 100%;
+        margin: 0 0 10px 0;
+        padding: 0;
+    }
+
+    .box ol li {
+        display: block;
+        flex: 0 1 auto;
+        list-style-type: none;
+        background: #fafafa;
+        border-radius: 4px;
+        border: #ccc solid 1px;
+        padding: 0 5px;
+        margin-right: 5px;
+    }
+
+    .info {
+        margin: 10px 0 20px 0;
+    }
+
+    .info img {
+        width: 70px;
+        float: left;
+        margin-right: 10px;
+    }
+
+
+    .current {
+        color: red;
+    }
+
+    a:link {
+        text-decoration: none;
+        color: #0959da
+    }
+
+    h2,
+    h3 {
+        border-bottom: #ccc solid 1px;
+        margin-bottom: 5px;
+    }
+
+
+    .index {
+        background: url('../img/index.png') center left no-repeat;
+        padding-left: 30px;
+		font-size: 18px;
+    }
+	
+    .calendar {
+        background: url('../img/calendar.png') center left no-repeat;
+        padding-left: 30px;
+    }
+
+    .radio {
+        background: url('../img/radio.png') center left no-repeat;
+        padding-left: 30px;
+    }
+
+    .site {
+        background: url('../img/site.png') center left no-repeat;
+        padding-left: 30px;
+    }
+
+    .graph {
+        background: url('../img/graph.png') center left no-repeat;
+        padding-left: 30px;
+    }
+
+    .events {
+        background: url('../img/events.png') center left no-repeat;
+        padding-left: 30px;
+    }
+
+    .data {
+        background: url('../img/data.png') center left no-repeat;
+        padding-left: 30px;
+    }
+
+    h1,
+    h2,
+    h3 {
+        margin: 0 0 10px 0;
+        padding: 0;
+        color: #006064;
+    }
+
+    dl {
+        padding: 0;
+        margin: 0;
+    }
+
+    dl dt {
+        font-weight: bold;
+        float: left;
+    }
+
+    .clearfix {
+        overflow: auto;
+    }
+
+    .comments {
+        font-style: italic;
+        border: none;
+        width: 100%;
+    }
+
+
+
+
+    /* Center the loader */
+    #loader {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        z-index: 1;
+        width: 120px;
+        height: 120px;
+        margin: -76px 0 0 -76px;
+        border: 16px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 16px solid #3498db;
+        -webkit-animation: spin 2s linear infinite;
+        animation: spin 2s linear infinite;
+    }
+
+    @-webkit-keyframes spin {
+        0% {
+            -webkit-transform: rotate(0deg);
+        }
+
+        100% {
+            -webkit-transform: rotate(360deg);
+        }
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Add animation to "page content" */
+    .animate-bottom {
+        position: relative;
+        -webkit-animation-name: animatebottom;
+        -webkit-animation-duration: 1s;
+        animation-name: animatebottom;
+        animation-duration: 1s
+    }
+
+    @-webkit-keyframes animatebottom {
+        from {
+            bottom: -100px;
+            opacity: 0
+        }
+
+        to {
+            bottom: 0px;
+            opacity: 1
+        }
+    }
+
+    @keyframes animatebottom {
+        from {
+            bottom: -100px;
+            opacity: 0
+        }
+
+        to {
+            bottom: 0;
+            opacity: 1
+        }
+    }
+
+   
+
+}

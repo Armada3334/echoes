@@ -1,0 +1,14 @@
+trunk/build-*
+build-echoes-Desktop-Debug/
+build-echoes-Desktop-Profile/
+build-echoes-Desktop-Release/
+ebrow/ebrow/
+echoes-0*
+echoes/RPMBUILD/
+echoes/echoes
+echoes/echoes.pro.user
+ebrow/venv
+ebrow/edb/ui_*
+ebrow/edb/ebrow_rc*
+
+
