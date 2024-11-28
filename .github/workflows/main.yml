@@ -1,9 +1,9 @@
-name: Sync from SourceForge
+name: Mirror from SourceForge
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Runs daily at midnight (adjust as needed)
-  workflow_dispatch: # Allows manual trigger
+    - cron: '0 0 * * *' # Runs daily at midnight
+  workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
   sync:
@@ -11,26 +11,27 @@ jobs:
 
     steps:
       # Step 1: Checkout the GitHub repository
-      - name: Checkout GitHub Repo
+      - name: Checkout GitHub Repository
         uses: actions/checkout@v3
         with:
           ref: main
 
       # Step 2: Clone the SourceForge repository
-      - name: Clone SourceForge Repo
+      - name: Clone SourceForge Repository
         run: |
-          git clone --depth 1 https://git.code.sf.net/p/echoes/code sourceforge
+          git clone --depth 1 https://git.code.sf.net/p/echoes/git sourceforge
           cd sourceforge
-          # Remove the README from SourceForge to avoid overwriting the custom one
+          # Remove README from SourceForge to preserve the custom one
           rm -f README.md
 
-      # Step 3: Copy SourceForge content into GitHub repo
+      # Step 3: Sync files from SourceForge to the GitHub repository
       - name: Sync SourceForge Content
         run: |
           rsync -a --exclude='.git' sourceforge/ .
+          rm -rf sourceforge # Cleanup
 
-      # Step 4: Commit and Push Changes
-      - name: Commit and Push
+      # Step 4: Commit and push changes to GitHub
+      - name: Commit and Push Changes
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
