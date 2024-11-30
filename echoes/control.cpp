@@ -97,6 +97,7 @@ Control::Control(Settings* appSettings, XQDir wDir)
     loop = 0;
     scans = 1;
     stddev = 0;
+    avgStddev = 0;
     autoCount = 0;
     manCount = 0;
     prog = 0;
@@ -1623,7 +1624,6 @@ void Control::measureScanTime()
         init = false;
         MYINFO << "Initialization terminated at scan#" << scans;
         joinTimer.start();
-        autoThrTimer.start();
         slotInitParams();
     }
 
@@ -2678,9 +2678,9 @@ bool Control::wfdBfs()
             }
             else if( eventDetected > 0 &&
                      (
-                        ( as->getThresholdsBehavior() == TB_DIFFERENTIAL && avgDiff <= autoDnThr ) ||
-                        ( as->getThresholdsBehavior() == TB_AUTOMATIC && avgDiff <= autoDnThr ) ||
-                        ( as->getThresholdsBehavior() == TB_ABSOLUTE && maxDbfs <= autoDnThr ) ||
+                        ( as->getThresholdsBehavior() == TB_DIFFERENTIAL && avgDiff < autoDnThr && maxDiff < autoDnThr  ) ||
+                        ( as->getThresholdsBehavior() == TB_AUTOMATIC && avgDiff < autoDnThr && maxDiff < autoDnThr && stddev < (2 * avgStddev)) ||
+                        ( as->getThresholdsBehavior() == TB_ABSOLUTE && maxDbfs < autoDnThr ) ||
                         ( lastingTimer.elapsed() > overdenseMs ) || //force event closing if lasting too long
                         ( restart == true )                   //force event closing when waterfall params change
                      )
@@ -2690,6 +2690,7 @@ bool Control::wfdBfs()
                 //when maxDiff falls below the lower threshold
                 //after a peak has been detected
                 MYWARNING << "Event " << prog << " stopped at " << maxFreq << " Hz";
+                MYINFO << "stdev=" << stddev << " avgStdev=" << avgStddev;
                 eventDetected = -maxFreq;
                 int msLasting = lastingTimer.elapsed();
 
@@ -2829,18 +2830,10 @@ bool Control::wfdBfs()
                     db->appendAutoData(&ad);
                     lad[2] = ad;
 
-
-
                     lastEventLasting = ad.lastingMs / 1000;
                 }
 
-                //if the last event lasts at least 1 sec,
-                //must wait some time before declaring the event as completely closed
-                if(lastEventLasting >= MIN_JOIN_LASTING)
-                {
-                    joinTimer.restart();
-                    autoThrTimer.restart();
-                }
+                joinTimer.restart();
             }
             else if(joinTimer.elapsed() > as->getJoinTime() &&
                     eventDetected < 0)
@@ -2851,7 +2844,7 @@ bool Control::wfdBfs()
                 eventBorder.clear();
             }
 
-            if(eventDetected == 0 && autoThrTimer.elapsed() > (lastEventLasting + 1))
+            if(eventDetected == 0 && joinTimer.elapsed() > as->getJoinTime())
             {
                 if( as->getThresholdsBehavior() == TB_AUTOMATIC && eventDetected == 0 )
                 {
@@ -2955,6 +2948,13 @@ bool Control::wfdBfs()
     double variance = sum / (Nfifo.count() - 1);
     stddev = sqrt(variance);
     //MYDEBUG << "variance(N)=" << variance << ", stddev(N)=" << stddev;
+
+    if(eventDetected == 0 && init == false)
+    {
+        avgStddev = avgStddev + stddev;
+        avgStddev = avgStddev / 2.0;
+        MYDEBUG << "stdev=" << stddev << " avgStdev=" << avgStddev;
+    }
 
     //the averaged S value to be used in next scan
     //is calculated by averaging all the

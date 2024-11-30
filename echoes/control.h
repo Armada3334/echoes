@@ -250,6 +250,7 @@ class Control : public QObject
     ///a scan peak is the maximum S-N found in a single scan:
 
     float stddev;               ///standard deviation of N
+    float avgStddev;             ///average standard deviation of N
     float avgDbfs;              ///average background noise [dBfs] in the current scan inside the detection range
     float avgS;                 ///averaged peak S [dBfs] calculated on the latest scans
     float avgN;                 ///averaged background noise N [dBfs] calculated on the latest scans
@@ -313,8 +314,6 @@ class Control : public QObject
     QElapsedTimer scanTimer;    ///stopwatch for scan time measure
     QElapsedTimer lastingTimer; ///stopwatch to measure event lasting (time between raising-->falling front)
     QElapsedTimer joinTimer;    ///stopwatch to measure the minimum time between consecutive separate events
-    QElapsedTimer autoThrTimer; ///stopwatch to wait after event's end before recalculate automatic thresholds
-    //QStringList dataDumps;      ///filenames of all produced dump files
 
     QStringList csvFields;      ///CSV output: columns names
 

@@ -111,7 +111,7 @@ MainWindow::MainWindow(Settings* appSettings, Control* appControl, QWidget *pare
     //Preferences
     guiWidgetsList[GT_PREFERENCES]={ ui->chkFticks,  ui->chkPticks, ui->chkTticks, ui->chkBoundaries, ui->chkTooltips,
                          ui->chkEnablePing, ui->chkEnableFaultSound, ui->chkEnableDAT, ui->sbDbOff, ui->sbDbGain, ui->leServerIP,
-                         ui->sbServerPort, ui->sbUDPdelay, ui->gbScanInteg };
+                         ui->sbServerPort, ui->sbUDPdelay, ui->gbScanInteg, ui->sbMaxEvLast, };
 
 
 
@@ -835,6 +835,9 @@ void MainWindow::slotGUIinit()
 
     i = as->getDBsnap();
     ui->sbDBsnap->setValue(i);
+
+    i = as->getMaxEventLasting();
+    ui->sbMaxEvLast->setValue(i);
 
     k = static_cast<Qt::CheckState>( as->getOverwriteSnap() );
     ui->chkOverwriteSnap->setChecked(k);
