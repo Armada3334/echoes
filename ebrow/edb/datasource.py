@@ -986,26 +986,31 @@ class DataSource:
         m.select()
         return m
 
-    def dailyCountsByClassification(self, df, filters, dateFrom=None, dateTo=None, totalRow=False, totalColumn=False,
+    def dailyCountsByClassification(self, df: pd.DataFrame, dateFrom: str = None, dateTo: str = None, filters: str = '',
+                                    totalRow: bool = False, totalColumn: bool = False,
                                     compensate=False, considerBackground=False):
         return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='count',
-                                                     totalRow=totalRow, totalColumn=totalColumn,
-                                                     compensate=compensate, considerBackground=considerBackground)
+                                                      totalRow=totalRow, totalColumn=totalColumn,
+                                                      compensate=compensate, considerBackground=considerBackground)
 
-    def dailyPowersByClassification(self, df, filters, dateFrom=None, dateTo=None, highestAvgRow=False,
-                                    highestAvgColumn=False):
+    def dailyPowersByClassification(self, df: pd.DataFrame, dateFrom: str = None, dateTo: str = None, filters: str = '',
+                                    highestAvgRow: bool = False,
+                                    highestAvgColumn: bool = False):
         return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='power',
-                                                     highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
+                                                      highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
 
-    def dailyLastingsByClassification(self, df, filters, dateFrom=None, dateTo=None, highestAvgRow=False,
-                                      highestAvgColumn=False):
+    def dailyLastingsByClassification(self, df: pd.DataFrame, dateFrom: str = None, dateTo: str = None,
+                                      filters: str = '',
+                                      highestAvgRow: bool = False,
+                                      highestAvgColumn: bool = False):
         return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='lasting',
-                                                     highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
+                                                      highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
 
-    def _dailyAggregationByClassification(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
-                                         metric: str = 'count', totalRow: bool = False, totalColumn: bool = False,
-                                         compensate: bool = False, considerBackground: bool = False,
-                                         highestAvgRow: bool = False, highestAvgColumn: bool = False) -> pd.DataFrame:
+    def _dailyAggregationByClassification(self, df: pd.DataFrame, filters: str, dateFrom: str = None,
+                                          dateTo: str = None,
+                                          metric: str = 'count', totalRow: bool = False, totalColumn: bool = False,
+                                          compensate: bool = False, considerBackground: bool = False,
+                                          highestAvgRow: bool = False, highestAvgColumn: bool = False) -> pd.DataFrame:
         """
         Aggregates daily metrics (count, mean of 'diff', or mean of 'lasting_ms') by classification.
 
@@ -1959,6 +1964,7 @@ class DataSource:
         seriesList = list()
 
         for row in rows:
+            print("row: {}/{}".format(row, rows))
             qApp.processEvents()
             if index is None:
                 serie = newDf.iloc[row, columns].reset_index(drop=True).squeeze()
@@ -2030,7 +2036,7 @@ class DataSource:
             slices.append(ds)
             if last:
                 break
-        return stacked      #.fillna('-')
+        return stacked  #.fillna('-')
 
     def makeRMOB(self, df: pd.DataFrame, lastOnly: bool = False):
         dfRMOB = None
@@ -2266,11 +2272,6 @@ class DataSource:
     def makeLastingsDf(self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, filters: str = '',
                        highestAvgRow: bool = True, highestAvgColumn: bool = True):
         return self._makeAverageDf(df, dtStart, dtEnd, dtRes, 'lasting_ms', 0, filters, highestAvgRow, highestAvgColumn)
-
-
-
-
-
 
     def dbCommit(self):
         if self._db is not None:

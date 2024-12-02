@@ -84,7 +84,11 @@ class Heatmap(BaseGraph):
                 # days columns values
                 column = list()
                 for hour in range(0, 24):
-                    value = int(df.iloc[dayCount, hour])
+                    value = df.iloc[dayCount, hour]
+                    if np.isnan(value):
+                        value = -1
+                    else:
+                        value = int(value)
                     column.append(value)
                 allColumns.append(column)
 
@@ -129,9 +133,12 @@ class Heatmap(BaseGraph):
                 column = list()
                 for hour in range(0, 24):
                     for minute in range(0, 60, 10):
-                        if df.iloc[dayCount, interval] is None:
-                            df.iloc[dayCount, interval] = 0
-                        value = int(df.iloc[dayCount, interval])
+                        value = df.iloc[dayCount, interval]
+                        if np.isnan(value):
+                            value = -1
+                        else:
+                            value = int(value)
+
                         column.append(value)
                         interval += 1
 
@@ -174,8 +181,12 @@ class Heatmap(BaseGraph):
                 column = list()
                 for dayCount in range(0, len(rowsHdr)):
                     print("flt={}, dayCount={}".format(flt, dayCount))
-                    count = int(df.iloc[dayCount, flt])
-                    column.append(count)
+                    value = df.iloc[dayCount, flt]
+                    if np.isnan(value):
+                        value = -1
+                    else:
+                        value = int(value)
+                    column.append(value)
                 allColumns.append(column)
         else:
             return

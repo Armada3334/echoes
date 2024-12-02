@@ -580,9 +580,8 @@ class Report:
 
             df = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
 
-            dailyDf = self._dataSource.dailyCountsByClassification(df, self._classFilter,
-                                                                   self._parent.fromDate, self._parent.toDate,
-                                                                   totalRow=True, totalColumn=True)
+            dailyDf = self._dataSource.dailyCountsByClassification(df, self._parent.fromDate, self._parent.toDate,
+                                                                   self._classFilter, totalRow=True, totalColumn=True)
 
             # in order to merge the daily counts table with the page header, their column names
             # must become a data row and column names become standardized numbers
