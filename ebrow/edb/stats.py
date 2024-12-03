@@ -540,8 +540,8 @@ class Stats:
         df = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
 
         if row == self.TAB_COUNTS_BY_DAY:
-            self._dataFrame = self._dataSource.dailyCountsByClassification(df, self._parent.fromDate,
-                                                                           self._parent.toDate, self._classFilter, totalRow=True,
+            self._dataFrame = self._dataSource.dailyCountsByClassification(df, self._classFilter, self._parent.fromDate,
+                                                                           self._parent.toDate, totalRow=True,
                                                                            totalColumn=True,
                                                                            compensate=self._compensation,
                                                                            considerBackground=self._considerBackground)
@@ -1173,13 +1173,17 @@ class Stats:
             self._ui.gbClassFilter_2.setVisible(True)
             self._ui.gbClassFilter_2.setEnabled(True)
 
-        if (row == self.TAB_SESSIONS_REGISTER or row == self.TAB_RMOB_MONTH or
-                row == self.TAB_SPORADIC_BG_BY_HOUR or row == self.TAB_SPORADIC_BG_BY_10M):
-            # RMOB data use an hardcoded filt, including only
+        if row == self.TAB_SESSIONS_REGISTER or row == self.TAB_RMOB_MONTH:
+            # RMOB data use an hardcoded filters, including only
             # non-fake events
             self._ui.gbDataSettings.setVisible(False)
             self._ui.gbClassFilter_2.setVisible(False)
             self._ui.gbClassFilter_2.setEnabled(False)
+
+        if row == self.TAB_SPORADIC_BG_BY_HOUR or row == self.TAB_SPORADIC_BG_BY_10M:
+            self._ui.gbDataSettings.setVisible(False)
+            self._ui.gbClassFilter_2.setVisible(True)
+            self._ui.gbClassFilter_2.setEnabled(True)
 
         if (row == self.TAB_POWERS_BY_DAY or row == self.TAB_POWERS_BY_HOUR or row == self.TAB_POWERS_BY_10M or
                 row == self.TAB_LASTINGS_BY_DAY or row == self.TAB_LASTINGS_BY_HOUR or row == self.TAB_LASTINGS_BY_10M):
@@ -1187,7 +1191,23 @@ class Stats:
             self._ui.gbClassFilter_2.setVisible(True)
             self._ui.gbClassFilter_2.setEnabled(True)
 
+
+
+
         # self._updateTabGraph()
+
+    def _selectSporadicDf(self, df):
+        df3 = None
+        if 'UNDER' in self._classFilter and 'OVER' in self._classFilter:
+            df2 = df.loc['Total'].to_frame().T
+            df3 = df2.rename(index={'Total': self._parent.toDate})
+        elif 'UNDER' in self._classFilter:
+            df2 = df.loc['UNDER'].to_frame().T
+            df3 = df2.rename(index={'UNDER': self._parent.toDate})
+        elif 'OVER' in self._classFilter:
+            df2 = df.loc['OVER'].to_frame().T
+            df3 = df2.rename(index={'OVER': self._parent.toDate})
+        return df3
 
     def _XYplot(self, tableRow: int, layout: QHBoxLayout):
         # classic plot
@@ -1235,9 +1255,9 @@ class Stats:
 
         if tableRow == self.TAB_COUNTS_BY_DAY:
             title = "Daily counts of filtered events in the covered dates, daily totals"
-            df = self._dataSource.dailyCountsByClassification(dfAuto,
+            df = self._dataSource.dailyCountsByClassification(dfAuto, self._classFilter,
                                                               self._parent.fromDate,
-                                                              self._parent.toDate,  self._classFilter, totalRow=False,
+                                                              self._parent.toDate, totalRow=False,
                                                               totalColumn=True,
                                                               compensate=self._compensation,
                                                               considerBackground=self._considerBackground)
@@ -1245,6 +1265,10 @@ class Stats:
             resolution = 'day'
             series = df['Total'].squeeze()
             yLabel = "Filtered daily counts"
+
+            resolution = 'hour'
+            series = self._dataSource.tableTimeSeries(df, columns=range(0, 24))
+            yLabel = "Filtered average powers by hour [dBfs]"
 
         if tableRow == self.TAB_POWERS_BY_10M:
             title = "Average S-N of filtered events in the covered dates by 1 hour intervals"
@@ -1374,80 +1398,106 @@ class Stats:
                 "title": "Daily counts by classification",
                 "resolution": "day",
                 "dataFunction": self._dataSource.dailyCountsByClassification,
-                "dataArgs": {"filters": self._classFilter, "totalRow": False, "totalColumn": False,
-                             "compensate": self._compensation, "considerBackground": self._considerBackground},
+                "dataArgs": {"filters": self._classFilter,
+                             "dateFrom": self._parent.fromDate,
+                             "dateTo": self._parent.toDate,
+                             "compensate": self._compensation,
+                             "considerBackground": self._considerBackground},
             },
             self.TAB_POWERS_BY_DAY: {
                 "title": "Average S-N, in the covered dates, daily totals by classification",
                 "resolution": "day",
                 "dataFunction": self._dataSource.dailyPowersByClassification,
-                "dataArgs": {"filters": self._classFilter, "highestAvgRow": False, "highestAvgColumn": False},
+                "dataArgs": {"filters": self._classFilter,
+                             "dateFrom": self._parent.fromDate,
+                             "dateTo": self._parent.toDate},
             },
             self.TAB_LASTINGS_BY_DAY: {
                 "title": "Average lastings in the covered dates, daily totals by classification",
                 "resolution": "day",
                 "dataFunction": self._dataSource.dailyLastingsByClassification,
-                "dataArgs": {"filters": self._classFilter, "highestAvgRow": False, "highestAvgColumn": False},
+                "dataArgs": {"filters": self._classFilter,
+                             "dateFrom": self._parent.fromDate,
+                             "dateTo": self._parent.toDate, },
             },
             self.TAB_RMOB_MONTH: {
                 "title": "RMOB monthly summary",
                 "resolution": "hour",
-                "dataFunction": self._prepareRmobData,
-                "dataArgs": {"overrideCmap": "colorgramme", "overrideShowValues": False},
+                "dataFunction": self._dataSource.makeCountsDf,
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": 'h',
+                             "filters": self._classFilterRMOB},
             },
             self.TAB_COUNTS_BY_HOUR: {
                 "title": "Hourly counts heatmap diagram",
                 "resolution": "hour",
                 "dataFunction": self._dataSource.makeCountsDf,
-                "dataArgs": {"dtRes": 'h', "filters": self._classFilter, "compensate": self._compensation,
-                             "considerBackground": self._considerBackground, "totalRow": False, "totalColumn": False},
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": 'h',
+                             "filters": self._classFilter,
+                             "compensate": self._compensation,
+                             "considerBackground": self._considerBackground},
             },
             self.TAB_COUNTS_BY_10M: {
                 "title": "Ten-minute counts heatmap diagram",
                 "resolution": "10m",
                 "dataFunction": self._dataSource.makeCountsDf,
-                "dataArgs": {"dtRes": '10T', "filters": self._classFilter, "compensate": self._compensation,
-                             "considerBackground": self._considerBackground, "totalRow": False, "totalColumn": False},
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": '10T',
+                             "filters": self._classFilter,
+                             "compensate": self._compensation,
+                             "considerBackground": self._considerBackground},
             },
             self.TAB_POWERS_BY_HOUR: {
                 "title": "Average S-N by hour",
                 "resolution": "hour",
                 "dataFunction": self._dataSource.makePowersDf,
-                "dataArgs": {"dtRes": 'h', "filters": self._classFilter, "highestAvgRow": False,
-                             "highestAvgColumn": False},
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": 'h',
+                             "filters": self._classFilter},
             },
             self.TAB_POWERS_BY_10M: {
                 "title": "Average S-N by 10-minute intervals",
                 "resolution": "10m",
                 "dataFunction": self._dataSource.makePowersDf,
-                "dataArgs": {"dtRes": '10T', "filters": self._classFilter, "highestAvgRow": False,
-                             "highestAvgColumn": False},
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": '10T',
+                             "filters": self._classFilter},
             },
             self.TAB_LASTINGS_BY_10M: {
                 "title": "Average lastings by 10-minute intervals",
                 "resolution": "10m",
                 "dataFunction": self._dataSource.makeLastingsDf,
-                "dataArgs": {"dtRes": '10T', "filters": self._classFilter, "highestAvgRow": False,
-                             "highestAvgColumn": False},
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": '10T',
+                             "filters": self._classFilter},
             },
             self.TAB_LASTINGS_BY_HOUR: {
                 "title": "Average lastings by hour",
                 "resolution": "hour",
                 "dataFunction": self._dataSource.makeLastingsDf,
-                "dataArgs": {"dtRes": 'h', "filters": self._classFilter, "highestAvgRow": False,
-                             "highestAvgColumn": False},
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": 'h',
+                             "filters": self._classFilter},
             },
             self.TAB_SPORADIC_BG_BY_HOUR: {
                 "title": "Sporadic background by hour",
                 "resolution": "hour",
-                "dataFunction": self._prepareSporadicData,
-                "dataArgs": {"timeResolution": 'hour'},
+                "dataFunction": lambda df: self._selectSporadicDf(self.avgHourDf),  # note: the df parameter is intentionally ignored
+                "dataArgs": {},
             },
             self.TAB_SPORADIC_BG_BY_10M: {
                 "title": "Sporadic background by 10-minute intervals",
                 "resolution": "10m",
-                "dataFunction": self._prepareSporadicData,
-                "dataArgs": {"timeResolution": '10m'},
+                "dataFunction": lambda df: self._selectSporadicDf(self.avg10minDf), # note: the df parameter is intentionally ignored
+                "dataArgs": {},
             },
         }
         # Show colormap settings and get the current colormap
@@ -1469,8 +1519,7 @@ class Stats:
         resolution = config["resolution"]
 
         # Generate the DataFrame
-        # dataFrame = dataFunction(baseDataFrame, self._classFilter, self._parent.fromDate, self._parent.toDate, **dataArgs)
-        dataFrame = dataFunction(baseDataFrame, self._parent.fromDate, self._parent.toDate, **dataArgs)
+        dataFrame = dataFunction(baseDataFrame, **dataArgs)
 
         # Check if the DataFrame is valid
         if dataFrame is None:
@@ -1485,8 +1534,11 @@ class Stats:
         print(f"pixelWidth={pixelWidth}, pixelHeight={pixelHeight}, inchWidth={inchWidth}, inchHeight={inchHeight}")
 
         # Create the Heatmap object
-        heatmap = Heatmap(dataFrame, self._settings, inchWidth, inchHeight, colormap, title, resolution,
-                          self._showValues, self._showGrid, self._considerBackground)
+        if tableRow == self.TAB_RMOB_MONTH:
+            heatmap = HeatmapRMOB(dataFrame, self._settings, inchWidth, inchHeight, colormap)
+        else:
+            heatmap = Heatmap(dataFrame, self._settings, inchWidth, inchHeight, colormap, title, resolution,
+                              self._showValues, self._showGrid, self._considerBackground)
 
         # Embed the Heatmap in the layout
         canvas = heatmap.widget()
@@ -1498,6 +1550,238 @@ class Stats:
         self._plot = heatmap
 
     def _bargraph(self, tableRow: int, layout: QHBoxLayout):
+        """
+        Generate a bargraph visualization based on the selected data and configuration.
+        """
+        # Mapping tableRow values to configuration parameters
+        tableRowConfig = {
+            self.TAB_COUNTS_BY_DAY: {
+                "title": "Daily counts by classification",
+                "resolution": "day",
+                "dataFunction": self._dataSource.dailyCountsByClassification,
+                "dataArgs": {"filters": self._classFilter,
+                             "dateFrom": self._parent.fromDate,
+                             "dateTo": self._parent.toDate,
+                             "totalColumn": True,
+                             "compensate": self._compensation,
+                             "considerBackground": self._considerBackground},
+                "seriesFunction": lambda df: df['Total'].squeeze(),
+                "seriesArgs": {},
+                "yLabel": "Filtered daily counts",
+                "fullScale": -1
+            },
+            self.TAB_POWERS_BY_DAY: {
+                "title": "Average S-N, in the covered dates, daily totals by classification",
+                "resolution": "day",
+                "dataFunction": self._dataSource.dailyPowersByClassification,
+                "dataArgs": {"filters": self._classFilter,
+                             "dateFrom": self._parent.fromDate,
+                             "dateTo": self._parent.toDate,
+                             "highestAvgColumn": True
+                             },
+                "seriesFunction": lambda df: df['Average'].squeeze(),
+                "seriesArgs": {},
+                "yLabel": "Filtered average powers by hour [dBfs]",
+                "fullScale": ""
+            },
+            self.TAB_LASTINGS_BY_DAY: {
+                "title": "Average lastings in the covered dates, daily totals by classification",
+                "resolution": "day",
+                "dataFunction": self._dataSource.dailyLastingsByClassification,
+                "dataArgs": {"filters": self._classFilter,
+                             "dateFrom": self._parent.fromDate,
+                             "dateTo": self._parent.toDate,
+                             "highestAvgColumn": True},
+                "seriesFunction": lambda df: df['Average'].squeeze(),
+                "seriesArgs": {},
+                "yLabel": "Filtered average lastings by day [ms]",
+                "fullScale": -1
+            },
+            self.TAB_RMOB_MONTH: {
+                "title": "RMOB hourly summary",
+                "resolution": "hour",
+                "dataFunction": self._dataSource.makeCountsDf,
+                "dataArgs": {"dtStart": self._parent.toDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": 'h',
+                             "filters": self._classFilterRMOB,
+                             "compensate": self._compensation,
+                             "considerBackground": self._considerBackground},
+                "seriesFunction": self._dataSource.tableTimeSeries,
+                "seriesArgs": {"columns": range(0, 24)},
+                "yLabel": "",
+                "fullScale": lambda df: df.max().max()
+            },
+            self.TAB_COUNTS_BY_HOUR: {
+                "title": "Hourly counts",
+                "resolution": "hour",
+                "dataFunction": self._dataSource.makeCountsDf,
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": 'h',
+                             "filters": self._classFilter,
+                             "compensate": self._compensation,
+                             "considerBackground": self._considerBackground},
+                "seriesFunction": self._dataSource.tableTimeSeries,
+                "seriesArgs": {"columns": range(0, 24)},
+                "yLabel": "Filtered hourly counts",
+                "fullScale": -1
+            },
+            self.TAB_POWERS_BY_HOUR: {
+                "title": "Average S-N by hour",
+                "resolution": "hour",
+                "dataFunction": self._dataSource.makePowersDf,
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": 'h',
+                             "filters": self._classFilter},
+                "seriesFunction": self._dataSource.tableTimeSeries,
+                "seriesArgs": {"columns": range(0, 24)},
+                "yLabel": "Filtered average powers by hour [dBfs]",
+                "fullScale": -1
+            },
+            self.TAB_LASTINGS_BY_HOUR: {
+                "title": "Average lastings by hour",
+                "resolution": "hour",
+                "dataFunction": self._dataSource.makeLastingsDf,
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": 'h',
+                             "filters": self._classFilter},
+                "seriesFunction": self._dataSource.tableTimeSeries,
+                "seriesArgs": {"columns": range(0, 24)},
+                "yLabel": "Filtered average lastings by hour [ms]",
+                "fullScale": -1
+            },
+            self.TAB_COUNTS_BY_10M: {
+                "title": "Ten-minute counts heatmap diagram",
+                "resolution": "10m",
+                "dataFunction": self._dataSource.makeCountsDf,
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": '10T',
+                             "filters": self._classFilter,
+                             "compensate": self._compensation,
+                             "considerBackground": self._considerBackground},
+                "seriesFunction": self._dataSource.tableTimeSeries,
+                "seriesArgs": {"columns": range(0, 24)},
+                "yLabel": "Filtered counts by 10min",
+                "fullScale": -1
+            },
+
+            self.TAB_POWERS_BY_10M: {
+                "title": "Average S-N by 10-minute intervals",
+                "resolution": "10m",
+                "dataFunction": self._dataSource.makePowersDf,
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": '10T',
+                             "filters": self._classFilter},
+                "seriesFunction": self._dataSource.tableTimeSeries,
+                "seriesArgs": {"columns": range(0, 144)},
+                "yLabel": "Filtered average powers by 10 min [dBfs]",
+                "fullScale": -1
+            },
+
+            self.TAB_LASTINGS_BY_10M: {
+                "title": "Average lastings by 10-minute intervals",
+                "resolution": "10m",
+                "dataFunction": self._dataSource.makeLastingsDf,
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": '10T',
+                             "filters": self._classFilter},
+                "seriesFunction": self._dataSource.tableTimeSeries,
+                "seriesArgs": {"columns": range(0, 144)},
+                "yLabel": "Filtered average lastings by 10min. [ms]",
+                "fullScale": -1
+            },
+
+            self.TAB_SPORADIC_BG_BY_HOUR: {
+                "title": "Sporadic background by hour",
+                "resolution": "hour",
+                "dataFunction": lambda df: self._selectSporadicDf(self.avgHourDf),  # note: the df parameter is intentionally ignored
+                "dataArgs": {},
+                "seriesFunction": self._dataSource.tableTimeSeries,
+                "seriesArgs": {"columns": range(0, 24)},
+                "yLabel": "Filtered counts",
+                "fullScale": -1
+            },
+            self.TAB_SPORADIC_BG_BY_10M: {
+                "title": "Sporadic background by 10-minute intervals",
+                "resolution": "10m",
+                "dataFunction": lambda df: self._selectSporadicDf(self.avg10minDf),
+                "dataArgs": {},
+                "seriesFunction": self._dataSource.tableTimeSeries,
+                "seriesArgs": {"columns": range(0, 144)},
+                "yLabel": "Filtered counts",
+                "fullScale": -1
+            },
+        }
+        # Show colormap settings and get the current colormap
+        self._showColormapSetting(True)
+        colormap = self._parent.cmapDict[self._currentColormap]
+
+        # Retrieve the base dataset
+        baseDataFrame = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
+
+        # Get configuration for the current tableRow
+        config = tableRowConfig.get(tableRow)
+        if not config:
+            return
+
+        # Retrieve specific data based on the tableRow configuration
+        dataFunction = config["dataFunction"]
+        dataArgs = config.get("dataArgs", {})
+        seriesFunction = config["seriesFunction"]
+        seriesArgs = config.get("seriesArgs", {})
+        title = config["title"]
+        resolution = config["resolution"]
+        yLabel = config["yLabel"]
+        fullScale = config["fullScale"]
+
+        # Generate the DataFrame
+        dataFrame = dataFunction(baseDataFrame, **dataArgs)
+        series = seriesFunction(dataFrame, **seriesArgs)
+
+        # Check if the DataFrame is valid
+        if series is None:
+            return
+
+        # Calculate chart dimensions in pixels and inches
+        pixelWidth = min(self._szBase.width() * self._hZoom, 65535)
+        pixelHeight = min(self._szBase.height() * self._vZoom, 65535)
+        inchWidth = pixelWidth / self._px  # Convert pixels to inches
+        inchHeight = pixelHeight / self._px
+
+        print(f"pixelWidth={pixelWidth}, pixelHeight={pixelHeight}, inchWidth={inchWidth}, inchHeight={inchHeight}")
+
+        # Creates the Bargraph object
+        if tableRow == self.TAB_RMOB_MONTH:
+            # override is only for GUI, the BargraphRMOB always behaves so
+            overrideShowValues = False
+            self._ui.chkShowValues.setChecked(overrideShowValues)
+            overrideShowGrid = False
+            self._ui.chkGrid_2.setChecked(overrideShowGrid)
+            overrideCmap = "colorgramme"
+            self._showColormapSetting(True, overrideCmap)
+            cm = self._parent.cmapDict[overrideCmap]
+            bargraph = BargraphRMOB(series, self._settings, inchWidth, inchHeight, cm, fullScale(dataFrame))
+        else:
+            bargraph = Bargraph(series, self._settings, inchWidth, inchHeight, title, yLabel, resolution,
+                                 self._showValues,
+                                 self._showGrid, self._considerBackground)
+
+        # Embeds the bargraph in the layout
+        canvas = bargraph.widget()
+        canvas.setMinimumSize(QSize(int(pixelWidth), int(pixelHeight)))
+        self._diagram.setWidget(canvas)
+        layout.addWidget(self._diagram)
+
+        # Store the Bargraph object for future reference
+        self._plot = bargraph
+
+    def _bargraphOld(self, tableRow: int, layout: QHBoxLayout):
         bg = None
         series = None
         title = None
@@ -1520,7 +1804,7 @@ class Stats:
             fullScale = df2.max().max()
 
             # the bargraph in fact considers only the latest day
-            dataFrame = self._dataSource.makeCountsDf(dfAuto, self._parent.fromDate, self._parent.toDate,
+            dataFrame = self._dataSource.makeCountsDf(dfAuto, self._parent.toDate, self._parent.toDate,
                                                       dtRes='h',
                                                       filters=self._classFilterRMOB, totalRow=False,
                                                       totalColumn=False,
@@ -1584,9 +1868,9 @@ class Stats:
 
         if tableRow == self.TAB_COUNTS_BY_DAY:
             title = "Daily counts of filtered events in the covered dates, daily totals"
-            dataFrame = self._dataSource.dailyCountsByClassification(dfAuto,
+            dataFrame = self._dataSource.dailyCountsByClassification(dfAuto, self._classFilter,
                                                                      self._parent.fromDate,
-                                                                     self._parent.toDate,  self._classFilter, totalRow=False,
+                                                                     self._parent.toDate, totalRow=False,
                                                                      totalColumn=True,
                                                                      compensate=self._compensation,
                                                                      considerBackground=self._considerBackground)
@@ -1632,6 +1916,7 @@ class Stats:
             title = "Average lastings of filtered events in the covered dates by 10 min. intervals"
             df = self._dataSource.makeLastingsDf(dfAuto, self._parent.fromDate, self._parent.toDate,
                                                  dtRes='10T',
+
                                                  filters=self._classFilter,
                                                  highestAvgRow=False, highestAvgColumn=False)
             resolution = '10m'
@@ -1646,7 +1931,7 @@ class Stats:
                                                  highestAvgRow=False, highestAvgColumn=False)
             resolution = 'hour'
             series = self._dataSource.tableTimeSeries(df, columns=range(0, 24))
-            yLabel = "Filtered average lastings by hour [dBfs]"
+            yLabel = "Filtered average lastings by hour [ms]"
 
         if tableRow == self.TAB_LASTINGS_BY_DAY:
             title = "Average lastings, in the covered dates, daily totals"
@@ -1747,29 +2032,3 @@ class Stats:
             self._diagram.setWidget(canvas)
             layout.addWidget(self._diagram)
         self._plot = pie
-
-    def _prepareRmobData(self, baseDataFrame, fromDate, toDate, overrideCmap, overrideShowValues):
-        """
-        Prepare RMOB data for visualization.
-        """
-        df = self._dataSource.makeCountsDf(baseDataFrame, fromDate, toDate, dtRes='h', filters=self._classFilterRMOB,
-                                           totalRow=False, totalColumn=False, compensate=self._compensation,
-                                           considerBackground=self._considerBackground)
-        df, _, _ = self._dataSource.makeRMOB(df)
-        return df
-
-    def _prepareSporadicData(self, baseDataFrame, fromDate, toDate, timeResolution):
-        """
-        Prepare sporadic background data for visualization.
-        """
-        if timeResolution == 'hour':
-            df = self.avgHourDf
-        elif timeResolution == '10m':
-            df = self.avg10minDf
-        if 'UNDER' in self._classFilter and 'OVER' in self._classFilter:
-            return df
-        elif 'UNDER' in self._classFilter:
-            return df.filter(items=['UNDER'], axis=0)
-        elif 'OVER' in self._classFilter:
-            return df.filter(items=['OVER'], axis=0)
-        return df

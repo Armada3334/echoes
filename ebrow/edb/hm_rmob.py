@@ -74,6 +74,8 @@ class HeatmapRMOB(BaseGraph):
                 # days columns values
                 column = list()
                 for hour in range(0, 24):
+                    if df.iloc[dayCount, hour] is None or np.isnan(df.iloc[dayCount, hour]):
+                        df.iloc[dayCount, hour] = 0
                     value = int(df.iloc[dayCount, hour])
                     column.append(value)
                 allColumns.append(column)
