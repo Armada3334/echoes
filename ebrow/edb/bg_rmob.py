@@ -55,8 +55,10 @@ class BargraphRMOB(BaseGraph):
         ax.tick_params(axis='x', which='both', labelrotation=0)
         # generate colorlist referred to maximum monthly value as fullscale, the same of the heatmap
         barColors = list()
-        ratio = len(cmap.colors) / fullScale
+        ratio = len(cmap.colors) / (fullScale if fullScale > 0 else 1)
         for value in y:
+            if value is None or np.isnan(value):
+                value = 0
             idx = int(value * ratio)
             if idx >= len(cmap.colors):
                 idx = len(cmap.colors)-1
