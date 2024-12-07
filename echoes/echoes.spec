@@ -17,7 +17,7 @@
 
 Name:           echoes
 Version:        0.58
-Release:        11
+Release:        12
 Summary:        RF spectrograph for meteor scatter
 License:        GPL-3.0-or-later
 Group:          Productivity/Scientific/Astronomy

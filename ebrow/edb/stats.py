@@ -191,7 +191,7 @@ class Stats:
                 "seriesFunction": lambda df: df['Average'].squeeze(),
                 "seriesArgs": {},
                 "yLabel": "Filtered average powers by hour [dBfs]",
-                "fullScale": ""
+                "fullScale": -1
             },
             self.TAB_LASTINGS_BY_DAY: {
                 "title": "Average lastings in the covered dates, daily totals",

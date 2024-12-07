@@ -616,6 +616,14 @@ bool DBif::executePendingQueries()
 
     }
 
+    //once loaded all the pending events in DB, flushes the wal file to free some drive space
+    result = r.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    if(!result)
+    {
+        QSqlError e = r.lastError();
+        MYCRITICAL<< __func__ << "() returned: "  << e.text();
+    }
+
     return result;
 }
 
@@ -1045,15 +1053,20 @@ bool DBif::deleteExpiredSessions(int sessionsLastingDays)
     QSqlQuery r(db);
 
   	//flushes the wal file to free some drive space
-  	r.exec("PRAGMA wal_checkpoint(TRUNCATE)"); 
-  
+    bool result = r.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    if(!result)
+    {
+        QSqlError e = r.lastError();
+        MYCRITICAL<< __func__ << "() returned: "  << e.text();
+    }
+
     QDateTime oldest = as->currentUTCdateTime();
     oldest = oldest.addDays(-sessionsLastingDays);
     r.prepare("DELETE FROM automatic_sessions WHERE end_dt < ?");
 
     r.addBindValue( oldest.toString() );
     qq.push_back(r);
-    bool result = executePendingQueries();
+    result = executePendingQueries();
     if(!result)
     {
         QSqlError e = r.lastError();
