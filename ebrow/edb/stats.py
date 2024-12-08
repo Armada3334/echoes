@@ -1658,7 +1658,7 @@ class Stats:
 
         # Create the Heatmap object
         if tableRow == self.TAB_RMOB_MONTH:
-            heatmap = HeatmapRMOB(dataFrame, self._settings, inchWidth, inchHeight, colormap)
+            heatmap = HeatmapRMOB(dataFrame, self._settings, inchWidth, inchHeight, self._parent.cmapDict['colorgramme'])
         else:
             heatmap = Heatmap(dataFrame, self._settings, inchWidth, inchHeight, colormap, title, resolution,
                               self._showValues, self._showGrid, self._considerBackground)
