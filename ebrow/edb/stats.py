@@ -562,7 +562,8 @@ class Stats:
         df = self._dataSource.getADpartialFrame(fromDate, toDate)
 
         df2 = self._dataSource.makeCountsDf(df, fromDate, toDate, dtRes='h',
-                                            filters=self._classFilterRMOB, totalRow=False, totalColumn=False)
+                                            filters=self._classFilterRMOB, totalRow=False, totalColumn=False,
+                                            placeholder=-1)
 
         dfRMOB, monthNr, year = self._dataSource.makeRMOB(df2, lastOnly=True)
         filePrefix, txtFileName, dfMonth = self._generateRMOBtableFile(dfRMOB, year, monthNr)
@@ -1547,7 +1548,8 @@ class Stats:
                 "dataArgs": {"dtStart": self._parent.fromDate,
                              "dtEnd": self._parent.toDate,
                              "dtRes": 'h',
-                             "filters": self._classFilterRMOB},
+                             "filters": self._classFilterRMOB,
+                             "placeholder": -1},
             },
             self.TAB_COUNTS_BY_HOUR: {
                 "title": "Hourly counts",

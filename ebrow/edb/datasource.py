@@ -2081,8 +2081,9 @@ class DataSource:
 
     def makeCountsDf(
             self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, filters: str = '',
-            compensate: bool = False, considerBackground: bool = False, totalRow: bool = False, totalColumn: bool = False
-    ):
+            compensate: bool = False, considerBackground: bool = False, totalRow: bool = False,
+            totalColumn: bool = False, placeholder: int = 0):
+
         """
         Computes event counts grouped by day and time resolution.
 
@@ -2095,6 +2096,7 @@ class DataSource:
         :param considerBackground: Whether to subtract the background from counts.
         :param totalRow: Adds a row with totals for each column.
         :param totalColumn: Adds a column with totals for each row.
+        :param placeholder: value to replace NaNs
         :return: DataFrame with the requested counts.
         """
         # Filter the DataFrame for relevant events
@@ -2119,13 +2121,29 @@ class DataSource:
             subDf = df[(df['datetime'] >= dtFrom) & (df['datetime'] < dtTo)]
             count = len(subDf)
 
-            # Adjust counts based on background or compensation rules
-            count = self._adjustCount(count, dtRes, compensate, considerBackground)
+            hole = False
+            if count == 0 and 'ACQ ACT' in filters:
+                if dtRes == 'D' and (not self.acqWasRunning(dtFrom, 86400)):
+                    count = placeholder
+                    hole = True
+
+                if dtRes == 'h' and (not self.acqWasRunning(dtFrom, 3600)):
+                    count = placeholder
+                    hole = True
+
+                if dtRes == '10T' and (not self.acqWasRunning(dtFrom, 600)):
+                    count = placeholder
+                    hole = True
+
+                if not hole:
+                    # Adjust counts based on background or compensation rules
+                    count = self._adjustCount(count, dtRes, compensate, considerBackground)
+
             row = dtFrom.date().strftime('%Y-%m-%d')
             column = self._formatColumnName(dtFrom, dtRes)
 
             if row not in odf.index:
-                odf.loc[row] = 0
+                odf.loc[row] = placeholder
             odf.at[row, column] = count
 
         # Add totals for rows and columns

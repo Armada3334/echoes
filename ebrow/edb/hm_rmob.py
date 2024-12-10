@@ -93,11 +93,14 @@ class HeatmapRMOB(BaseGraph):
         data = np.transpose(data)
 
         cmap.set_bad(color='black')
+        cmap.set_under(color='black')
+        cmap.set_over(color='red')
         data = data.astype(float)
         data[data == -1] = np.nan
         plt.figure(figsize=(inchWidth, inchHeight))
+
         self._fig, ax = plt.subplots(1, facecolor='#ffffff')
-        ax.set_facecolor('#ffffff')
+        ax.set_facecolor('#000000')
 
         im = ax.imshow(data, cmap=cmap, aspect='auto')
 

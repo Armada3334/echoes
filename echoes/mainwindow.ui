@@ -449,6 +449,7 @@
    <font>
     <family>Gauge</family>
     <pointsize>8</pointsize>
+    <weight>50</weight>
     <italic>false</italic>
     <bold>false</bold>
    </font>
@@ -4112,6 +4113,7 @@ QTabBar::tab:selected {
              <font>
               <family>Gauge</family>
               <pointsize>8</pointsize>
+              <weight>50</weight>
               <italic>false</italic>
               <bold>false</bold>
              </font>
@@ -17928,6 +17930,7 @@ alternate-background-color: rgb(170, 0, 0);
                <font>
                 <family>Gauge Heavy</family>
                 <pointsize>14</pointsize>
+                <weight>10</weight>
                 <italic>false</italic>
                 <bold>false</bold>
                </font>
@@ -18247,6 +18250,7 @@ alternate-background-color: rgb(170, 0, 0);
                <font>
                 <family>Gauge</family>
                 <pointsize>16</pointsize>
+                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -29535,7 +29539,7 @@ alternate-background-color: rgb(170, 0, 0);
              </palette>
             </property>
             <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically delete tabular data older than X days from the database. This setting does not affect shots and dumps, the expiration of which is set with the &amp;quot;Image lasting&amp;quot; control. It was necessary to differentiate the two deadlines as shots and dumps are much more cumbersome than tabular data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically delete tabular data older than X days from the database. This setting does not affect shots and dumps, the expiration of which is set with the &amp;quot;Image lasting&amp;quot; control. It was necessary to differentiate the two deadlines as shots and dumps are much more cumbersome than tabular data. Maximum value alloweed: 1096 days (3 years including a leap year)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="styleSheet">
              <string notr="true">color: rgb(0, 255, 0);
@@ -29552,10 +29556,10 @@ alternate-background-color: rgb(170, 0, 0);
              <string> days</string>
             </property>
             <property name="maximum">
-             <number>366</number>
+             <number>1096</number>
             </property>
             <property name="value">
-             <number>366</number>
+             <number>1096</number>
             </property>
            </widget>
           </item>
