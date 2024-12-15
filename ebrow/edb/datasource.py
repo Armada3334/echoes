@@ -999,11 +999,11 @@ class DataSource:
 
     def dailyLastingsByClassification(self, df, filters, dateFrom=None, dateTo=None, highestAvgRow=False,
                                       highestAvgColumn=False):
-        return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='lasting',
+        return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo,  metric='lasting', dtDec = 0,
                                                      highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
 
     def _dailyAggregationByClassification(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
-                                         metric: str = 'count', totalRow: bool = False, totalColumn: bool = False,
+                                         metric: str = 'count', dtDec: int = 1, totalRow: bool = False, totalColumn: bool = False,
                                          compensate: bool = False, considerBackground: bool = False,
                                          highestAvgRow: bool = False, highestAvgColumn: bool = False) -> pd.DataFrame:
         """
@@ -1014,6 +1014,7 @@ class DataSource:
         @param dateFrom: Start date (inclusive)
         @param dateTo: End date (inclusive)
         @param metric: Aggregation metric ('count', 'power', 'lasting')
+        @param dtDec: number of decimals to show, zero=integer
         @param totalRow: Add a total row summing all columns
         @param totalColumn: Add a total column summing all rows
         @param compensate: If True, adjust counts based on background values
@@ -1055,7 +1056,7 @@ class DataSource:
                 elif metric == 'power':
                     value = tempDf['diff'].mean() if tempDf.shape[0] > 0 else 0
                 elif metric == 'lasting':
-                    value = tempDf['lasting_ms'].mean() if tempDf.shape[0] > 0 else 0
+                    value = round(tempDf['lasting_ms'].mean()) if tempDf.shape[0] > 0 else 0
                 else:
                     raise ValueError(f"Unsupported metric: {metric}")
 
@@ -1074,27 +1075,45 @@ class DataSource:
                     if value < 0:
                         value = 0
 
-                metricDict[dt] = round(value, 1) if not pd.isna(value) else np.nan
+                if dtDec > 0:
+                    metricDict[dt] = round(value, dtDec) if not pd.isna(value) else np.nan
+                else:
+                    metricDict[dt] = round(value) if not pd.isna(value) else -1
 
             resultsList.append(pd.Series(metricDict))
 
         # Combine results into a DataFrame
         newDf = pd.concat(resultsList, axis=1)
 
+        # Controlla se tutti i tipi di dati originali sono interi
+        all_integers = all(dtype.kind == 'i' for dtype in newDf.dtypes)
+
         # Add totals or averages
         if totalRow:
-            newDf.loc['Total'] = newDf.sum(numeric_only=True)
-        if totalColumn:
-            newDf['Total'] = newDf.sum(axis=1)
-            classList.append('Total')
-        if highestAvgColumn:
-            newDf['Average'] = round(newDf.apply(lambda row: row[row != 0].mean(), axis=1), 1).replace(0, None)
-            classList.append('Average')
-        if highestAvgRow:
-            newDf.loc['Average'] = round(newDf.apply(lambda col: col[col != 0].mean(), axis=0), 1).replace(0, None)
-        if highestAvgColumn and highestAvgRow:
-            newDf.at['Average', 'Average'] = None
+            total_row = newDf.sum(numeric_only=True)
+            newDf.loc['Total'] = total_row.astype(int) if all_integers else total_row  # Interi solo se tutto è intero
 
+        if totalColumn:
+            total_column = newDf.sum(axis=1)
+            newDf['Total'] = total_column.astype(int) if all_integers else total_column
+            classList.append('Total')
+
+        # Calcolo della colonna Average
+        if highestAvgColumn:
+            averages = newDf.apply(lambda row: row[row != 0].mean(), axis=1).round(1)
+            newDf['Average'] = averages.astype(int) if all_integers else averages
+            classList.append('Average')
+
+        # Calcolo della riga Average
+        if highestAvgRow:
+            averages = newDf.apply(lambda col: col[col != 0].mean(), axis=0).round(1)
+            newDf.loc['Average'] = averages.astype(int) if all_integers else averages
+
+        # Evitare conflitti tra Average row e Average column
+        if highestAvgColumn and highestAvgRow:
+            newDf.at['Average', 'Average'] = -1 if all_integers else None
+
+        # Riassegna i nomi delle colonne
         newDf.columns = classList
         return newDf
 
