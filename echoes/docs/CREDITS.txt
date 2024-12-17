@@ -23,6 +23,7 @@ Alec Alden, whose first experience with Echoes helped me finding bugs in 0.27
 
 Leslie Fry, for bug reporting about cgram_goods cropped on laptops with small screens, in 0.32
 
+HTML report generation from Ebrow comes from preliminary work by Ruben Giancarlo Elmo
 
 
 

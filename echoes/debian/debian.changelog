@@ -107,7 +107,7 @@ echoes (0.50-1) stable; urgency=low
 
  -- Giuseppe Massimo Bertani <gmbertani@users.sourceforge.net>  Mon, 15 Jul 2024 00:00:01 +0100
 
- echoes (0.58-1) stable; urgency=low
+ echoes (0.58-12) stable; urgency=low
 
   * see ANNOUNCE.txt
 
