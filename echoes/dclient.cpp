@@ -733,7 +733,6 @@ bool DongleClient::waitServerConfig()
                     cfg >> srvDsBandwidth   ; MYINFO << "srvDsBandwidth=" << srvDsBandwidth; //simply stored
                     cfg >> srvIqBufSize     ; MYINFO << " srvIqBufSize=" << srvIqBufSize;    //simply stored
                     cfg >> sizeofDoublet    ; MYINFO << "sizeofDoublet=" << sizeofDoublet;   //simply stored
-                    cfg >> isDirectBuffersEnabled; MYINFO << "isDirectBuffersEnabled=" << isDirectBuffersEnabled;   //simply stored
                     cfg >> srvRxStreamMTU   ; MYINFO << "SRVrxStreamMTU=" << srvRxStreamMTU;
                     MYINFO << "sizeof CFG: " << baData.size();
 

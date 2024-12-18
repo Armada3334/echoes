@@ -19,7 +19,7 @@ SET qtenv=%qtroot%\qtenv2.bat
 SET nsispath=D:\"Program Files (x86)"\NSIS
 SET nsis=%nsispath%\makensisw.exe
 
-SET APP_VERSION=0.56
+SET APP_VERSION=0.58
 
 REM ----- CUSTOMIZE END ---------------------------------------------
 
