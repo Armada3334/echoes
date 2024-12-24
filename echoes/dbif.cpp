@@ -992,7 +992,7 @@ bool DBif::deleteExpiredBlobs(int blobsLastingDays)
     {
         r.first();
         MYDEBUG << "query validity=" << r.isValid();
-        if(r.isValid())
+        if((r.isValid()) && (r.size() > 0))
         {
             bool ok = false;
             id = r.value(0).toInt(&ok);
