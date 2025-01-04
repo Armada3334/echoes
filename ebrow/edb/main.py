@@ -85,6 +85,10 @@ def excepthook(excType, excValue, tracebackobj):
 def main():
     global mainWin
 
+    workingDir = Path(Path.home(), Path("ebrow"))
+    lockFilePath = workingDir / Path("ebrow.lock")
+    workingDir.mkdir(parents=True, exist_ok=True)
+
     # sys.stdout = None  # suppress console output
     sys.excepthook = excepthook
     app = QApplication(sys.argv)
@@ -123,8 +127,6 @@ def main():
             # database file specified on command line
             dbFile = sys.argv[argc]
 
-    workingDir = Path(Path.home(), Path("ebrow"))
-    lockFilePath = workingDir / Path("ebrow.lock")
     if lockFilePath.exists():
         if not multipleInstances:
             with open(lockFilePath, 'r') as lockfile:
@@ -138,7 +140,6 @@ def main():
             print("removing stale lock file of dead process ", pid)
             os.remove(lockFilePath)
 
-    workingDir.mkdir(parents=True, exist_ok=True)
     with open(lockFilePath, 'w') as f:
         f.write("{}".format(os.getpid()))
 
