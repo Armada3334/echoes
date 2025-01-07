@@ -254,7 +254,7 @@ QSlider::handle:horizontal {
 </string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_24" stretch="0,0">
+   <layout class="QVBoxLayout" name="verticalLayout_24">
     <item>
      <widget class="QTabWidget" name="twMain">
       <property name="palette">
@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>13</hour>
+                    <hour>10</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>20</hour>
+                    <hour>14</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>18</hour>
+                    <hour>12</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -4027,7 +4027,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>265</width>
+             <width>285</width>
              <height>1126</height>
             </rect>
            </property>
@@ -14284,6 +14284,52 @@ border: none;</string>
                <layout class="QVBoxLayout" name="verticalLayout_35">
                 <item>
                  <widget class="QTableView" name="tvCfgPrefs">
+                  <property name="toolTip">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Preferences configuration table related to the selected event.&lt;/p&gt;&lt;p&gt;WARNING: These preferences are related to Echoes only, not Ebrow&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  </property>
+                  <property name="frameShape">
+                   <enum>QFrame::Box</enum>
+                  </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Plain</enum>
+                  </property>
+                  <property name="alternatingRowColors">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+              <widget class="QWidget" name="tabCfgWaterfall">
+               <attribute name="title">
+                <string>Waterfall</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_57">
+                <item>
+                 <widget class="QTableView" name="tvCfgWaterfall">
+                  <property name="toolTip">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Preferences configuration table related to the selected event.&lt;/p&gt;&lt;p&gt;WARNING: These preferences are related to Echoes only, not Ebrow&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  </property>
+                  <property name="frameShape">
+                   <enum>QFrame::Box</enum>
+                  </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Plain</enum>
+                  </property>
+                  <property name="alternatingRowColors">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+              <widget class="QWidget" name="tabCfgHistory">
+               <attribute name="title">
+                <string>RTS history</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_56">
+                <item>
+                 <widget class="QTableView" name="tvCfgHistory">
                   <property name="toolTip">
                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Preferences configuration table related to the selected event.&lt;/p&gt;&lt;p&gt;WARNING: These preferences are related to Echoes only, not Ebrow&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                   </property>

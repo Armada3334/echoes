@@ -25,10 +25,11 @@
 import json
 import numpy as np
 from PyQt5.QtWidgets import QDialog
-from skimage.transform import hough_line, hough_line_peaks
 from .ui_afhashead import Ui_afHasHead
 from .logprint import print
 from .utilities import splitASCIIdumpFile, splitBinaryDumpFile
+import pandas as pd
+import cv2
 
 
 
@@ -50,6 +51,8 @@ class HasHead(QDialog):
         self._ui.pbOk.clicked.connect(self.accept)
         self._settings = settings
         self._enabled = False
+        self._percentile = 0
+        self._timeDelta = 0
         self._load()
         print("HasHead loaded")
 
@@ -59,7 +62,11 @@ class HasHead(QDialog):
         from settings file
         """
         self._enabled = self._settings.readSettingAsBool('afHasHeadEnabled')
+        self._percentile = self._settings.readSettingAsInt('afHasHeadPercentile')
+        self._timeDelta = self._settings.readSettingAsInt('afHasHeadTimeDelta')
         self._ui.chkEnabled.setChecked(self._enabled)
+        self._ui.sbPercentile.setValue(self._percentile)
+        self._ui.sbTimeDelta.setValue(self._timeDelta)
 
     def _save(self):
         """
@@ -67,6 +74,120 @@ class HasHead(QDialog):
         to settings file
         """
         self._settings.writeSetting('afHasHeadEnabled', self._enabled)
+        self._settings.writeSetting('afHasHeadPercentile', self._percentile)
+        self._settings.writeSetting('afHasHeadTimeDelta', self._timeDelta)
+
+    def _doppler(self, df, referenceFreq, percentile, timeDelta):
+
+        # Sort the DataFrame by time and frequency
+        df = df.sort_values(by=['time', 'frequency'])
+
+        # Create a pivot table
+        pivotTable = df.pivot_table(index='time', columns='frequency', values='S', aggfunc='first')
+
+        # Round the values to two decimal places
+        pivotTable = pivotTable.round(2)
+
+        # Convert the pivot table to a 2D numpy array
+        image = pivotTable.to_numpy()
+
+        # Extract the lists of times and frequencies
+        timeList = pd.to_datetime(pivotTable.index, unit='s')  # Convert to datetime
+        freqList = list(map(float, pivotTable.columns.tolist()))
+
+        # Normalize the image for power values
+        minPower = np.min(image)
+        maxPower = np.max(image)
+        imageNorm = (image - minPower) / (maxPower - minPower)
+
+        # Calculate a dynamic threshold based on the user-provided percentile
+        powerThreshold = np.percentile(image, percentile)
+
+        # Find points above the power threshold
+        binaryImage = np.uint8(image >= powerThreshold)
+
+        # Find contours in the binary image
+        contours, _ = cv2.findContours(binaryImage, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Identify the main contour (largest area and near the reference frequency)
+        mainContour = None
+        doppler = 0
+        maxArea = -1
+        for contour in contours:
+            contour = contour.squeeze().astype(np.float32)
+            if contour.ndim == 2 and contour.shape[1] == 2:
+                freqIndices = contour[:, 0]
+                timeIndices = contour[:, 1]
+                avgFreq = np.mean([freqList[int(idx)] for idx in freqIndices if int(idx) < len(freqList)])
+                area = cv2.contourArea(contour)
+                if area > maxArea and abs(avgFreq - referenceFreq) < abs(referenceFreq * 0.1):
+                    maxArea = area
+                    mainContour = contour
+
+        # Find the maximum power point
+        maxPowerIdx = np.unravel_index(np.argmax(image, axis=None), image.shape)
+        maxPowerFreq = freqList[maxPowerIdx[1]]
+        maxPowerTime = timeList[maxPowerIdx[0]]
+
+        # Optimize the search for the extreme point
+        extremePoint = None
+        maxDistance = -1
+        if mainContour is not None:
+            # Get coordinates of all points in the main contour
+            contourPoints = np.array([[int(pt[0]), int(pt[1])] for pt in mainContour if len(pt) == 2])
+            timeIndices = contourPoints[:, 1]
+            freqIndices = contourPoints[:, 0]
+
+            # Apply timeDelta constraint
+            validIndices = [
+                idx for idx, timeIdx in enumerate(timeIndices)
+                if (maxPowerTime - timeList[timeIdx]).total_seconds() * 1000 >= timeDelta
+            ]
+
+            # Find the extreme point with the maximum frequency
+            for idx in validIndices:
+                freqIdx = freqIndices[idx]
+                timeIdx = timeIndices[idx]
+                extremeFreq = freqList[freqIdx]
+                distance = abs(extremeFreq - referenceFreq)
+
+                # Ensure no points in the contour have a lower or equal Y and a higher frequency
+                if (
+                        distance > maxDistance
+                        and extremeFreq > referenceFreq
+                        and all(
+                            freqList[freqIndices[otherIdx]] <= extremeFreq
+                            for otherIdx in range(len(timeIndices))
+                            if timeIndices[otherIdx] == timeIdx and otherIdx != idx
+                        )
+                        and timeIdx == np.min(timeIndices)  # Ensure it's the lowest Y
+                ):
+                    maxDistance = distance
+                    extremePoint = (timeIdx, freqIdx)
+
+        # Output the extreme point
+        if extremePoint is not None:
+            timeIdx, freqIdx = extremePoint
+            extremeFreq = freqList[freqIdx]
+            extremeTime = timeList[timeIdx]
+            doppler = extremeFreq - referenceFreq
+            print(f"Extreme Point: Frequency = {extremeFreq} Hz, Time = {extremeTime}, Doppler = {doppler} Hz")
+        else:
+            print("No valid extreme point found, doppler unknown")
+
+        result = dict()
+        result['freq0'] = float(extremeFreq)
+        result['freq1'] = float(referenceFreq)
+        result['time0'] = extremeTime.time()
+        result['time1'] = extremeTime.time()
+        result['doppler'] = doppler
+
+        # as result of the hough trasform, this filter must return
+        # a JSON string containing the following 5 parameters:
+        # freq0,time0 = starting point of the echo head
+        # freq1, time1 = ending point of the echo head
+        # doppler = frequency shift = (freq0 - freq1)
+        return result
 
     def evalFilter(self, evId: int) -> bool:
         """
@@ -78,32 +199,31 @@ class HasHead(QDialog):
         due to missing data
         """
 
-        df = self._parent.dataSource.getEventData(evId)
+        # df = self._parent.dataSource.getEventData(evId)
+
+        df = self._parent.dataSource.getADpartialFrame(idFrom=evId, idTo=evId, wantFakes=False)
+        rtsSer = df.loc[(df['event_status'] =='Fall'), 'revision'].reset_index(drop=True)
+        rtsRevision = rtsSer[0]
+
         datName, datData, dailyNr, utcDate = self._parent.dataSource.extractDumpData(evId)
+
         if datName is not None and datData is not None:
             if ".datb" in datName:
                 dfMap, dfPower = splitBinaryDumpFile(datData)
             else:
                 dfMap, dfPower = splitASCIIdumpFile(datData)
 
+        cfg = self._parent.dataSource.loadTableConfig('cfg_devices')  # , self._configRevision)
+        tunSer = cfg.loc[(cfg['id'] == rtsRevision), 'tune'].reset_index(drop=True)
+        tune = tunSer[0]
+
+        cfg = self._parent.dataSource.loadTableConfig('cfg_waterfall')  # , self._configRevision)
+        offSer = cfg.loc[(cfg['id'] == rtsRevision), 'freq_offset'].reset_index(drop=True)
+        offset = offSer[0]
+
         # dfMap is a table time,freq,S
-
-        result = dict()
-
-        result['freq0'] = 0
-        result['freq1'] = 0
-        result['time0'] = 0
-        result['time1'] = 0
-        result['doppler'] = 0
-
-        # as result of the hough trasform, this filter must return
-        # a JSON string containing the following 5 parameters:
-        # freq0,time0 = starting point of the echo head
-        # freq1, time1 = ending point of the echo head
-        # doppler = frequency shift = (freq0 - freq1)
-
+        result = self._doppler(dfMap, tune+offset, self._percentile, self._timeDelta)
         return json.dumps(result)
-
 
     def getParameters(self):
         """
@@ -111,8 +231,11 @@ class HasHead(QDialog):
         and gets the user's settings
         """
         print("HasHead.getParameters()")
+        self._load()
         self.exec()
         self._enabled = self._ui.chkEnabled.isChecked()
+        self._percentile = self._ui.sbPercentile.value()
+        self._timeDelta = self._ui.sbTimeDelta.value()
         self._save()
         return None
 

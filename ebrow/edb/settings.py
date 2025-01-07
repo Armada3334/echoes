@@ -209,7 +209,10 @@ class Settings(QSettings):
 
         # attribute filters
         d['afDummyEnabled'] = False
+
         d['afHasHeadEnabled'] = False
+        d['afHasHeadPercentile'] = 90
+        d['afHasHeadTimeDelta'] = 300
 
         self._defaults = d
         self._settings = d

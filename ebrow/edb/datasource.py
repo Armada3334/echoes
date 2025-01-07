@@ -1694,7 +1694,7 @@ class DataSource:
 
                 attribs = fallRecords.loc[idx, 'attributes']
                 myId = fallRecords.loc[idx, 'id']
-
+                myData = fallRecords.loc[idx]
                 if attribs == '' or overwrite:
                     print("Calculating attributes for eventID#", myId)
                     # idx indexes the fall event - to browse peak events, idx must be decremented by 1

@@ -35,7 +35,9 @@ class RTSconfig:
     RTS_OUTPUT = 2
     RTS_STORAGE = 3
     RTS_PREFS = 4
-    RTS_TOTAL = 5
+    RTS_WATERFALL = 5
+    RTS_HISTORY = 6
+    RTS_TOTAL = 7
 
     def __init__(self, parent, ui, settings):
         self._ui = ui
@@ -69,6 +71,10 @@ class RTSconfig:
                 self._displayCfgStorage()
             if self._ui.twRTS.currentIndex() == self.RTS_PREFS:
                 self._displayCfgPrefs()
+            if self._ui.twRTS.currentIndex() == self.RTS_WATERFALL:
+                self._displayCfgWaterfall()
+            if self._ui.twRTS.currentIndex() == self.RTS_HISTORY:
+                self._displayCfgHistory()
         self._parent.busy(False)
 
     def _displayCfgDevices(self):
@@ -100,6 +106,16 @@ class RTSconfig:
         self._currentDf = self._dataSource.loadTableConfig('cfg_prefs') # , self._configRevision)
         model = PandasModel(self._currentDf)
         self._ui.tvCfgPrefs.setModel(model)
+
+    def _displayCfgWaterfall(self):
+        self._currentDf = self._dataSource.loadTableConfig('cfg_waterfall') # , self._configRevision)
+        model = PandasModel(self._currentDf)
+        self._ui.tvCfgWaterfall.setModel(model)
+
+    def _displayCfgHistory(self):
+        self._currentDf = self._dataSource.loadTableConfig('configuration') # , self._configRevision)
+        model = PandasModel(self._currentDf)
+        self._ui.tvCfgHistory.setModel(model)
 
     def _exportPressed(self, checked):
         self._parent.busy(True)
