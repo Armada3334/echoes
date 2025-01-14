@@ -70,7 +70,7 @@ class Settings(QSettings):
                          'CAR1filterThreshold', 'CAR2filter', 'CAR2filterThreshold',
                          'underdenseMs', 'overdenseSec', 'carrierSec', 'acqActive', 'refNlevel', 'enableRefN']
 
-        self._attrFilters = ["afHasHeadEnabled"]
+        self._attrFilters = ["afOverOnly", "afHasHeadEnabled"]
 
         self._report = ['siteInfosExc', 'dailyExc', 'RMOBexc', 'hourlyExc', 'tenMinExc',
                         'chronoExc', 'expEvExc', 'stTabExc', 'stGrpExc', 'setupExc',
@@ -208,8 +208,8 @@ class Settings(QSettings):
         d['aeNoComments'] = True
 
         # attribute filters
+        d['afOverOnly'] = False
         d['afDummyEnabled'] = False
-
         d['afHasHeadEnabled'] = False
         d['afHasHeadPercentile'] = 90
         d['afHasHeadTimeDelta'] = 300

@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>10</hour>
+                    <hour>9</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>14</hour>
+                    <hour>12</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>12</hour>
+                    <hour>10</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -30537,6 +30537,16 @@ alternate-background-color: rgb(170, 0, 0);
              <string>Attribute filters</string>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_37">
+             <item>
+              <widget class="QCheckBox" name="chkOverOnly">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Considers only events classified as overdense while extracting attributes. Since this task can take some seconds on each dump file, saving time is important.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Process overdense events only</string>
+               </property>
+              </widget>
+             </item>
              <item>
               <widget class="QComboBox" name="cbAttribSettings">
                <property name="minimumSize">

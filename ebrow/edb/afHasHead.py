@@ -22,12 +22,14 @@
 *******************************************************************************
 
 """
+import datetime
 import json
 import numpy as np
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QDialog, qApp
 from .ui_afhashead import Ui_afHasHead
 from .logprint import print
 from .utilities import splitASCIIdumpFile, splitBinaryDumpFile
+
 import pandas as pd
 import cv2
 
@@ -64,6 +66,7 @@ class HasHead(QDialog):
         self._enabled = self._settings.readSettingAsBool('afHasHeadEnabled')
         self._percentile = self._settings.readSettingAsInt('afHasHeadPercentile')
         self._timeDelta = self._settings.readSettingAsInt('afHasHeadTimeDelta')
+
         self._ui.chkEnabled.setChecked(self._enabled)
         self._ui.sbPercentile.setValue(self._percentile)
         self._ui.sbTimeDelta.setValue(self._timeDelta)
@@ -114,6 +117,7 @@ class HasHead(QDialog):
         doppler = 0
         maxArea = -1
         for contour in contours:
+            qApp.processEvents()
             contour = contour.squeeze().astype(np.float32)
             if contour.ndim == 2 and contour.shape[1] == 2:
                 freqIndices = contour[:, 0]
@@ -129,8 +133,14 @@ class HasHead(QDialog):
         maxPowerFreq = freqList[maxPowerIdx[1]]
         maxPowerTime = timeList[maxPowerIdx[0]]
 
+
+        referenceFreq = maxPowerFreq
+
         # Optimize the search for the extreme point
         extremePoint = None
+        extremeFreq = 0.0
+        extremeTime = datetime.datetime.now()
+        # referenceFreq = 0.0
         maxDistance = -1
         if mainContour is not None:
             # Get coordinates of all points in the main contour
@@ -146,11 +156,11 @@ class HasHead(QDialog):
 
             # Find the extreme point with the maximum frequency
             for idx in validIndices:
+                qApp.processEvents()
                 freqIdx = freqIndices[idx]
                 timeIdx = timeIndices[idx]
                 extremeFreq = freqList[freqIdx]
                 distance = abs(extremeFreq - referenceFreq)
-
                 # Ensure no points in the contour have a lower or equal Y and a higher frequency
                 if (
                         distance > maxDistance
@@ -177,10 +187,10 @@ class HasHead(QDialog):
 
         result = dict()
         result['freq0'] = float(extremeFreq)
-        result['freq1'] = float(referenceFreq)
-        result['time0'] = extremeTime.time()
-        result['time1'] = extremeTime.time()
-        result['doppler'] = doppler
+        result['freq1'] = float(maxPowerFreq)
+        result['time0'] = str(extremeTime.time())
+        result['time1'] = str(maxPowerTime.time())
+        result['freq_shift'] = doppler
 
         # as result of the hough trasform, this filter must return
         # a JSON string containing the following 5 parameters:
@@ -189,7 +199,7 @@ class HasHead(QDialog):
         # doppler = frequency shift = (freq0 - freq1)
         return result
 
-    def evalFilter(self, evId: int) -> bool:
+    def evalFilter(self, evId: int) -> str:
         """
         Calculates the frequency shift of the head echo from a DATB if present.
         The results must be stored by the caller.
@@ -200,11 +210,11 @@ class HasHead(QDialog):
         """
 
         # df = self._parent.dataSource.getEventData(evId)
-
+        dfMap = None
         df = self._parent.dataSource.getADpartialFrame(idFrom=evId, idTo=evId, wantFakes=False)
-        rtsSer = df.loc[(df['event_status'] =='Fall'), 'revision'].reset_index(drop=True)
-        rtsRevision = rtsSer[0]
+        idx = df.loc[(df['event_status'] =='Fall')].index[0]
 
+        rtsRevision = df.loc[idx, 'revision']
         datName, datData, dailyNr, utcDate = self._parent.dataSource.extractDumpData(evId)
 
         if datName is not None and datData is not None:
@@ -213,17 +223,20 @@ class HasHead(QDialog):
             else:
                 dfMap, dfPower = splitASCIIdumpFile(datData)
 
-        cfg = self._parent.dataSource.loadTableConfig('cfg_devices')  # , self._configRevision)
-        tunSer = cfg.loc[(cfg['id'] == rtsRevision), 'tune'].reset_index(drop=True)
-        tune = tunSer[0]
+        if dfMap is not None:
+            cfg = self._parent.dataSource.loadTableConfig('cfg_devices')  # , self._configRevision)
+            idx = cfg.loc[(cfg['id'] == rtsRevision)].index[0]
+            tune = cfg.loc[idx, 'tune']
 
-        cfg = self._parent.dataSource.loadTableConfig('cfg_waterfall')  # , self._configRevision)
-        offSer = cfg.loc[(cfg['id'] == rtsRevision), 'freq_offset'].reset_index(drop=True)
-        offset = offSer[0]
+            cfg = self._parent.dataSource.loadTableConfig('cfg_waterfall')  # , self._configRevision)
+            offset = cfg.loc[idx, 'freq_offset']
 
-        # dfMap is a table time,freq,S
-        result = self._doppler(dfMap, tune+offset, self._percentile, self._timeDelta)
-        return json.dumps(result)
+            # dfMap is a table time,freq,S
+            result = self._doppler(dfMap, tune+offset, self._percentile, self._timeDelta)
+            return json.dumps(result)
+        else:
+            self._parent.updateStatusBar(f"dump file for event#{evId} corrupted, skipping attributes finding")
+        return None
 
     def getParameters(self):
         """

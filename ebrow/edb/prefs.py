@@ -133,6 +133,7 @@ class Prefs(QWidget):
         self._ui.pbCalc.pressed.connect(self._calculateSporadicBackground)
         self._ui.pbEditParms.pressed.connect(self._editAttributeParms)
 
+        self._ui.chkOverOnly.clicked.connect(lambda checked: self._settings.writeSetting('afOverOnly', checked))
         self.updateTabPrefs()
 
     def updateTabPrefs(self):
@@ -242,6 +243,7 @@ class Prefs(QWidget):
         self._ui.pbCalc.setEnabled(self._dataSource is not None)
 
         # attribute filters configuration interface
+        self._ui.chkOverOnly.setChecked(self._settings.readSettingAsBool('afOverOnly'))
         cwd = None
         if not self._attributeFilterNames:
             afList = list()

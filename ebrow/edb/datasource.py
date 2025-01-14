@@ -39,7 +39,7 @@ from PyQt5.QtSql import QSqlDatabase, QSqlQuery, QSqlError, QSqlTableModel
 from PyQt5.QtWidgets import QFileDialog, qApp
 from PyQt5.QtCore import QDir, QDate, qUncompress, QMetaType, QResource, QFile, QByteArray
 
-from .utilities import fpCmp, fuzzyCompare, castFloatPrecision, timestamp2sideral
+from .utilities import fuzzyCompare, castFloatPrecision, timestamp2sideral
 from .logprint import print
 
 
@@ -296,7 +296,7 @@ class DataSource:
                                      "work with, or delete the cache file manually first.")
         self._adf = None
         self._parent.updateProgressBar()  # hide progressbar
-        return False
+        return result
 
     def _loadAutoDataTableFromDB(self):
         """
@@ -1671,6 +1671,8 @@ class DataSource:
         if toID < lowestID:
             toID = lowestID
 
+        overOnly = self._settings.readSettingAsBool('afOverOnly')
+
         df = self.getADpartialFrame(idFrom=fromID, idTo=toID, wantFakes=False)
 
         self._parent.updateProgressBar(0)
@@ -1679,23 +1681,31 @@ class DataSource:
         currentRow = 0
 
         if df is not None:
-            raiseRecords = df.loc[(df['event_status'] == 'Raise') & (df['attributes'] == '')]
-            peakRecords = df.loc[(df['event_status'] == 'Peak') & (df['attributes'] == '')]
-            fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['attributes'] == '')]
+            if overOnly:
+                # raiseRecords = df.loc[(df['event_status'] == 'Raise') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
+                # peakRecords = df.loc[(df['event_status'] == 'Peak') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
+                fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
+            else:
+                # raiseRecords = df.loc[(df['event_status'] == 'Raise') & (df['attributes'] == '')]
+                # peakRecords = df.loc[(df['event_status'] == 'Peak') & (df['attributes'] == '')]
+                fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['attributes'] == '')]
             r = 0
 
             totalRows = len(fallRecords.index)
             self._parent.updateStatusBar(
                 "updating attributes on {} events provided with dump files (fakes are ignored)".format(totalRows))
 
+            estimatedTime = 0
+            elapsedTime = 0
             for idx in fallRecords.index:
+                startTime = 0
                 currentRow += 1
                 self._parent.updateProgressBar(currentRow, totalRows)
 
-                attribs = fallRecords.loc[idx, 'attributes']
+                attributes = fallRecords.loc[idx, 'attributes']
                 myId = fallRecords.loc[idx, 'id']
                 myData = fallRecords.loc[idx]
-                if attribs == '' or overwrite:
+                if attributes == '' or overwrite:
                     print("Calculating attributes for eventID#", myId)
                     # idx indexes the fall event - to browse peak events, idx must be decremented by 1
                     idp = idx - 1
@@ -1706,12 +1716,27 @@ class DataSource:
                     attrDict = dict()
                     for afName in afDict.keys():
                         print("Executing {} on event#{}".format(afName, myId))
+                        qApp.processEvents()
                         af = afDict[afName]
                         if af.isFilterEnabled():
+                            startTime = time.time()
                             resultsJson = af.evalFilter(myId)
-                            resultDict = json.loads(resultsJson)
-                            attrDict = {key: value for (key, value) in
-                                        (list(attrDict.items()) + list(resultDict.items()))}
+                            if resultsJson is not None:
+                                resultDict = json.loads(resultsJson)
+                                attrDict = {key: value for (key, value) in
+                                            (list(attrDict.items()) + list(resultDict.items()))}
+
+                                # updates the doppler measurement overwriting Echoes generated value
+                                if 'freq_shift' in resultDict.keys():
+                                    df.loc[(df.index == idx), 'freq_shift'] = int(resultDict['freq_shift'])
+                            endTime = time.time()
+
+                            if estimatedTime == 0 or currentRow % 20 == 0:
+                                elapsedTime = endTime - startTime
+                                rowsLeft = totalRows - currentRow
+                                estimatedTime = int((elapsedTime * rowsLeft) / 60)      # in minutes
+                                self._parent.updateStatusBar(
+                                    f"still {rowsLeft} rows left, estimated time to finish: {estimatedTime} minutes")
 
                     # string dump of the attributeDict
                     if len(attrDict.keys()) > 0:
@@ -2093,10 +2118,6 @@ class DataSource:
             dfRMOB.index.name = monthName
             return dfRMOB, monthNum, year
 
-    import pandas as pd
-    from datetime import datetime, timedelta
-    import pandas as pd
-    from datetime import datetime, timedelta
 
     def makeCountsDf(
             self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, filters: str = '',

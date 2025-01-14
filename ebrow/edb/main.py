@@ -98,6 +98,7 @@ def main():
     isBatchXLSX = False
     verboseLog = False
     multipleInstances = False
+    calcAttributes = False
     dbFile = None
     argc = len(sys.argv)
 
@@ -119,8 +120,11 @@ def main():
         if '--multiple' in sys.argv[argc]:
             multipleInstances = True
             still -= 1
+        if '--attr' in sys.argv[argc]:
+            calcAttributes = True
+            still -= 1
         if '--help' in sys.argv[argc]:
-            print("Usage: ebrow [--verbose] [--report] [--xlsx] [--rmob] [--multiple] [DB file]")
+            print("Usage: ebrow [--verbose] [--attr] [--report] [--xlsx] [--rmob] [--multiple] [DB file]")
             sys.exit(0)
 
         if still > 0:
@@ -133,7 +137,8 @@ def main():
                 pid = int(lockfile.read().strip())
                 if psutil.pid_exists(pid):
                     print(
-                        "ERROR - Cannot run. Stale lock file ebrow.lock: another Ebrow instance is already running or has just crashed.")
+                        "ERROR - Cannot run. Stale lock file ebrow.lock: another Ebrow instance is already running or "
+                        "has just crashed.")
                     print("        Use ebrow --multiple to allow multiple instances or delete the lock file manually.")
                     sys.exit(-1)
 
@@ -143,7 +148,7 @@ def main():
     with open(lockFilePath, 'w') as f:
         f.write("{}".format(os.getpid()))
 
-    mainWin = MainWindow(app, dbFile, isBatchRMOB, isBatchReport, isBatchXLSX, verboseLog)
+    mainWin = MainWindow(app, dbFile, calcAttributes, isBatchRMOB, isBatchReport, isBatchXLSX, verboseLog)
     if os.name == 'nt':
         myappid = 'GABB.Echoes.DataBrowser'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)

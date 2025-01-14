@@ -31,7 +31,7 @@ from pathlib import Path
 
 # from pyqtspinner import WaitingSpinner
 from PyQt5.QtCore import Qt, QDate, QEvent, QTimer
-from PyQt5.QtGui import QColor, QFontDatabase
+from PyQt5.QtGui import QFontDatabase
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, qApp
 
 # from splash import SplashWindow
@@ -59,7 +59,8 @@ class MainWindow(QMainWindow):
     WINDOW_TITLE = "Echoes Data Browser"
     DEFAULT_PROGRESS_STEP = 1
 
-    def __init__(self, app: QApplication, dbFile: str=None, isBatchRMOB: bool = False, isBatchReport: bool = False, isBatchXLSX = False, verboseLog: bool = True):
+    def __init__(self, app: QApplication, dbFile: str = None, mustCalcAttr: bool = False, isBatchRMOB: bool = False, isBatchReport: bool = False,
+                 isBatchXLSX=False, verboseLog: bool = True):
         super(MainWindow, self).__init__()
 
         self.app = app
@@ -86,16 +87,18 @@ class MainWindow(QMainWindow):
         self.isQuitting = False
         self.isReporting = False
         self.isAutoExport = False
+
         logPrintVerbose(verboseLog)
 
         self.cmapDict = createCustomColormapsDict()
+        self.mustCalcAttr = mustCalcAttr
         self.isBatchRMOB = isBatchRMOB
         self.isBatchReport = isBatchReport
         self.isBatchXLSX = isBatchXLSX
 
         self._fontDB = QFontDatabase()
-        self._fontDB.addApplicationFont(":/resources/fonts/Gauge-Regular.ttf");
-        self._fontDB.addApplicationFont(":/resources/fonts/Gauge-Heavy.ttf");
+        self._fontDB.addApplicationFont(":/resources/fonts/Gauge-Regular.ttf")
+        self._fontDB.addApplicationFont(":/resources/fonts/Gauge-Heavy.ttf")
         self._ui = Ui_ebrowWindow()
         self._ui.setupUi(self)
         self._splash = None
@@ -148,15 +151,18 @@ class MainWindow(QMainWindow):
         '''
         self.filterTags = ['OVER', 'UNDER', 'FAKE RFI', 'FAKE ESD', 'FAKE CAR1', 'FAKE CAR2', 'FAKE SAT', 'FAKE LONG',
                            'ACQ ACT']
-        self.filterChecks = [self._ui.chkOverdense, self._ui.chkUnderdense, self._ui.chkFakeRfi, self._ui.chkFakeEsd, self._ui.chkFakeCar1,
+        self.filterChecks = [self._ui.chkOverdense, self._ui.chkUnderdense, self._ui.chkFakeRfi, self._ui.chkFakeEsd,
+                             self._ui.chkFakeCar1,
                              self._ui.chkFakeCar2, self._ui.chkFakeSat, self._ui.chkFakeLong, self._ui.chkFakeLong]
         # last one is unused but these 2 lists must have same length
 
-        self.filterCheckStats = [self._ui.chkOverdense_2, self._ui.chkUnderdense_2, self._ui.chkFakeRfi_2, self._ui.chkFakeEsd_2,
+        self.filterCheckStats = [self._ui.chkOverdense_2, self._ui.chkUnderdense_2, self._ui.chkFakeRfi_2,
+                                 self._ui.chkFakeEsd_2,
                                  self._ui.chkFakeCar1_2, self._ui.chkFakeCar2_2, self._ui.chkFakeSat_2,
                                  self._ui.chkFakeLong_2, self._ui.chkAcqActive_2]
 
-        self.filterCheckReport = [self._ui.chkOverdense_3, self._ui.chkUnderdense_3, self._ui.chkFakeRfi_3, self._ui.chkFakeEsd_3,
+        self.filterCheckReport = [self._ui.chkOverdense_3, self._ui.chkUnderdense_3, self._ui.chkFakeRfi_3,
+                                  self._ui.chkFakeEsd_3,
                                   self._ui.chkFakeCar1_3, self._ui.chkFakeCar2_3, self._ui.chkFakeSat_3,
                                   self._ui.chkFakeLong_3]
 
@@ -286,7 +292,7 @@ class MainWindow(QMainWindow):
             # self._ui.dtFrom.setDate(qdateFrom)
             # self._ui.dtTo.setDate(QDate(today.year, today.month, today.day))
         '''
-        print("isBatchXLSX=",self.isBatchXLSX)
+        print("isBatchXLSX=", self.isBatchXLSX)
         if self.isBatchRMOB or self.isBatchReport or self.isBatchXLSX or self.dbFile is not None:
             self.updateStatusBar("Loading database file")
             self._openDataSource(noGUI=True)
@@ -431,7 +437,7 @@ class MainWindow(QMainWindow):
         if self.app is not None:
             self.app.processEvents()
 
-    def updateProgressBar(self, doneItems: int = None, totalItems: int = None, step: int = DEFAULT_PROGRESS_STEP):
+    def updateProgressBar(self, doneItems: int = None, totalItems: int = None):
         if totalItems is not None:
             self._progressTarget = int(totalItems)
 
@@ -443,7 +449,6 @@ class MainWindow(QMainWindow):
         else:
             self._ui.pbDB.setVisible(True)
             doneItems = int(doneItems)
-            step = int(step)
             self._progress = (doneItems / self._progressTarget) * 100
             self._progressPercent = int(self._progress)
             if self._progressPercent < 100:
@@ -568,7 +573,6 @@ class MainWindow(QMainWindow):
         qDateFrom.setDate(y, 1, 1)
         self._ui.dtFrom.setDate(qDateFrom)
 
-
     def _quit(self):
         if not self.isQuitting:
             self.isQuitting = True
@@ -637,10 +641,8 @@ class MainWindow(QMainWindow):
             if len(subsetDBpath) > 0:
                 self.busy(True)
                 self.updateStatusBar("Creating a DB subset into {}".format(subsetDBpath))
-                result = self.dataSource.createSubset(subsetDBpath, self.fromDate, self.toDate)
-
+                self.dataSource.createSubset(subsetDBpath, self.fromDate, self.toDate)
                 self.busy(False)
-
 
     def _resetClassifications(self):
         if self.dataSource is not None:
@@ -658,8 +660,14 @@ class MainWindow(QMainWindow):
                     self.eventDataChanges = [False] * (self.fromId + self.covID)
                     self.updateStatusBar("Performing classifications...")
                     self.dataSource.classifyEvents(self.fromId, self.toId)
-                    self.updateStatusBar("Calculating attributes...")
-                    self.dataSource.attributeEvents(self.fromId, self.toId)
+                    if self.confirmMessage("Question",
+                                           "Recalculate attributes? This task can take up to several hours, \
+                                           depending on how many dump files are in the database, but it can also \
+                                           be run later in batch mode by specifying --attr on the command line."):
+                        self.updateStatusBar("Calculating attributes...")
+                        self.dataSource.attributeEvents(self.fromId, self.toId)
+                    else:
+                        self.updateStatusBar("Skipping attributes recalc")
                 self.busy(False)
 
     def _overrideClassifications(self):
@@ -679,7 +687,7 @@ class MainWindow(QMainWindow):
                 self.dataSource.setEventClassification(idx, self.classifications.loc[idx, 'classification'])
             idx += 1
             updated += 1
-            self.updateProgressBar(idx, total, step=5)
+            self.updateProgressBar(idx, total)
 
         self.updateStatusBar("{} classifications ready, including manual overrides".format(updated - 1))
         # self._ui.pbSave.setEnabled(False)
@@ -748,7 +756,6 @@ class MainWindow(QMainWindow):
             self._ui.twMain.setTabVisible(4, True)  # Report
             self.tabPrefs.updateTabPrefs()
 
-
             if len(self.filteredIDs) > 0:
                 self.currentID = self.filteredIDs[self.currentIndex]
                 self.currentDailyNr = self.filteredDailies[self.currentIndex]
@@ -757,7 +764,20 @@ class MainWindow(QMainWindow):
             self.updateStatusBar("Opening ok, performing classifications...")
             self.eventDataChanges = [False] * (self.fromId + self.covID)
             self.dataSource.classifyEvents(self.fromId, self.toId)
-            self.dataSource.attributeEvents(self.fromId, self.toId)
+
+            if  self.isBatchRMOB or self.isBatchReport or self.isBatchXLSX:
+                self.updateStatusBar("Calculating attributes...")
+                self.dataSource.attributeEvents(self.fromId, self.toId)
+            else:
+                if self.confirmMessage("Question",
+                                       "Calculate attributes? This task can take up to several hours, \
+                                       depending on how many dump files are in the database, but it can also \
+                                       be run later in batch mode by specifying --attr on the command line."):
+                    self.updateStatusBar("Calculating attributes...")
+                    self.dataSource.attributeEvents(self.fromId, self.toId)
+                else:
+                    self.updateStatusBar("Skipping attributes calculation")
+
             self._ui.pbSave.setEnabled(True)
             self._ui.pbSubset.setEnabled(True)
             self._ui.pbClassReset.setEnabled(True)
