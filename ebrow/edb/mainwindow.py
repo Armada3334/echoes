@@ -317,7 +317,7 @@ class MainWindow(QMainWindow):
                 self._splash.end()
         self.updateProgressBar()  # hide the progressbar
         # self._parent.checkExportDir(self._exportDir)
-        self.busy(False, force=True)
+        self.busy(False, force=False)
 
     def getRMOBdata(self, sendOk: bool = True):
         # automatic export of RMOB file
@@ -342,6 +342,7 @@ class MainWindow(QMainWindow):
         '''
 
     def busy(self, wantBusy: bool, force: bool = False, spinner: bool = True):
+        stillBusy = 0
         if wantBusy:
             if self.busyCount == 0:
                 # disable all pushbuttons when waiting
@@ -373,13 +374,18 @@ class MainWindow(QMainWindow):
                     QApplication.setOverrideCursor(Qt.WaitCursor)
             self.busyCount += 1
             print("Busy [{}]".format(self.busyCount))
+            stillBusy = self.busyCount
         else:
             if self.busyCount > 0:
-                self.busyCount -= 1
+                if not force:
+                    self.busyCount -= 1
                 if self.busyCount == 0 or force:
-                    self.busyCount = 0
                     self.updateProgressBar()  # hide progress bar
-                    self.updateStatusBar("Ready")
+                    if force:
+                        self.updateStatusBar("Forced ready")
+                    else:
+                        self.updateStatusBar("Ready")
+
                     # self.updateStatusBar("Ready (force={})".format(force))
                     self._ui.pbOpen.setEnabled(True)
                     if self.dbOk:
@@ -407,10 +413,17 @@ class MainWindow(QMainWindow):
                     if spinner and self._spinner is not None:
                         self._spinner.stop()
                     QApplication.restoreOverrideCursor()
+                    if force:
+                        print("Still busy [{}]".format(self.busyCount))
+                        stillBusy = self.busyCount
+                        self.busyCount = 0
                 else:
                     print("Still busy [{}]".format(self.busyCount))
+                    stillBusy = self.busyCount
+
         self.app.processEvents()
         time.sleep(0.1)
+        return stillBusy
 
     def updateStatusBar(self, text: str, logOnly: bool = False):
         sText = text
@@ -462,21 +475,31 @@ class MainWindow(QMainWindow):
             qApp.processEvents()
 
     def infoMessage(self, notice: str, msg: str):
-        self.busy(False, force=True)
+        stillBusy = self.busy(False, force=True)
         errorbox = QMessageBox()
         errorbox.setWindowTitle(self.WINDOW_TITLE)
         errorbox.setText(str(notice) + '\n' + str(msg))
         errorbox.setIcon(QMessageBox.Information)
         errorbox.exec_()
+        while stillBusy:
+            # restore the busy cursor if it was showed
+            # before displaying the dialog
+            self.busy(True)
+            stillBusy -= 1
 
     def confirmMessage(self, notice: str, msg: str):
-        self.busy(False, force=True)
+        stillBusy = self.busy(False, force=True)
         errorbox = QMessageBox()
         errorbox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         errorbox.setWindowTitle(self.WINDOW_TITLE)
         errorbox.setText(str(notice) + '\n' + str(msg))
         errorbox.setIcon(QMessageBox.Question)
         button = errorbox.exec_()
+        while stillBusy:
+            # restore the busy cursor if it was showed
+            # before displaying the dialog
+            self.busy(True)
+            stillBusy -= 1
         return button == QMessageBox.Ok
 
     # protected methods:
@@ -773,6 +796,7 @@ class MainWindow(QMainWindow):
                                        "Calculate attributes? This task can take up to several hours, \
                                        depending on how many dump files are in the database, but it can also \
                                        be run later in batch mode by specifying --attr on the command line."):
+
                     self.updateStatusBar("Calculating attributes...")
                     self.dataSource.attributeEvents(self.fromId, self.toId)
                 else:
