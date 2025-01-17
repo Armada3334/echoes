@@ -184,6 +184,7 @@ class HasHead(QDialog):
             print(f"Extreme Point: Frequency = {extremeFreq} Hz, Time = {extremeTime}, Doppler = {doppler} Hz")
         else:
             print("No valid extreme point found, doppler unknown")
+            return None
 
         result = dict()
         result['freq0'] = float(extremeFreq)
@@ -233,9 +234,12 @@ class HasHead(QDialog):
 
             # dfMap is a table time,freq,S
             result = self._doppler(dfMap, tune+offset, self._percentile, self._timeDelta)
-            return json.dumps(result)
+            if result:
+                return json.dumps(result)
+            else:
+                return None     # unable to find head echo
         else:
-            self._parent.updateStatusBar(f"dump file for event#{evId} corrupted, skipping attributes finding")
+            self._parent.updateStatusBar(f"dump file for event#{evId} not available, ignoring  it.")
         return None
 
     def getParameters(self):

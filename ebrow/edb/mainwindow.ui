@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>9</hour>
+                    <hour>7</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>12</hour>
+                    <hour>8</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>10</hour>
+                    <hour>6</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -2836,6 +2836,47 @@ alternate-background-color: rgb(170, 0, 0);</string>
                <property name="icon">
                 <iconset resource="ebrow.qrc">
                  <normaloff>:/saveas</normaloff>:/saveas</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>32</width>
+                 <height>32</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pbStop">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>60</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>400</width>
+                 <height>40</height>
+                </size>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stops the cache update process with new classifications and attributes; press if you urgently need to use the program even with outdated data. The cache will still be updated on JSON files up to the point where the button was pressed. The same events will not be reprocessed at the next load from the DB.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>&amp;Stop loading</string>
+               </property>
+               <property name="icon">
+                <iconset resource="ebrow.qrc">
+                 <normaloff>:/stop</normaloff>:/stop</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -3936,6 +3977,9 @@ alternate-background-color: rgb(170, 0, 0);</string>
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Expanding</enum>
+            </property>
             <property name="sizeHint" stdset="0">
              <size>
               <width>20</width>
@@ -4027,7 +4071,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>285</width>
+             <width>265</width>
              <height>1126</height>
             </rect>
            </property>
@@ -11222,7 +11266,7 @@ font: 10pt &quot;Gauge&quot;;
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>285</width>
+             <width>274</width>
              <height>851</height>
             </rect>
            </property>

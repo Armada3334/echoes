@@ -329,6 +329,9 @@ class DataSource:
                 firstRaiseFound = False
                 while q.isValid():
                     currentRow += 1
+                    if self._parent.stopRequested:
+                        self._parent.busy(False)
+                        return False  # loop interrupted by user
                     qApp.processEvents()
                     rec = q.record()
                     if len(dataDict.keys()) == 0:
@@ -1455,6 +1458,8 @@ class DataSource:
             rows = fallRecords.shape[0]
             self._parent.updateStatusBar("updating classifications on {} events".format(rows))
             for idx in fallRecords.index:
+                if self._parent.stopRequested:
+                    return False  # loop interrupted by user
                 currentRow += 1
                 self._parent.updateProgressBar(currentRow, rows)
                 qApp.processEvents()
@@ -1698,6 +1703,8 @@ class DataSource:
             estimatedTime = 0
             elapsedTime = 0
             for idx in fallRecords.index:
+                if self._parent.stopRequested:
+                    return False  # loop interrupted by user
                 startTime = 0
                 currentRow += 1
                 self._parent.updateProgressBar(currentRow, totalRows)
@@ -1731,7 +1738,7 @@ class DataSource:
                                     df.loc[(df.index == idx), 'freq_shift'] = int(resultDict['freq_shift'])
                             endTime = time.time()
 
-                            if estimatedTime == 0 or currentRow % 20 == 0:
+                            if estimatedTime == 0 or currentRow % 50 == 0:
                                 elapsedTime = endTime - startTime
                                 rowsLeft = totalRows - currentRow
                                 estimatedTime = int((elapsedTime * rowsLeft) / 60)      # in minutes

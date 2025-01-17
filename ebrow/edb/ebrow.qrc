@@ -59,6 +59,7 @@
         <file alias="plasma">resources/colormaps/plasma.png</file>
         <file alias="echoes">resources/colormaps/echoes.png</file>
         <file alias="gray">resources/colormaps/gray.png</file>
+        <file alias="stop">resources/icons/process-stop.png</file>  
         <file alias="colorgramme">resources/colormaps/colorgramme.png</file>
         
         <file>resources/fonts/Gauge-Heavy.otf</file>

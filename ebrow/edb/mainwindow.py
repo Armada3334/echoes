@@ -87,6 +87,7 @@ class MainWindow(QMainWindow):
         self.isQuitting = False
         self.isReporting = False
         self.isAutoExport = False
+        self.stopRequested = False
 
         logPrintVerbose(verboseLog)
 
@@ -192,6 +193,7 @@ class MainWindow(QMainWindow):
         self._ui.pbSave.clicked.connect(self._updateDataSource)
         self._ui.pbSubset.clicked.connect(self._createSubset)
         self._ui.pbClassReset.clicked.connect(self._resetClassifications)
+        self._ui.pbStop.clicked.connect(self._stopMe)
         self._ui.pbQuit.clicked.connect(self._quit)
         self._ui.pbLastMonth.clicked.connect(self.coverLastMonth)
         self._ui.pbLastYear.clicked.connect(self.coverLastYear)
@@ -347,6 +349,7 @@ class MainWindow(QMainWindow):
             if self.busyCount == 0:
                 # disable all pushbuttons when waiting
                 self.updateStatusBar("Busy")
+                self._ui.pbStop.setEnabled(True)
                 self._ui.pbShotExp.setEnabled(False)
                 self._ui.pbStatTabExp.setEnabled(False)
                 self._ui.pbCfgTabExp.setEnabled(False)
@@ -385,9 +388,11 @@ class MainWindow(QMainWindow):
                         self.updateStatusBar("Forced ready")
                     else:
                         self.updateStatusBar("Ready")
-
+                    self.stopRequested = False
                     # self.updateStatusBar("Ready (force={})".format(force))
                     self._ui.pbOpen.setEnabled(True)
+                    self._ui.pbStop.setEnabled(False)
+
                     if self.dbOk:
                         self._ui.pbShotExp.setEnabled(True)
                         self._ui.pbStatTabExp.setEnabled(True)
@@ -639,7 +644,7 @@ class MainWindow(QMainWindow):
             if True in self.eventDataChanges:
                 if (self._settings.readSettingAsBool('autosaving')
                         or
-                        self.confirmMessage("About to saving the changes on cache file.",
+                        self.confirmMessage("About to save the changes on cache file.",
                                             "Press OK to confirm, Cancel to skip")):
                     self.busy(True)
                     if self._overrideClassifications():
@@ -786,21 +791,21 @@ class MainWindow(QMainWindow):
             self._settings.writeSetting('lastDBfilePath', self.dataSource.fullPath())
             self.updateStatusBar("Opening ok, performing classifications...")
             self.eventDataChanges = [False] * (self.fromId + self.covID)
-            self.dataSource.classifyEvents(self.fromId, self.toId)
-
-            if  self.isBatchRMOB or self.isBatchReport or self.isBatchXLSX:
-                self.updateStatusBar("Calculating attributes...")
-                self.dataSource.attributeEvents(self.fromId, self.toId)
-            else:
-                if self.confirmMessage("Question",
-                                       "Calculate attributes? This task can take up to several hours, \
-                                       depending on how many dump files are in the database, but it can also \
-                                       be run later in batch mode by specifying --attr on the command line."):
-
+            if self.dataSource.classifyEvents(self.fromId, self.toId):
+                if  self.isBatchRMOB or self.isBatchReport or self.isBatchXLSX:
                     self.updateStatusBar("Calculating attributes...")
                     self.dataSource.attributeEvents(self.fromId, self.toId)
                 else:
-                    self.updateStatusBar("Skipping attributes calculation")
+                    if self.confirmMessage("Question",
+                                           "Calculate attributes? This task can take up to several hours, \
+                                           depending on how many dump files are in the database, but it can also \
+                                           be run later in batch mode by specifying --attr on the command line."):
+
+                        self.updateStatusBar("Calculating attributes...")
+                        if not self.dataSource.attributeEvents(self.fromId, self.toId):
+                            self.updateStatusBar("Attributes calculation stopped by user")
+                    else:
+                        self.updateStatusBar("Skipping attributes calculation")
 
             self._ui.pbSave.setEnabled(True)
             self._ui.pbSubset.setEnabled(True)
@@ -819,3 +824,7 @@ class MainWindow(QMainWindow):
             self._ui.twMain.setTabVisible(3, False)  # RTS config
 
         self.busy(False)
+
+    def _stopMe(self):
+        self.stopRequested = True
+        self.updateStatusBar("Stop pressed")
