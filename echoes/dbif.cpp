@@ -991,7 +991,6 @@ bool DBif::deleteExpiredBlobs(int blobsLastingDays)
     if (result)
     {
         r.first();
-        MYDEBUG << "query validity=" << r.isValid();
         if((r.isValid()) && (r.size() > 0))
         {
             bool ok = false;
@@ -1014,6 +1013,10 @@ bool DBif::deleteExpiredBlobs(int blobsLastingDays)
             qq.push_back(r);
             result = executePendingQueries();
             MYINFO << "done";
+        }
+        else
+        {
+            MYCRITICAL << "query validity=" << r.isValid() << " result size=" << r.size();           
         }
     }
     else
