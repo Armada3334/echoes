@@ -990,8 +990,8 @@ bool DBif::deleteExpiredBlobs(int blobsLastingDays)
     bool result = r.exec();
     if (result)
     {
-        r.first();
-        if((r.isValid()) && (r.size() > 0))
+
+        if(r.first())
         {
             bool ok = false;
             id = r.value(0).toInt(&ok);
@@ -1016,7 +1016,7 @@ bool DBif::deleteExpiredBlobs(int blobsLastingDays)
         }
         else
         {
-            MYCRITICAL << "query validity=" << r.isValid() << " result size=" << r.size();           
+            MYCRITICAL << "query validity=" << r.isValid() << " no rows returned";
         }
     }
     else

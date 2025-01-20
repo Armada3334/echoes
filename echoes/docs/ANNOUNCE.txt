@@ -1,5 +1,16 @@
-﻿19/12/2024
-December 19, 2024
+﻿19/01/2025
+Bugfix release Echoes 0.60
+Fixed blobs deletion function - the bugfix in 0.59 was not so good.
+r.size() could return -1 even if records are regularly present in result,
+So - with large DBs - the deleting of expired screens and dumps did not happen
+causing the continue growing of the DB
+
+24/12/2024
+Bugfix release Echoes 0.59
+Fixed blobs deletion function - crashes occurred the first time midnight swap was run on an brand new database,
+due to assertion failed (Milan Kalina)
+
+19/12/2024
 Releasing Echoes 0.58 + Ebrow 0.1.83
 This release includes several improvements I introduced in the last three months. Some of them have been tested directly on the GABB.IT station.
 As for Echoes, we have the following changes that affect the graphical interface:

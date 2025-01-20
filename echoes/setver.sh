@@ -1,8 +1,8 @@
 #!/bin/sh
 #$Id$
 
-export appVersion=0.59 ;
-export oldVersion=0.58 ;
+export appVersion=0.60 ;
+export oldVersion=0.59 ;
 
 
 

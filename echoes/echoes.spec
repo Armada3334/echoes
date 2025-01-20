@@ -16,13 +16,13 @@
 #
 
 Name:           echoes
-Version:        0.59
+Version:        0.60
 Release:        1
 Summary:        RF spectrograph for meteor scatter
 License:        GPL-3.0-or-later
 Group:          Productivity/Scientific/Astronomy
 Url:            https://sourceforge.net/projects/echoes
-Source:         echoes-0.59.tar.gz
+Source:         echoes-0.60.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 
@@ -46,7 +46,7 @@ Echoes is a RF spectrograph designed for meteor scatter purposes. It relies on S
 %prep
 
 %setup
-qmake-qt5 echoes.pro -r -spec linux-g++  AUX_INSTALL_DIR=/usr/share BIN_INSTALL_DIR=/usr/bin APP_VERSION=0.59 BUILD_DATE=`date --iso-8601`
+qmake-qt5 echoes.pro -r -spec linux-g++  AUX_INSTALL_DIR=/usr/share BIN_INSTALL_DIR=/usr/bin APP_VERSION=0.60 BUILD_DATE=`date --iso-8601`
 
 %build
 %make_build
