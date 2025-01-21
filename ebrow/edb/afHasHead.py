@@ -180,7 +180,7 @@ class HasHead(QDialog):
             timeIdx, freqIdx = extremePoint
             extremeFreq = freqList[freqIdx]
             extremeTime = timeList[timeIdx]
-            doppler = extremeFreq - referenceFreq
+            doppler = referenceFreq - extremeFreq
             print(f"Extreme Point: Frequency = {extremeFreq} Hz, Time = {extremeTime}, Doppler = {doppler} Hz")
         else:
             print("No valid extreme point found, doppler unknown")

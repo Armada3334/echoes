@@ -436,10 +436,10 @@ class ScreenShots:
             secTickRanges = [5, 2, 2, 1, 1, 0.5, 0.5, 0.2, 0.2, 0.1]
             tickEverySecs = secTickRanges[int(self._vZoom - 1)]
             cmap = self._parent.cmapDict[self._currentColormap]
+
+            attrDict = self._parent.dataSource.getEventAttr(self._parent.currentID)
             self._plot = MapPlot(dfMap, dfPower, self._settings, inchWidth, inchHeight, cmap, name, self._plotVmin,
-                                 self._plotVmax,
-                                 tickEveryHz,
-                                 tickEverySecs, self._showGrid)
+                                 self._plotVmax, tickEveryHz, tickEverySecs, self._showGrid, attrDict)
             self._parent.app.processEvents()
             minV, maxV = self._plot.getMinMax()
             if self._plotVmin < minV:

@@ -73,6 +73,7 @@ class DataSource:
         self._dataChangedInMemory = False
         self._settings = settings
         self.dataReady = False
+        self.cacheNeedsUpdate = False
 
         # pd.set_option('display.precision', 4)
         # Configure Pandas to show 4-decimal floats
@@ -226,10 +227,7 @@ class DataSource:
                                             # end while
                                             adfUpdate = pd.DataFrame(dataDict)
                                             if not adfUpdate.empty:
-                                                # joins the new events to adf table
-                                                # adfUpdate.set_index('id', inplace=True)
-                                                # adfUpdate.sort_index(inplace=True, ascending=True)
-
+                                                self.cacheNeedsUpdate = True
                                                 # calculate the sidereal times for the new events
                                                 adfUpdate['sidereal_utc'] = adfUpdate.apply(
                                                     lambda x: timestamp2sideral(x['timestamp_ms']), axis=1)
@@ -1834,6 +1832,27 @@ class DataSource:
             dft = dfc.transpose()
             dft.columns = ['RAISE', 'PEAK', 'FALL']
             return dft
+        return None
+
+    def getEventAttr(self, eventID: int):
+        """
+        Returns a dictionary with event attributes, if present. Otherwise returns None
+
+        @param eventID:
+        @return:
+        """
+        print("getEventAttr({})".format(eventID))
+        df = self.getADpartialFrame(idFrom=eventID, idTo=eventID)
+        df.reset_index(drop=True, inplace=True)
+        attr = df.loc[0, 'attributes']
+        if attr and len(attr) > 0:
+            try:
+                attrDict = json.loads(attr)
+                attrDict['evId'] = eventID
+                return attrDict
+
+            except json.JSONDecodeError as e:
+                print(f"Error: malformed attribute string {attr}\n{e}")
         return None
 
     def getADframe(self):

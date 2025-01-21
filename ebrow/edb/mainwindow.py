@@ -523,7 +523,10 @@ class MainWindow(QMainWindow):
             self._ui.lbDBfilename.setText("{} ".format(self.dataSource.name()))
             if self.fromQDate >= qDateDBfrom and self.toQDate <= qDateDBto:
                 # the required coverage in compatible with DB coverage
-                pass
+                if self.dataSource.cacheNeedsUpdate:
+                    # extends the required coverage to include the latest
+                    # events loaded from DB and not yet present in cache
+                    self._ui.dtTo.setDate(qDateDBto)
 
             elif self.fromQDate >= qDateDBfrom and self.toQDate > qDateDBto:
                 # the required coverage overlaps the DB's coverage
@@ -641,7 +644,7 @@ class MainWindow(QMainWindow):
     def _updateDataSource(self):
         print("_updateDataSource()")
         if self.dataSource is not None:
-            if True in self.eventDataChanges:
+            if True in self.eventDataChanges or self.dataSource.cacheNeedsUpdate:
                 if (self._settings.readSettingAsBool('autosaving')
                         or
                         self.confirmMessage("About to save the changes on cache file.",
@@ -656,6 +659,7 @@ class MainWindow(QMainWindow):
                             return True
                     self.busy(False)
             self.updateStatusBar("Cache file doesn't need updating")
+            self.dataSource.cacheNeedsUpdate = False
         return False
 
     def _createSubset(self):
@@ -776,8 +780,6 @@ class MainWindow(QMainWindow):
 
         if self.dbOk:
             self.getCoverage()
-
-        if self.dbOk:
             self._ui.twMain.setTabVisible(1, True)  # Screenshots
             self._ui.twMain.setTabVisible(2, True)  # Plots
             self._ui.twMain.setTabVisible(3, True)  # Statistics
@@ -792,10 +794,13 @@ class MainWindow(QMainWindow):
             self.updateStatusBar("Opening ok, performing classifications...")
             self.eventDataChanges = [False] * (self.fromId + self.covID)
             if self.dataSource.classifyEvents(self.fromId, self.toId):
-                if  self.isBatchRMOB or self.isBatchReport or self.isBatchXLSX:
+                if self.isBatchReport or self.isBatchXLSX or self.mustCalcAttr:
+                    # attributes are always calculated before generating an automatic report
                     self.updateStatusBar("Calculating attributes...")
                     self.dataSource.attributeEvents(self.fromId, self.toId)
-                else:
+
+                elif not self.isBatchRMOB:
+                    # This is not needed for RMOB exports
                     if self.confirmMessage("Question",
                                            "Calculate attributes? This task can take up to several hours, \
                                            depending on how many dump files are in the database, but it can also \

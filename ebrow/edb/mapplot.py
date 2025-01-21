@@ -43,18 +43,15 @@ mp.use('Qt5Agg')
 
 class MapPlot(BaseGraph):
     def __init__(self, dfMap: pd.DataFrame, dfPower: pd.DataFrame, settings: Settings, inchWidth: float,
-                 inchHeight: float, cmap: list,
-                 name: str, vmin: float, vmax: float, tickEveryHz: int = 1000, tickEverySecs: int = 1,
-                 showGrid: bool = True):
+                 inchHeight: float, cmap: list, name: str, vmin: float, vmax: float, 
+                 tickEveryHz: int = 1000, tickEverySecs: int = 1, showGrid: bool = True, attrDict: dict = None):
         BaseGraph.__init__(self, settings)
 
-        # plt.rcParams['axes.autolimit_mode'] = 'round_numbers'
 
-        # dfMap.to_csv('C:/temp/map.csv', sep=';')
+        self._df = None
         dfMap = dfMap.reset_index()
 
         # --- horizontal x axis [Hz] ----
-
         # FFT bins
         freqs = dfMap['frequency'].unique()
         totFreqs = len(freqs)
@@ -74,7 +71,6 @@ class MapPlot(BaseGraph):
         startTime = np.datetime64(dt)
         dt = datetime.fromtimestamp(scans[-1], tz=timezone.utc)
         endTime = np.datetime64(dt)
-
         yLims = date2num([startTime, endTime])
 
         yLoc = AutoDateLocator(interval_multiples=True)
@@ -94,19 +90,15 @@ class MapPlot(BaseGraph):
         yFmt = DateFormatter('%H:%M:%S.%f')
 
         # ---- the waterfall flows downwards so the time increase from bottom to top (origin lower)
-
         data = dfMap[['S']].to_numpy().reshape(totScans, totFreqs)
         self._min = data.min()
         self._max = data.max()
-
         np.clip(data, vmin, vmax, data)
 
         colors = self._settings.readSettingAsObject('colorDict')
-        # backColor = colors['background'].name()
         plt.figure(figsize=(inchWidth, inchHeight))
-        self._fig, ax = plt.subplots(1) #, facecolor=backColor)
-        # ax.set_facecolor(backColor)
-
+        self._fig, ax = plt.subplots(1)
+        
         im = ax.imshow(data, cmap=cmap, aspect='auto', vmin=vmin, vmax=vmax, interpolation=None,
                        origin='lower', extent=[xLims[0], xLims[1], yLims[0], yLims[1]])
         print("extent=", im.get_extent())
@@ -122,7 +114,6 @@ class MapPlot(BaseGraph):
         norm = mp.colors.Normalize(vmin=vmin, vmax=vmax)
         self._fig.colorbar(im, drawedges=False, norm=norm, cmap=cmap)
         title = "Mapped spectrogram from data file " + name
-        # ax.set_title(title, loc='left', pad=20)
         self._fig.suptitle(title + '\n')
         ax.tick_params(axis='x', which='both', labelrotation=90, color=colors['majorGrids'].name())
 
@@ -132,16 +123,68 @@ class MapPlot(BaseGraph):
         if self._settings.readSettingAsString('cursorEnabled') == 'true':
             cursor(hover=True)
 
-        self._df = dfMap
-        self._fig.set_tight_layout({"pad": 5.0})
-        self._canvas = FigureCanvasQTAgg(self._fig)
+        if attrDict:
+            # saving references
+            self._ax = ax
+            self._fig.set_tight_layout({"pad": 5.0})
+            self._canvas = FigureCanvasQTAgg(self._fig)
+            self._extremePoint = (int(attrDict['freq0']), int(attrDict['time0']))
+            self._maxPoint = (int(attrDict['freq1']), int(attrDict['time1']))
+            self._cmap = cmap
+            self._plotExtras()
+
         # avoids showing the original fig window
         plt.close('all')
 
-    def savePlotDataToDisk(self, fileName):
-        self._df = self._df.set_index('time')
-        self._df.to_csv(fileName, sep=self._settings.dataSeparator())
+    def _plotExtras(self):
+        """
+        Adds a plot overlay with the contour, max power point, and extreme point.
+        Adjusts colors to avoid conflict with the colormap.
 
+        """
+        # Default colors
+        contourColor = 'green'
+        maxPointColor = 'red'
+        extremePointColor = 'orange'
+
+        # Check for conflicts with colormap colors
+        if self._cmap:
+            availableColors = ['blue', 'magenta', 'cyan', 'yellow', 'black', 'white']
+            for color in [contourColor, maxPointColor, extremePointColor]:
+                if color in self._cmap:
+                    newColor = next((c for c in availableColors if c not in self._cmap), None)
+                    if newColor:
+                        if color == contourColor:
+                            contourColor = newColor
+                        elif color == maxPointColor:
+                            maxPointColor = newColor
+                        elif color == extremePointColor:
+                            extremePointColor = newColor
+
+        ax = self._fig.axes[0]
+
+        # Plot contour
+        if contourPoints:
+            contourTimes, contourFreqs = zip(*contourPoints)
+            ax.plot(contourFreqs, contourTimes, color=contourColor, label='Contour', linewidth=2)
+
+        # Plot maximum power point
+        if self._maxPoint:
+            maxFreq, maxTime = self._maxPoint
+            ax.plot(maxFreq, maxTime, 'o', color=maxPointColor, markersize=8, label='Max Power Point')
+
+        # Plot extreme point
+        if self._extremePoint:
+            extremeFreq, extremeTime = self._extremePoint
+            ax.plot(extremeFreq, extremeTime, 'x', color=extremePointColor, markersize=10, label='Extreme Point')
+
+        # Update the legend to include new elements
+        ax.legend(loc='upper left')
+
+
+    def savePlotDataToDisk(self, fileName):
+        df = self._dfMap.set_index('time')
+        df.to_csv(fileName, sep=self._settings.dataSeparator())
 
     def getMinMax(self):
         return [self._min, self._max]
