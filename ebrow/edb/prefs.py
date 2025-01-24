@@ -125,9 +125,6 @@ class Prefs(QWidget):
         self._ui.sbCarLasting.valueChanged.connect(lambda val: self._settings.writeSetting('carrierSec', val))
         self._ui.pbFindRMOBclient.pressed.connect(self._selectRMOBclient)
 
-        self._ui.chkRefNman.clicked.connect(lambda checked: self._settings.writeSetting('enableRefN', checked))
-        self._ui.sbRefN.valueChanged.connect(lambda val: self._settings.writeSetting('refNlevel', val))
-
         self._ui.pbAdd.pressed.connect(self._addDateInterval)
         self._ui.pbDel.pressed.connect(self._removeDateInterval)
         self._ui.pbCalc.pressed.connect(self._calculateSporadicBackground)
@@ -179,9 +176,6 @@ class Prefs(QWidget):
         self._ui.sbUnderThr.setValue(self._settings.readSettingAsInt('underdenseMs'))
         self._ui.sbOverThr.setValue(self._settings.readSettingAsInt('overdenseSec'))
         self._ui.sbCarLasting.setValue(self._settings.readSettingAsInt('carrierSec'))
-
-        self._ui.chkRefNman.setChecked(self._settings.readSettingAsBool('enableRefN'))
-        self._ui.sbRefN.setValue(self._settings.readSettingAsFloat('refNlevel'))
 
         self._ui.cbFontFamily.setCurrentText(self._settings.readSettingAsString('fontFamily'))
         self._ui.sbFontSize.setValue(self._settings.readSettingAsInt('fontSize'))

@@ -25,6 +25,7 @@
 from datetime import datetime, timezone
 from dateutil.rrule import SECONDLY, MINUTELY
 
+import cv2
 import pandas as pd
 import numpy as np
 import matplotlib as mp
@@ -33,7 +34,7 @@ from matplotlib.dates import AutoDateLocator, date2num, MICROSECONDLY, DateForma
 from mplcursors import cursor
 from matplotlib.ticker import MaxNLocator, ScalarFormatter
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-
+from PyQt5.QtWidgets import qApp
 from .utilities import PrecisionDateFormatter
 from .settings import Settings
 from .basegraph import BaseGraph
@@ -46,7 +47,6 @@ class MapPlot(BaseGraph):
                  inchHeight: float, cmap: list, name: str, vmin: float, vmax: float, 
                  tickEveryHz: int = 1000, tickEverySecs: int = 1, showGrid: bool = True, attrDict: dict = None):
         BaseGraph.__init__(self, settings)
-
 
         self._df = None
         dfMap = dfMap.reset_index()
@@ -123,14 +123,13 @@ class MapPlot(BaseGraph):
         if self._settings.readSettingAsString('cursorEnabled') == 'true':
             cursor(hover=True)
 
+        self._fig.set_tight_layout({"pad": 5.0})
+        self._canvas = FigureCanvasQTAgg(self._fig)
+        self._cmap = cmap
+        self._df = dfMap
+        self._attrDict = attrDict
+
         if attrDict:
-            # saving references
-            self._ax = ax
-            self._fig.set_tight_layout({"pad": 5.0})
-            self._canvas = FigureCanvasQTAgg(self._fig)
-            self._extremePoint = (int(attrDict['freq0']), int(attrDict['time0']))
-            self._maxPoint = (int(attrDict['freq1']), int(attrDict['time1']))
-            self._cmap = cmap
             self._plotExtras()
 
         # avoids showing the original fig window
@@ -164,26 +163,87 @@ class MapPlot(BaseGraph):
         ax = self._fig.axes[0]
 
         # Plot contour
-        if contourPoints:
-            contourTimes, contourFreqs = zip(*contourPoints)
-            ax.plot(contourFreqs, contourTimes, color=contourColor, label='Contour', linewidth=2)
+        extremePoint = (int(self._attrDict['freq0']), int(self._attrDict['time0']))
+        maxPoint = (int(self._attrDict['freq1']), int(self._attrDict['time1']))
+        percentile = int(self._attrDict['perc'])
+        referenceFreq = int(self._attrDict['freq1'])
+
+        # Sort the DataFrame by time and frequency
+        df = self._df.sort_values(by=['time', 'frequency'])
+
+        # Create a pivot table
+        pivotTable = df.pivot_table(index='time', columns='frequency', values='S', aggfunc='first')
+
+        # Round the values to two decimal places
+        pivotTable = pivotTable.round(2)
+
+        # Convert the pivot table to a 2D numpy array
+        image = pivotTable.to_numpy()
+
+        # Extract the lists of times and frequencies
+        timeList = pd.to_datetime(pivotTable.index, unit='s')  # Convert to datetime
+        freqList = list(map(float, pivotTable.columns.tolist()))
+
+        # Normalize the image for power values
+        minPower = np.min(image)
+        maxPower = np.max(image)
+        # imageNorm = (image - minPower) / (maxPower - minPower)
+
+        # Calculate a dynamic threshold based on the user-provided percentile
+        powerThreshold = np.percentile(image, percentile)
+
+        # Find points above the power threshold
+        binaryImage = np.uint8(image >= powerThreshold)
+
+        # Find contours in the binary image
+        contours, _ = cv2.findContours(binaryImage, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Identify the main contour (largest area and near the reference frequency)
+        mainContour = None
+        doppler = 0
+        maxArea = -1
+        for contour in contours:
+            qApp.processEvents()
+            contour = contour.squeeze().astype(np.float32)
+            if contour.ndim == 2 and contour.shape[1] == 2:
+                freqIndices = contour[:, 0]
+                timeIndices = contour[:, 1]
+                avgFreq = np.mean([freqList[int(idx)] for idx in freqIndices if int(idx) < len(freqList)])
+                area = cv2.contourArea(contour)
+                if area > maxArea and abs(avgFreq - referenceFreq) < abs(referenceFreq * 0.1):
+                    maxArea = area
+                    mainContour = contour
+
+        # Find the maximum power point
+        maxPowerIdx = np.unravel_index(np.argmax(image, axis=None), image.shape)
+        maxPowerFreq = freqList[maxPowerIdx[1]]
+        maxPowerTime = timeList[maxPowerIdx[0]]
+
+        referenceFreq = maxPowerFreq
+
+        # Optimize the search for the extreme point
+        if mainContour is not None:
+            # Get coordinates of all points in the main contour
+            contourPoints = np.array([[int(pt[0]), int(pt[1])] for pt in mainContour if len(pt) == 2])
+            timeIndices = contourPoints[:, 1]
+            freqIndices = contourPoints[:, 0]
+            ax.plot(freqIndices, timeIndices, color=contourColor, label='Contour', linewidth=2)
 
         # Plot maximum power point
-        if self._maxPoint:
-            maxFreq, maxTime = self._maxPoint
+        if maxPoint:
+            maxFreq, maxTime = maxPoint
             ax.plot(maxFreq, maxTime, 'o', color=maxPointColor, markersize=8, label='Max Power Point')
 
         # Plot extreme point
-        if self._extremePoint:
-            extremeFreq, extremeTime = self._extremePoint
+        if extremePoint:
+            extremeFreq, extremeTime = extremePoint
             ax.plot(extremeFreq, extremeTime, 'x', color=extremePointColor, markersize=10, label='Extreme Point')
 
         # Update the legend to include new elements
         ax.legend(loc='upper left')
 
-
     def savePlotDataToDisk(self, fileName):
-        df = self._dfMap.set_index('time')
+        df = self._df.set_index('time')
         df.to_csv(fileName, sep=self._settings.dataSeparator())
 
     def getMinMax(self):

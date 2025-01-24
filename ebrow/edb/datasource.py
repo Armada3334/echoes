@@ -142,7 +142,7 @@ class DataSource:
         @return: the id to the first new data records added
         """
         result = False
-
+        q = None
         # if false, the db is not open
         if self._db is not None:
             self._parent.busy(True)
@@ -685,6 +685,59 @@ class DataSource:
             print("DataSource.getFirstDumpId() ", e.text())
         return 0
 
+    def _computeSegmentAverages(self, df, columnName='N', deltaN=10, minRecs=30):
+        """
+        Compute a series with the average of each segment for each element in a DataFrame column.
+        For elements in discarded segments (too short), the average of the last valid segment is used.
+
+        Args:
+        - df: DataFrame containing the data.
+        - columnName: Name of the column to analyze.
+        - deltaN: Maximum allowed variation to define a new segment.
+        - minRecs: Minimum number of records for a valid segment.
+
+        Returns:
+        - A pandas Series with the average value for each element's segment.
+        """
+        segmentAverages = []
+        currentAvg = df[columnName].iloc[0]
+        segmentStart = 0
+        lastValidAvg = currentAvg
+
+        # Iterate through the DataFrame to identify segments
+        for i in range(1, len(df)):
+            if abs(df[columnName].iloc[i] - currentAvg) > deltaN:
+                # Process the previous segment
+                segmentEnd = i
+                segment = df[columnName].iloc[segmentStart:segmentEnd]
+
+                if len(segment) >= minRecs:
+                    # Valid segment: use its average
+                    currentAvg = segment.mean()
+                    lastValidAvg = currentAvg
+                else:
+                    # Invalid segment: use the last valid segment average
+                    currentAvg = lastValidAvg
+
+                # Assign the average to all elements in the segment
+                segmentAverages.extend([currentAvg] * len(segment))
+                segmentStart = i
+
+            # Update the current average incrementally
+            currentAvg = df[columnName].iloc[segmentStart:i + 1].mean()
+
+        # Process the last segment
+        segment = df[columnName].iloc[segmentStart:]
+        if len(segment) >= minRecs:
+            currentAvg = segment.mean()
+            lastValidAvg = currentAvg
+        else:
+            currentAvg = lastValidAvg
+        segmentAverages.extend([currentAvg] * len(segment))
+
+        # Return as a pandas Series
+        return pd.Series(segmentAverages, index=df.index)
+
     def timestamp2datetime(self, timestamp_ms: str):
         return datetime.strptime(timestamp_ms, '%d/%m/%Y;%H:%M:%S.%f')
 
@@ -990,23 +1043,25 @@ class DataSource:
     def dailyCountsByClassification(self, df, filters, dateFrom=None, dateTo=None, totalRow=False, totalColumn=False,
                                     compensate=False, considerBackground=False):
         return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='count',
-                                                     totalRow=totalRow, totalColumn=totalColumn,
-                                                     compensate=compensate, considerBackground=considerBackground)
+                                                      totalRow=totalRow, totalColumn=totalColumn,
+                                                      compensate=compensate, considerBackground=considerBackground)
 
     def dailyPowersByClassification(self, df, filters, dateFrom=None, dateTo=None, highestAvgRow=False,
                                     highestAvgColumn=False):
         return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='power',
-                                                     highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
+                                                      highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
 
     def dailyLastingsByClassification(self, df, filters, dateFrom=None, dateTo=None, highestAvgRow=False,
                                       highestAvgColumn=False):
-        return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo,  metric='lasting', dtDec = 0,
-                                                     highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
+        return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='lasting', dtDec=0,
+                                                      highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
 
-    def _dailyAggregationByClassification(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
-                                         metric: str = 'count', dtDec: int = 1, totalRow: bool = False, totalColumn: bool = False,
-                                         compensate: bool = False, considerBackground: bool = False,
-                                         highestAvgRow: bool = False, highestAvgColumn: bool = False) -> pd.DataFrame:
+    def _dailyAggregationByClassification(self, df: pd.DataFrame, filters: str, dateFrom: str = None,
+                                          dateTo: str = None,
+                                          metric: str = 'count', dtDec: int = 1, totalRow: bool = False,
+                                          totalColumn: bool = False,
+                                          compensate: bool = False, considerBackground: bool = False,
+                                          highestAvgRow: bool = False, highestAvgColumn: bool = False) -> pd.DataFrame:
         """
         Aggregates daily metrics (count, mean of 'diff', or mean of 'lasting_ms') by classification.
 
@@ -1417,237 +1472,224 @@ class DataSource:
                           'freq_shift',
                           'std_dev']]
 
-            manRefN = self._settings.readSettingAsBool('enableRefN')
-            if manRefN:
-                referenceN = self._settings.readSettingAsFloat('refNlevel')
-            else:
-                referenceN = self.DBFS_RANGE_MAX
+            if len(subsetFall) > 0:
+                refN = self._computeSegmentAverages(fallRecords)
 
-            nextReferenceN = referenceN
+                RFIfilter = self._settings.readSettingAsBool('RFIfilter')
+                ESDfilter = self._settings.readSettingAsBool('ESDfilter')
+                SATfilter = self._settings.readSettingAsBool('SATfilter')
+                CAR1filter = self._settings.readSettingAsBool('CAR1filter')
+                CAR2filter = self._settings.readSettingAsBool('CAR2filter')
+                RFIfilterThreshold = self._settings.readSettingAsFloat('RFIfilterThreshold')
+                ESDfilterThreshold = self._settings.readSettingAsFloat('ESDfilterThreshold')
+                SATfilterThreshold = self._settings.readSettingAsFloat('SATfilterThreshold')
+                CAR1filterThreshold = self._settings.readSettingAsFloat('CAR1filterThreshold')
+                CAR2filterThreshold = self._settings.readSettingAsFloat('CAR2filterThreshold')
+                underdenseMs = self._settings.readSettingAsInt('underdenseMs')
+                overdenseSec = self._settings.readSettingAsInt('overdenseSec')
+                carrierSec = self._settings.readSettingAsInt('carrierSec')
 
-            RFIfilter = self._settings.readSettingAsBool('RFIfilter')
-            ESDfilter = self._settings.readSettingAsBool('ESDfilter')
-            SATfilter = self._settings.readSettingAsBool('SATfilter')
-            CAR1filter = self._settings.readSettingAsBool('CAR1filter')
-            CAR2filter = self._settings.readSettingAsBool('CAR2filter')
-            RFIfilterThreshold = self._settings.readSettingAsFloat('RFIfilterThreshold')
-            ESDfilterThreshold = self._settings.readSettingAsFloat('ESDfilterThreshold')
-            SATfilterThreshold = self._settings.readSettingAsFloat('SATfilterThreshold')
-            CAR1filterThreshold = self._settings.readSettingAsFloat('CAR1filterThreshold')
-            CAR2filterThreshold = self._settings.readSettingAsFloat('CAR2filterThreshold')
-            underdenseMs = self._settings.readSettingAsInt('underdenseMs')
-            overdenseSec = self._settings.readSettingAsInt('overdenseSec')
-            carrierSec = self._settings.readSettingAsInt('carrierSec')
+                cfgOutput = self.loadTableConfig('cfg_output', 0xffff)
+                if cfgOutput is None:
+                    print("classifyEvents(): no output settings table found, doing nothing")
+                    return False
 
-            cfgOutput = self.loadTableConfig('cfg_output', 0xffff)
-            if cfgOutput is None:
-                print("classifyEvents(): no output settings table found, doing nothing")
-                return False
+                elem = cfgOutput.iloc[-1:].loc[:, 'shot_freq_range']
+                detectionRange = elem.iloc[0].astype(int)
 
-            elem = cfgOutput.iloc[-1:].loc[:, 'shot_freq_range']
-            detectionRange = elem.iloc[0].astype(int)
+                r = 0
+                configRevision = 0
+                odf = None
+                rows = fallRecords.shape[0]
+                self._parent.updateStatusBar("updating classifications on {} events".format(rows))
+                for idx in fallRecords.index:
+                    if self._parent.stopRequested:
+                        return False  # loop interrupted by user
+                    currentRow += 1
+                    self._parent.updateProgressBar(currentRow, rows)
+                    qApp.processEvents()
 
-            # fallRecords.set_index('id', drop=False, inplace=True)
-            # peakRecords.set_index('id', drop=False, inplace=True)
-            # raiseRecords.set_index('id', drop=False, inplace=True)
-            r = 0
-            configRevision = 0
-            odf = None
-            rows = fallRecords.shape[0]
-            self._parent.updateStatusBar("updating classifications on {} events".format(rows))
-            for idx in fallRecords.index:
-                if self._parent.stopRequested:
-                    return False  # loop interrupted by user
-                currentRow += 1
-                self._parent.updateProgressBar(currentRow, rows)
-                qApp.processEvents()
-                if nextReferenceN == self.DBFS_RANGE_MAX:
-                    # initialize the reference N value
-                    nextReferenceN = subsetFall.loc[idx, 'N']
+                    referenceN = refN[idx]
+                    cla = fallRecords.loc[idx, 'classification']
+                    myId = fallRecords.loc[idx, 'id']
+                    if cla == '':
+                        print("Classifying eventID#", myId)
 
-                if manRefN:
-                    referenceN = self._settings.readSettingAsFloat('refNlevel')
-                else:
-                    referenceN = nextReferenceN
+                        # gets some Echoes setup parameters useful for fakes detection
+                        cr = self.getCfgRevisionFromID(myId)
+                        if cr != configRevision or odf is None:
+                            configRevision = cr
+                            odf = self.loadTableConfig('cfg_output', configRevision)
+                            recTime = odf.loc[0, 'rec_time']
 
-                cla = fallRecords.loc[idx, 'classification']
-                myId = fallRecords.loc[idx, 'id']
-                if cla == '':
-                    print("Classifying eventID#", myId)
+                        # idx indexes the fall event - to browse peak events, idx must be decremented by 1
+                        idp = idx - 1
 
-                    # gets some Echoes setup parameters useful for fakes detection
-                    cr = self.getCfgRevisionFromID(myId)
-                    if cr != configRevision or odf is None:
-                        configRevision = cr
-                        odf = self.loadTableConfig('cfg_output', configRevision)
-                        recTime = odf.loc[0, 'rec_time']
+                        # while to browse the raise event, idx must be decremented by 2
+                        idr = idx - 2
 
-                    # idx indexes the fall event - to browse peak events, idx must be decremented by 1
-                    idp = idx - 1
+                        N = subsetPeak.loc[idp, 'N']
+                        diff = subsetPeak.loc[idp, 'diff']
+                        avgDiff = subsetPeak.loc[idp, 'avg_diff']
+                        stdDev = [subsetRaise.loc[idr, 'std_dev'], subsetPeak.loc[idp, 'std_dev'],
+                                  subsetFall.loc[idx, 'std_dev']]
 
-                    # while to browse the raise event, idx must be decremented by 2
-                    idr = idx - 2
+                        begDiffPeak = subsetPeak.loc[idp, 'diff_start']
+                        endDiffPeak = subsetPeak.loc[idp, 'diff_end']
 
-                    N = subsetPeak.loc[idp, 'N']
-                    diff = subsetPeak.loc[idp, 'diff']
-                    avgDiff = subsetPeak.loc[idp, 'avg_diff']
-                    stdDev = [subsetRaise.loc[idr, 'std_dev'], subsetPeak.loc[idp, 'std_dev'],
-                              subsetFall.loc[idx, 'std_dev']]
+                        begDiffRaise = subsetRaise.loc[idr, 'diff_start']
+                        endDiffRaise = subsetRaise.loc[idr, 'diff_end']
 
-                    begDiffPeak = subsetPeak.loc[idp, 'diff_start']
-                    endDiffPeak = subsetPeak.loc[idp, 'diff_end']
+                        upperThreshold = subsetPeak.loc[idp, 'up_thr']
 
-                    begDiffRaise = subsetRaise.loc[idr, 'diff_start']
-                    endDiffRaise = subsetRaise.loc[idr, 'diff_end']
+                        # result = fpCmp(referenceN, N, 1)
+                        # if result != 0:
+                        #    referenceN = N
 
-                    upperThreshold = subsetPeak.loc[idp, 'up_thr']
+                        peaksCount = subsetFall.loc[idx, 'peaks_count']
+                        echoArea = subsetFall.loc[idx, 'echo_area']
+                        intervalArea = subsetFall.loc[idx, 'interval_area']
+                        lastingMs = subsetFall.loc[idx, 'lasting_ms']
+                        lastingScans = subsetFall.loc[idx, 'lasting_scans']
+                        freqShift = subsetFall.loc[idx, 'freq_shift'] - subsetRaise.loc[idr, 'freq_shift']
+                        begN = subsetRaise.loc[idr, 'N']
+                        endN = subsetFall.loc[idx, 'N']
 
-                    # result = fpCmp(referenceN, N, 1)
-                    # if result != 0:
-                    #    referenceN = N
+                        # fakes filter suited for lightings and electrostatic discharges ESD
+                        if ESDfilter != 0:
+                            # ESD appear on waterfall like an horizontal stripe covering the entire bandwidth
+                            # with variable duration, depending of its cause: human (i.e. electric motors) or natural
+                            # (lightings).
+                            # The reference band S-N,  expressed as the average of S-N values read at the beginning (left)
+                            # and at the end (right) of the scan, is calculated on Raise and Peak times.
+                            # If the difference between the peak and raise references exceeds the upper threshold
+                            # we have an ESD disturbance
 
-                    peaksCount = subsetFall.loc[idx, 'peaks_count']
-                    echoArea = subsetFall.loc[idx, 'echo_area']
-                    intervalArea = subsetFall.loc[idx, 'interval_area']
-                    lastingMs = subsetFall.loc[idx, 'lasting_ms']
-                    lastingScans = subsetFall.loc[idx, 'lasting_scans']
-                    freqShift = subsetFall.loc[idx, 'freq_shift'] - subsetRaise.loc[idr, 'freq_shift']
-                    begN = subsetRaise.loc[idr, 'N']
-                    endN = subsetFall.loc[idx, 'N']
+                            avg = (begDiffRaise + endDiffRaise) / 2
+                            refRaise = avg if avg > 0 else 0
+                            avg = (begDiffPeak + endDiffPeak) / 2
+                            refPeak = avg if avg > 0 else 0
+                            refDiff = refPeak - refRaise
+                            cmp = fuzzyCompare(refDiff, upperThreshold, ESDfilterThreshold)
+                            if cmp == 1:
+                                # refDiff exceeds upperThreshold
+                                print("eventID#{} is ESD fake".format(myId))
+                                self.setEventClassification(myId, "FAKE ESD")
+                                continue
 
-                    # fakes filter suited for lightings and electrostatic discharges ESD
-                    if ESDfilter != 0:
-                        # ESD appear on waterfall like an horizontal stripe covering the entire bandwidth
-                        # with variable duration, depending of its cause: human (i.e. electric motors) or natural
-                        # (lightings).
-                        # The reference band S-N,  expressed as the average of S-N values read at the beginning (left)
-                        # and at the end (right) of the scan, is calculated on Raise and Peak times.
-                        # If the difference between the peak and raise references exceeds the upper threshold
-                        # we have an ESD disturbance
+                        # filter against rx saturations artifacts
+                        if SATfilter > 0:
 
-                        avg = (begDiffRaise + endDiffRaise) / 2
-                        refRaise = avg if avg > 0 else 0
-                        avg = (begDiffPeak + endDiffPeak) / 2
-                        refPeak = avg if avg > 0 else 0
-                        refDiff = refPeak - refRaise
-                        cmp = fuzzyCompare(refDiff, upperThreshold, (ESDfilterThreshold / 10))
-                        if cmp == 1:
-                            # refDiff exceeds upperThreshold
-                            print("eventID#{} is ESD fake".format(myId))
-                            self.setEventClassification(myId, "FAKE ESD")
+                            # Strong signals near the receiver site, even on different frequencies
+                            # than Echoes tuned frequency, can cause receiver saturations, that
+                            # are detected by checking the N level falling down or raising up suddendly.
+                            # The filter works by storing the N recorded at any event.
+                            # That stored value becomes the reference level for the next event.
+                            # If in a new event,
+                            # the N level falls below or jumps above that reference exceeding the given tolerance
+                            # threshold, the event is classified as saturation
+
+                            fuzzyRatio = fuzzyCompare(begN, endN, SATfilterThreshold)
+                            if fuzzyRatio != 0:
+                                print("eventID#{} is a saturation fake (sudden N variation - middle)".format(myId))
+                                self.setEventClassification(myId, "FAKE SAT")
+                                continue
+
+                            fuzzyRatio = fuzzyCompare(referenceN, begN, SATfilterThreshold)
+                            if fuzzyRatio != 0:
+                                print("eventID#{} is a saturation fake (sudden N variation - begin)".format(myId))
+                                self.setEventClassification(myId, "FAKE SAT")
+                                continue
+
+                            fuzzyRatio = fuzzyCompare(referenceN, endN, SATfilterThreshold)
+                            if fuzzyRatio != 0:
+                                print("eventID#{} is a saturation fake (sudden N variation - end)".format(myId))
+                                self.setEventClassification(myId, "FAKE SAT")
+                                continue
+
+                        # filter against RF interferences artifacts
+                        if RFIfilter > 0:
+                            # RFI cause quick and strong variations of S
+                            # since N is obtained by averaging S in order to
+                            # obtain a stable reference, RFI affects
+                            # also N, that shows variations proportional to
+                            # the disturbance and the AveragedScans setting.
+                            # The standard deviation indicates how strong are
+                            # this N variations
+                            # print("stdDev=", stdDev)
+                            halfThr = RFIfilterThreshold / 2
+
+                            if stdDev[1] > RFIfilterThreshold or (
+                                    stdDev[0] > halfThr and stdDev[1] > halfThr and stdDev[2] > halfThr):
+                                print("eventID#{} is a fake due to radio interferences (too high stdev: raise:{}, "
+                                      "peak: {}, fall: {}, halfThr={}".format(myId, stdDev[0], stdDev[1], stdDev[2],
+                                                                              halfThr))
+                                self.setEventClassification(myId, "FAKE RFI")
+                                continue
+
+                            # Another criteria to detect RFIs is the ratio between the capture area and the area covered
+                            # by the echo. Real echoes usually don't fill up the entire intervalArea
+                            if echoArea > (intervalArea * RFIfilterThreshold):
+                                print("eventID#{} is a fake due to radio interferences (area too wide: echoArea: {}, "
+                                      "intervalArea: {}, threshold={})".format(myId, echoArea, intervalArea,
+                                                                               RFIfilterThreshold))
+                                self.setEventClassification(myId, "FAKE RFI")
+                                continue
+
+                            # Third criteria is the ratio between the nr. of peaks detected in a scan
+                            # and the total number of scans covered by the echo
+                            if lastingScans > 10 and peaksCount > (lastingScans * RFIfilterThreshold):
+                                print("eventID#{} is a fake due to radio interferences (too many peaks: peaksCount: {}, "
+                                      "lastingScans: {}, threshold={})".format(myId, peaksCount, lastingScans,
+                                                                               RFIfilterThreshold))
+                                self.setEventClassification(myId, "FAKE RFI")
+                                continue
+
+                        # fakes filters suited for radio carriers tuned at waterfall's center frequency
+
+                        if CAR1filter > 0:
+                            # the CAR filter 1 works on the ratio between the echo area and the interval area covered
+                            # that must be similar, within a given tolerance.
+                            # Fixed carriers tend to have very small echo area, being narrow and regular.
+                            # In order to discriminate them from real echoes, thay must last at least the given number of seconds.
+
+                            estimatedArea = lastingScans * freqShift
+                            if lastingMs > (carrierSec * 1000) and freqShift == 0 and fuzzyCompare(estimatedArea, echoArea,
+                                                                                                   CAR1filterThreshold) == 0:
+                                print("eventID#{} is fake,  due to a carrier signal, estimatedArea={}, echoArea={}, "
+                                      "lastingMs={}, freqShift={}".format(myId, estimatedArea, echoArea, lastingMs,
+                                                                          freqShift))
+                                self.setEventClassification(myId, "FAKE CAR1")
+                                continue
+
+                        if CAR2filter > 0:
+                            # The filt 2 finds carriers by checking the istantaneous difference S-N against its average.
+                            # If they are too close, into a certain percentage, the event is a carrier
+                            fuzzyRatio = fuzzyCompare(diff, avgDiff, CAR2filterThreshold)
+                            if lastingMs > (carrierSec * 1000) and fuzzyRatio == 0 and lastingMs > underdenseMs:
+                                print(
+                                    "eventID#{} is fake,  due to a carrier signal, lastingMs={}, fuzzyRatio={}".format(myId,
+                                                                                                                       lastingMs,
+                                                                                                                       fuzzyRatio))
+                                self.setEventClassification(myId, "FAKE CAR2")
+                                continue
+
+                        # simple fake filter, lasting based
+                        if (lastingMs / 1000) > overdenseSec:
+                            print("eventID#{} is fake,  it lasts too long={}ms".format(myId, lastingMs))
+                            self.setEventClassification(myId, "FAKE LONG")
                             continue
 
-                    # filter against rx saturations artifacts
-                    if SATfilter > 0:
-
-                        # Strong signals near the receiver site, even on different frequencies
-                        # than Echoes tuned frequency, can cause receiver saturations, that
-                        # are detected by checking the N level falling down or raising up suddendly.
-                        # The filter works by storing the N recorded at any event.
-                        # That stored value becomes the reference level for the next event. 
-                        # If in a new event,
-                        # the N level falls below or jumps above that reference exceeding the given tolerance
-                        # threshold, the event is classified as saturation
-
-                        fuzzyRatio = fuzzyCompare(begN, endN, (SATfilterThreshold / 10))
-                        if fuzzyRatio != 0:
-                            print("eventID#{} is a saturation fake (sudden N variation - middle)".format(myId))
-                            self.setEventClassification(myId, "FAKE SAT")
-                            continue
-
-                        fuzzyRatio = fuzzyCompare(referenceN, begN, (SATfilterThreshold / 10))
-                        if fuzzyRatio != 0:
-                            print("eventID#{} is a saturation fake (sudden N variation - begin)".format(myId))
-                            self.setEventClassification(myId, "FAKE SAT")
-                            continue
-
-                        fuzzyRatio = fuzzyCompare(referenceN, endN, (SATfilterThreshold / 10))
-                        if fuzzyRatio != 0:
-                            print("eventID#{} is a saturation fake (sudden N variation - end)".format(myId))
-                            self.setEventClassification(myId, "FAKE SAT")
-                            continue
-
-                    # filter against RF interferences artifacts
-                    if RFIfilter > 0:
-                        # RFI cause quick and strong variations of S
-                        # since N is obtained by averaging S in order to
-                        # obtain a stable reference, RFI affects
-                        # also N, that shows variations proportional to
-                        # the disturbance and the AveragedScans setting.
-                        # The standard deviation indicates how strong are
-                        # this N variations
-                        # print("stdDev=", stdDev)
-                        halfThr = RFIfilterThreshold / 2
-
-                        if stdDev[1] > RFIfilterThreshold or (
-                                stdDev[0] > halfThr and stdDev[1] > halfThr and stdDev[2] > halfThr):
-                            print("eventID#{} is a fake due to radio interferences (too high stdev: raise:{}, "
-                                  "peak: {}, fall: {}, halfThr={}".format(myId, stdDev[0], stdDev[1], stdDev[2],
-                                                                          halfThr))
-                            self.setEventClassification(myId, "FAKE RFI")
-                            continue
-
-                        # Another criteria to detect RFIs is the ratio between the capture area and the area covered
-                        # by the echo. Real echoes usually don't fill up the entire intervalArea
-                        if echoArea > (intervalArea * RFIfilterThreshold):
-                            print("eventID#{} is a fake due to radio interferences (area too wide: echoArea: {}, "
-                                  "intervalArea: {}, threshold={})".format(myId, echoArea, intervalArea,
-                                                                           RFIfilterThreshold))
-                            self.setEventClassification(myId, "FAKE RFI")
-                            continue
-
-                        # Third criteria is the ratio between the nr. of peaks detected in a scan
-                        # and the total number of scans covered by the echo
-                        if lastingScans > 10 and peaksCount > (lastingScans * RFIfilterThreshold):
-                            print("eventID#{} is a fake due to radio interferences (too many peaks: peaksCount: {}, "
-                                  "lastingScans: {}, threshold={})".format(myId, peaksCount, lastingScans,
-                                                                           RFIfilterThreshold))
-                            self.setEventClassification(myId, "FAKE RFI")
-                            continue
-
-                    # fakes filters suited for radio carriers tuned at waterfall's center frequency
-
-                    if CAR1filter > 0:
-                        # the CAR filter 1 works on the ratio between the echo area and the interval area covered
-                        # that must be similar, within a given tolerance.
-                        # Fixed carriers tend to have very small echo area, being narrow and regular.
-                        # In order to discriminate them from real echoes, thay must last at least the given number of seconds.
-
-                        estimatedArea = lastingScans * freqShift
-                        if lastingMs > (carrierSec * 1000) and freqShift == 0 and fuzzyCompare(estimatedArea, echoArea,
-                                                                                               CAR1filterThreshold) == 0:
-                            print("eventID#{} is fake,  due to a carrier signal, estimatedArea={}, echoArea={}, "
-                                  "lastingMs={}, freqShift={}".format(myId, estimatedArea, echoArea, lastingMs,
-                                                                      freqShift))
-                            self.setEventClassification(myId, "FAKE CAR1")
-                            continue
-
-                    if CAR2filter > 0:
-                        # The filt 2 finds carriers by checking the istantaneous difference S-N against its average.
-                        # If they are too close, into a certain percentage, the event is a carrier
-                        fuzzyRatio = fuzzyCompare(diff, avgDiff, CAR2filterThreshold)
-                        if lastingMs > (carrierSec * 1000) and fuzzyRatio == 0 and lastingMs > underdenseMs:
-                            print(
-                                "eventID#{} is fake,  due to a carrier signal, lastingMs={}, fuzzyRatio={}".format(myId,
-                                                                                                                   lastingMs,
-                                                                                                                   fuzzyRatio))
-                            self.setEventClassification(myId, "FAKE CAR2")
-                            continue
-
-                    # simple fake filter, lasting based
-                    if (lastingMs / 1000) > overdenseSec:
-                        print("eventID#{} is fake,  it lasts too long={}ms".format(myId, lastingMs))
-                        self.setEventClassification(myId, "FAKE LONG")
-                        continue
-
-                    # the event is good
-                    if lastingMs <= underdenseMs:
-                        print("eventID#{} is underdense, it lasts {}ms".format(myId, lastingMs))
-                        self.setEventClassification(myId, "UNDER")
-                    elif (lastingMs / 1000) <= overdenseSec:
-                        print("eventID#{} is overdense, it lasts {}ms".format(myId, lastingMs))
-                        self.setEventClassification(myId, "OVER")
+                        # the event is good
+                        if lastingMs <= underdenseMs:
+                            print("eventID#{} is underdense, it lasts {}ms".format(myId, lastingMs))
+                            self.setEventClassification(myId, "UNDER")
+                        elif (lastingMs / 1000) <= overdenseSec:
+                            print("eventID#{} is overdense, it lasts {}ms".format(myId, lastingMs))
+                            self.setEventClassification(myId, "OVER")
             return True
+
+        return False
 
     def attributeEvents(self, fromID: int, toID: int, overwrite: bool = False):
         """
@@ -1687,7 +1729,8 @@ class DataSource:
             if overOnly:
                 # raiseRecords = df.loc[(df['event_status'] == 'Raise') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
                 # peakRecords = df.loc[(df['event_status'] == 'Peak') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
-                fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
+                fallRecords = df.loc[
+                    (df['event_status'] == 'Fall') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
             else:
                 # raiseRecords = df.loc[(df['event_status'] == 'Raise') & (df['attributes'] == '')]
                 # peakRecords = df.loc[(df['event_status'] == 'Peak') & (df['attributes'] == '')]
@@ -1739,7 +1782,7 @@ class DataSource:
                             if estimatedTime == 0 or currentRow % 50 == 0:
                                 elapsedTime = endTime - startTime
                                 rowsLeft = totalRows - currentRow
-                                estimatedTime = int((elapsedTime * rowsLeft) / 60)      # in minutes
+                                estimatedTime = int((elapsedTime * rowsLeft) / 60)  # in minutes
                                 self._parent.updateStatusBar(
                                     f"still {rowsLeft} rows left, estimated time to finish: {estimatedTime} minutes")
 
@@ -2100,7 +2143,7 @@ class DataSource:
             slices.append(ds)
             if last:
                 break
-        return stacked      #.fillna('-')
+        return stacked  #.fillna('-')
 
     def makeRMOB(self, df: pd.DataFrame, lastOnly: bool = False):
         dfRMOB = None
@@ -2143,7 +2186,6 @@ class DataSource:
             monthName = calendar.month_abbr[monthNum].lower()
             dfRMOB.index.name = monthName
             return dfRMOB, monthNum, year
-
 
     def makeCountsDf(
             self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, filters: str = '',
@@ -2350,11 +2392,6 @@ class DataSource:
     def makeLastingsDf(self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, filters: str = '',
                        highestAvgRow: bool = False, highestAvgColumn: bool = False):
         return self._makeAverageDf(df, dtStart, dtEnd, dtRes, 'lasting_ms', 0, filters, highestAvgRow, highestAvgColumn)
-
-
-
-
-
 
     def dbCommit(self):
         if self._db is not None:

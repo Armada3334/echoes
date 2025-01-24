@@ -34,7 +34,6 @@ import pandas as pd
 import cv2
 
 
-
 class HasHead(QDialog):
     """
     This filter detects the presence of a head echo.
@@ -133,7 +132,6 @@ class HasHead(QDialog):
         maxPowerFreq = freqList[maxPowerIdx[1]]
         maxPowerTime = timeList[maxPowerIdx[0]]
 
-
         referenceFreq = maxPowerFreq
 
         # Optimize the search for the extreme point
@@ -187,11 +185,15 @@ class HasHead(QDialog):
             return None
 
         result = dict()
+        result['perc'] = percentile
+        result['tdelta'] = timeDelta
         result['freq0'] = float(extremeFreq)
         result['freq1'] = float(maxPowerFreq)
         result['time0'] = str(extremeTime.time())
         result['time1'] = str(maxPowerTime.time())
         result['freq_shift'] = doppler
+
+
 
         # as result of the hough trasform, this filter must return
         # a JSON string containing the following 5 parameters:
@@ -235,6 +237,7 @@ class HasHead(QDialog):
             # dfMap is a table time,freq,S
             result = self._doppler(dfMap, tune+offset, self._percentile, self._timeDelta)
             if result:
+                result['evId'] = evId
                 return json.dumps(result)
             else:
                 return None     # unable to find head echo

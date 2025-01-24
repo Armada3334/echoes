@@ -68,7 +68,7 @@ class Settings(QSettings):
 
         self._filters = ["RFIfilter", "RFIfilterThreshold", 'ESDfilter', 'ESDfilterThreshold', 'SATfilter', 'SATfilterThreshold', 'CAR1filter',
                          'CAR1filterThreshold', 'CAR2filter', 'CAR2filterThreshold',
-                         'underdenseMs', 'overdenseSec', 'carrierSec', 'acqActive', 'refNlevel', 'enableRefN']
+                         'underdenseMs', 'overdenseSec', 'carrierSec', 'acqActive']
 
         self._attrFilters = ["afOverOnly", "afHasHeadEnabled"]
 
@@ -182,8 +182,6 @@ class Settings(QSettings):
         d['overdenseSec'] = 50
         d['carrierSec'] = 5
         d['acqActive'] = 0
-        d['refNlevel'] = 0.0
-        d['enableRefN'] = False
 
         # report
         d['siteInfosExc'] = 0
