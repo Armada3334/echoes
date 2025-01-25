@@ -9,6 +9,7 @@ pyuic5 mainwindow.ui -o ui_mainwindow.py --import-from=.
 pyuic5 dateintervaldialog.ui -o ui_dateintervaldialog.py --import-from=.
 pyuic5 afDummy.ui -o ui_afdummy.py --import-from=.
 pyuic5 afHasHead.ui -o ui_afhashead.py --import-from=.
+pyuic5 afFreezeDetect.ui -o ui_affreezedetect.py --import-from=.
 pyrcc5 ebrow.qrc -o ebrow_rc.py
 cd ..
 python -m edb.main --verbose 

@@ -5,7 +5,7 @@
     tool for Echoes.
     Echoes is a RF spectrograph for SDR devices designed for meteor scatter.
 
-    Both copyright (C) 2018-2023
+    Both copyright (C) 2018-2025
     Giuseppe Massimo Bertani gm_bertani(a)yahoo.it
 
     This program is free software: you can redistribute it and/or modify
@@ -1775,8 +1775,12 @@ class DataSource:
                                             (list(attrDict.items()) + list(resultDict.items()))}
 
                                 # updates the doppler measurement overwriting Echoes generated value
+                                # TODO: move into afHasHead.py
                                 if 'freq_shift' in resultDict.keys():
                                     df.loc[(df.index == idx), 'freq_shift'] = int(resultDict['freq_shift'])
+
+
+
                             endTime = time.time()
 
                             if estimatedTime == 0 or currentRow % 50 == 0:

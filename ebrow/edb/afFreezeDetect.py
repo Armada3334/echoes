@@ -25,39 +25,37 @@
 
 import json
 from PyQt5.QtWidgets import QDialog
-from .ui_afdummy import Ui_afDummy
+from .ui_affreezedetect import Ui_afFreezeDetect
 from .logprint import print
 
 
-class Dummy(QDialog):
+class FreezeDetect(QDialog):
     """
-    This is a prototype attribute filter and also serves as a base class for other attribute filters.
-    An attribute is information relating to an event that is calculated on the basis of information present in the database
-    or in external files. An attribute filter is a python class that can be added in the attributes folder.
-    It has a graphical interface for configuring its parameters, a method for calculating the attributes and a third method
-    that indicates whether the filter is valid, i.e. it was possible to calculate the attributes and the fourth returns
-    the value of the attributes.
-
+    This filter checks for dump files having "holes" on time axis. that means
+    Echoes acquisition has frozen while recording, producing a fake overdense event.
+    When such holes are detected, the filter returns the number of holes and the
+    ms missed in each of them.
+    The caller should mark the event as FAKE LONG
     """
 
     def __init__(self, parent, ui, settings):
         QDialog.__init__(self)
         self._parent = parent
-        self._ui = Ui_afDummy()
+        self._ui = Ui_afFreezeDetect()
         self._ui.setupUi(self)
         self._ui.pbOk.setEnabled(True)
         self._ui.pbOk.clicked.connect(self.accept)
         self._settings = settings
         self._enabled = False
         self._load()
-        print("Dummy loaded")
+        print("FreezeDetect loaded")
 
     def _load(self):
         """
         loads this filter's parameters
         from settings file
         """
-        self._enabled = self._settings.readSettingAsBool('afDummyEnabled')
+        self._enabled = self._settings.readSettingAsBool('afFreezeDetectEnabled')
         self._ui.chkEnabled.setChecked(self._enabled)
 
     def _save(self):
@@ -65,7 +63,7 @@ class Dummy(QDialog):
         save ths filter's parameters
         to settings file
         """
-        self._settings.writeSetting('afDummyEnabled', self._enabled)
+        self._settings.writeSetting('afFreezeDetectEnabled', self._enabled)
 
     def evalFilter(self, evId: int) -> dict:
         """
@@ -75,7 +73,8 @@ class Dummy(QDialog):
         A None value means that the calculation was impossible
         due to missing data
         """
-        df = self._parent.dataSource.getEventData(evId)
+        datName, datData, dailyNr, utcDate = self._parent.dataSource.extractDumpData(evId)
+
 
         result = dict()
 

@@ -5,7 +5,7 @@
     tool for Echoes.
     Echoes is a RF spectrograph for SDR devices designed for meteor scatter.
 
-    Both copyright (C) 2018-2023
+    Both copyright (C) 2018-2025
     Giuseppe Massimo Bertani gm_bertani(a)yahoo.it
 
     This program is free software: you can redistribute it and/or modify
@@ -70,7 +70,7 @@ class Settings(QSettings):
                          'CAR1filterThreshold', 'CAR2filter', 'CAR2filterThreshold',
                          'underdenseMs', 'overdenseSec', 'carrierSec', 'acqActive']
 
-        self._attrFilters = ["afOverOnly", "afHasHeadEnabled"]
+        self._attrFilters = ["afOverOnly", "afHasHeadEnabled", "afFreezeDetectEnabled"]
 
         self._report = ['siteInfosExc', 'dailyExc', 'RMOBexc', 'hourlyExc', 'tenMinExc',
                         'chronoExc', 'expEvExc', 'stTabExc', 'stGrpExc', 'setupExc',
@@ -208,6 +208,7 @@ class Settings(QSettings):
         # attribute filters
         d['afOverOnly'] = False
         d['afDummyEnabled'] = False
+        d['afFreezeDetectEnabled'] = False
         d['afHasHeadEnabled'] = False
         d['afHasHeadPercentile'] = 90
         d['afHasHeadTimeDelta'] = 300
