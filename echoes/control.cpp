@@ -3178,6 +3178,13 @@ void Control::updateRootDir()
         }
     }
 
+    if(db != nullptr)
+    {
+        //configuration saved with a new name, closes the DB
+        delete db;
+        db = nullptr;
+    }
+
     if(db == nullptr)
     {
         /*
@@ -3231,6 +3238,7 @@ void Control::updateRootDir()
         db = nullptr;
         MYINFO << "DB initialized, closed connection";
     }
+
     rd = wd;
     rd.cd(rootDir);
 }

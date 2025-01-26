@@ -597,11 +597,11 @@ void Settings::loadConfig( QString& name, bool enableNotifications )
 void Settings::setConfigName(XQDir wd, QString& name  )
 {
     //perform a SaveAs
-
     configName = name;
     MYINFO << "setConfigName(" << configName << ")" << MY_ENDL;
     QString rts = configName+CONFIG_EXT;
     QSettings ini( wd.absoluteFilePath(rts), QSettings::IniFormat );
+    rtsRevision = 0;
     save(ini, true);
 }
 
