@@ -907,11 +907,14 @@ class ScreenShots:
             self._parent.busy(True)
             self._parent.updateStatusBar("Filtering daily events by classification: {}".format(self._classFilter))
 
-            if self._parent.currentID not in self._parent.filteredIDs and len(self._parent.filteredIDs) > 0:
-                self._selectCurrentId(self._parent.filteredIDs[0])
+            if len(self._parent.filteredIDs) > 0:
+                if self._parent.currentID not in self._parent.filteredIDs:
+                    # if the currentID is no more visible due to filter classes changed, it selects the first visible ID
+                    self._selectCurrentId(self._parent.filteredIDs[0])
                 self.refresh(self._parent.filteredIDs.index(self._parent.currentID), True)
             else:
                 self._parent.updateStatusBar("No events classified as {}".format(self._classFilter))
+                self.refresh()
             self._parent.busy(False)
         else:
             # whatever else tab showed
