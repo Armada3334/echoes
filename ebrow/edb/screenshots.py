@@ -29,7 +29,7 @@ import pandas as pd
 from pathlib import Path
 from math import isnan
 
-from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QLabel, QWidget, QInputDialog, QAbstractItemView
+from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QLabel, QWidget, QInputDialog, QAbstractItemView, QTableView
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import QSize, Qt, QSortFilterProxyModel, QItemSelectionModel
 
@@ -555,7 +555,17 @@ class ScreenShots:
         self._ui.tvShotDetails.resizeColumnsToContents()
         self._updateClassification()
         self._dfDetails = df
-        # self._parent.busy(False)
+
+        attrDict = self._parent.dataSource.getEventAttr(self._parent.currentID)
+        if len(attrDict.keys()) > 0:
+            for afName, afAttr in attrDict.items():
+                df = pd.DataFrame([afAttr])
+                model = PandasModel(df)
+                qtv = QTableView()
+                qtv.setModel(model)
+                qtv.setStyleSheet("color: rgb(0,255,0); font: 10pt 'Gauge';")
+                qtv.resizeColumnsToContents()
+                self._ui.vlEventDetails.addWidget(qtv)
 
     def autoExport(self, classFilter):
 

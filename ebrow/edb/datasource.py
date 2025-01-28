@@ -1768,18 +1768,20 @@ class DataSource:
                         af = afDict[afName]
                         if af.isFilterEnabled():
                             startTime = time.time()
-                            resultsJson = af.evalFilter(myId)
-                            if resultsJson is not None:
-                                resultDict = json.loads(resultsJson)
-                                attrDict = {key: value for (key, value) in
-                                            (list(attrDict.items()) + list(resultDict.items()))}
+                            '''
+                            TODO: deve ritornare un dizionario, non json
+                            in modo che si possa poi costruire un unico dizionario che ha per chiave
+                            il nome del filtro e che contenga i risultati per ogni filtro
+                            infine il dizionario viene convertito in json
+                            '''
+
+                            resultDict = af.evalFilter(myId)
+                            if resultDict is not None:
+                                attrDict[afName] = resultDict
 
                                 # updates the doppler measurement overwriting Echoes generated value
-                                # TODO: move into afHasHead.py
-                                if 'freq_shift' in resultDict.keys():
+                                if afName == 'HasHead' and 'freq_shift' in resultDict.keys():
                                     df.loc[(df.index == idx), 'freq_shift'] = int(resultDict['freq_shift'])
-
-
 
                             endTime = time.time()
 
@@ -1792,16 +1794,19 @@ class DataSource:
 
                     # string dump of the attributeDict
                     if len(attrDict.keys()) > 0:
+                        print(attrDict)
                         self._adf.loc[mask, 'attributes'] = json.dumps(attrDict)
+                    else:
+                        self._adf.loc[mask, 'attributes'] = "{}"
 
-                        # the attributes returned by each filter are joined in a single json string
-                        # and stored in adf['attributes'] in the Fall record
+                    # the attributes returned by each filter are joined in a single json string
+                    # and stored in adf['attributes'] in the Fall record
 
-                        try:
-                            self._parent.eventDataChanges[myId] = True
-                            self._dataChangedInMemory = True
-                        except IndexError:
-                            print("BUG! id=", myId)
+                    try:
+                        self._parent.eventDataChanges[myId] = True
+                        self._dataChangedInMemory = True
+                    except IndexError:
+                        print("BUG! id=", myId)
 
             # reordering columns
             cols = ['id', 'daily_nr', 'event_status', 'utc_date', 'utc_time',

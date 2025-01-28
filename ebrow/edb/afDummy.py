@@ -80,7 +80,7 @@ class Dummy(QDialog):
         result = dict()
 
         result['none'] = 0
-        return json.dumps(result)
+        return result
 
     def getParameters(self):
         """

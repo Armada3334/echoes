@@ -129,7 +129,7 @@ class MapPlot(BaseGraph):
         self._df = dfMap
         self._attrDict = attrDict
 
-        if attrDict:
+        if len(attrDict.keys()) > 0 :
             self._plotExtras()
 
         # avoids showing the original fig window

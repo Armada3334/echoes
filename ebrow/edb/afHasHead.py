@@ -185,13 +185,13 @@ class HasHead(QDialog):
             return None
 
         result = dict()
-        result['perc'] = percentile
-        result['tdelta'] = timeDelta
-        result['freq0'] = float(extremeFreq)
-        result['freq1'] = float(maxPowerFreq)
+        result['perc'] = round(percentile, 0)
+        result['tdelta'] = round(timeDelta, 0)
+        result['freq0'] = round(extremeFreq, 0)
+        result['freq1'] = round(maxPowerFreq, 0)
         result['time0'] = str(extremeTime.time())
         result['time1'] = str(maxPowerTime.time())
-        result['freq_shift'] = doppler
+        result['freq_shift'] = int(doppler)
 
 
 
@@ -237,8 +237,8 @@ class HasHead(QDialog):
             # dfMap is a table time,freq,S
             result = self._doppler(dfMap, tune+offset, self._percentile, self._timeDelta)
             if result:
-                result['evId'] = evId
-                return json.dumps(result)
+                result['evId'] = int(evId)
+                return result
             else:
                 return None     # unable to find head echo
         else:
