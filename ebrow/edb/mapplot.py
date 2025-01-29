@@ -150,8 +150,8 @@ class MapPlot(BaseGraph):
         if self._cmap:
             availableColors = ['blue', 'magenta', 'cyan', 'yellow', 'black', 'white']
             for color in [contourColor, maxPointColor, extremePointColor]:
-                if color in self._cmap:
-                    newColor = next((c for c in availableColors if c not in self._cmap), None)
+                if color in self._cmap.colors:  # Access colors directly from cmap
+                    newColor = next((c for c in availableColors if c not in self._cmap.colors), None)
                     if newColor:
                         if color == contourColor:
                             contourColor = newColor
@@ -163,10 +163,10 @@ class MapPlot(BaseGraph):
         ax = self._fig.axes[0]
 
         # Plot contour
-        extremePoint = (int(self._attrDict['freq0']), int(self._attrDict['time0']))
-        maxPoint = (int(self._attrDict['freq1']), int(self._attrDict['time1']))
-        percentile = int(self._attrDict['perc'])
-        referenceFreq = int(self._attrDict['freq1'])
+        extremePoint = (int(self._attrDict['extreme_hz']), int(self._attrDict['extreme_time']))
+        maxPoint = (int(self._attrDict['peak_hz']), int(self._attrDict['peak_time']))
+        percentile = int(self._attrDict['percentile'])
+        referenceFreq = int(self._attrDict['peak_hz'])
 
         # Sort the DataFrame by time and frequency
         df = self._df.sort_values(by=['time', 'frequency'])

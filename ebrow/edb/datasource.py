@@ -1691,7 +1691,7 @@ class DataSource:
 
         return False
 
-    def attributeEvents(self, fromID: int, toID: int, overwrite: bool = False):
+    def attributeEvents(self, fromID: int, toID: int, silent: bool=False, overwrite: bool = False):
         """
 
         :param fromID:
@@ -1726,97 +1726,101 @@ class DataSource:
         currentRow = 0
 
         if df is not None:
-            if overOnly:
-                # raiseRecords = df.loc[(df['event_status'] == 'Raise') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
-                # peakRecords = df.loc[(df['event_status'] == 'Peak') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
-                fallRecords = df.loc[
-                    (df['event_status'] == 'Fall') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
+            if overwrite:
+                if overOnly:
+                    fallRecords = df.loc[
+                        (df['event_status'] == 'Fall') & (df['classification'] == 'OVER')]
+                else:
+                    fallRecords = df.loc[(df['event_status'] == 'Fall')]
             else:
-                # raiseRecords = df.loc[(df['event_status'] == 'Raise') & (df['attributes'] == '')]
-                # peakRecords = df.loc[(df['event_status'] == 'Peak') & (df['attributes'] == '')]
-                fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['attributes'] == '')]
+                if overOnly:
+                    fallRecords = df.loc[
+                        (df['event_status'] == 'Fall') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
+                else:
+                    fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['attributes'] == '')]
+
             r = 0
 
             totalRows = len(fallRecords.index)
-            self._parent.updateStatusBar(
-                "updating attributes on {} events provided with dump files (fakes are ignored)".format(totalRows))
+            if overwrite or (totalRows > 0 and self._parent.confirmMessage("Question",
+                               "Calculate attributes? This task can take up to several hours, \
+                               depending on how many dump files are in the database, but it can also \
+                               be run later in batch mode by specifying --attr on the command line.")):
 
-            estimatedTime = 0
-            elapsedTime = 0
-            for idx in fallRecords.index:
-                if self._parent.stopRequested:
-                    return False  # loop interrupted by user
-                startTime = 0
-                currentRow += 1
-                self._parent.updateProgressBar(currentRow, totalRows)
+                self._parent.updateStatusBar(
+                    "updating attributes on {} events provided with dump files (fakes are ignored)".format(totalRows))
 
-                attributes = fallRecords.loc[idx, 'attributes']
-                myId = fallRecords.loc[idx, 'id']
-                myData = fallRecords.loc[idx]
-                if attributes == '' or overwrite:
-                    print("Calculating attributes for eventID#", myId)
-                    # idx indexes the fall event - to browse peak events, idx must be decremented by 1
-                    idp = idx - 1
-                    # while to browse raise event, idx must be decremented by 2
-                    idr = idx - 2
-                    mask = (self._adf['id'] == myId)
-                    self._adf.loc[mask, 'attributes'] = ''
-                    attrDict = dict()
-                    for afName in afDict.keys():
-                        print("Executing {} on event#{}".format(afName, myId))
-                        qApp.processEvents()
-                        af = afDict[afName]
-                        if af.isFilterEnabled():
-                            startTime = time.time()
-                            '''
-                            TODO: deve ritornare un dizionario, non json
-                            in modo che si possa poi costruire un unico dizionario che ha per chiave
-                            il nome del filtro e che contenga i risultati per ogni filtro
-                            infine il dizionario viene convertito in json
-                            '''
+                estimatedTime = 0
+                elapsedTime = 0
+                for idx in fallRecords.index:
+                    if self._parent.stopRequested:
+                        return False  # loop interrupted by user
+                    startTime = 0
+                    currentRow += 1
+                    self._parent.updateProgressBar(currentRow, totalRows)
 
-                            resultDict = af.evalFilter(myId)
-                            if resultDict is not None:
-                                attrDict[afName] = resultDict
+                    attributes = fallRecords.loc[idx, 'attributes']
+                    myId = fallRecords.loc[idx, 'id']
+                    myData = fallRecords.loc[idx]
+                    if attributes == '' or overwrite:
+                        print("Calculating attributes for eventID#", myId)
+                        # idx indexes the fall event - to browse peak events, idx must be decremented by 1
+                        idp = idx - 1
+                        # while to browse raise event, idx must be decremented by 2
+                        idr = idx - 2
+                        mask = (self._adf['id'] == myId)
+                        self._adf.loc[mask, 'attributes'] = ''
+                        attrDict = dict()
+                        for afName in afDict.keys():
+                            print("Executing {} on event#{}".format(afName, myId))
+                            qApp.processEvents()
+                            af = afDict[afName]
+                            if af.isFilterEnabled():
+                                startTime = time.time()
+                                resultDict = af.evalFilter(myId)
+                                if resultDict is not None:
+                                    attrDict[afName] = resultDict
 
-                                # updates the doppler measurement overwriting Echoes generated value
-                                if afName == 'HasHead' and 'freq_shift' in resultDict.keys():
-                                    df.loc[(df.index == idx), 'freq_shift'] = int(resultDict['freq_shift'])
+                                    # updates the doppler measurement overwriting Echoes generated value
+                                    if afName == 'HasHead' and 'freq_shift' in resultDict.keys():
+                                        df.loc[(df.index == idx), 'freq_shift'] = int(resultDict['freq_shift'])
 
-                            endTime = time.time()
+                                endTime = time.time()
 
-                            if estimatedTime == 0 or currentRow % 50 == 0:
-                                elapsedTime = endTime - startTime
-                                rowsLeft = totalRows - currentRow
-                                estimatedTime = int((elapsedTime * rowsLeft) / 60)  # in minutes
-                                self._parent.updateStatusBar(
-                                    f"still {rowsLeft} rows left, estimated time to finish: {estimatedTime} minutes")
+                                if estimatedTime == 0 or currentRow % 50 == 0:
+                                    elapsedTime = endTime - startTime
+                                    rowsLeft = totalRows - currentRow
+                                    estimatedTime = int((elapsedTime * rowsLeft) / 60)  # in minutes
+                                    self._parent.updateStatusBar(
+                                        f"still {rowsLeft} rows left, estimated time to finish: {estimatedTime} minutes")
 
-                    # string dump of the attributeDict
-                    if len(attrDict.keys()) > 0:
-                        print(attrDict)
-                        self._adf.loc[mask, 'attributes'] = json.dumps(attrDict)
-                    else:
-                        self._adf.loc[mask, 'attributes'] = "{}"
+                        # string dump of the attributeDict
+                        if len(attrDict.keys()) > 0:
+                            print(attrDict)
+                            self._adf.loc[mask, 'attributes'] = json.dumps(attrDict)
+                        else:
+                            self._adf.loc[mask, 'attributes'] = "{}"
 
-                    # the attributes returned by each filter are joined in a single json string
-                    # and stored in adf['attributes'] in the Fall record
+                        # the attributes returned by each filter are joined in a single json string
+                        # and stored in adf['attributes'] in the Fall record
 
-                    try:
-                        self._parent.eventDataChanges[myId] = True
-                        self._dataChangedInMemory = True
-                    except IndexError:
-                        print("BUG! id=", myId)
+                        try:
+                            self._parent.eventDataChanges[myId] = True
+                            self._dataChangedInMemory = True
+                        except IndexError:
+                            print("BUG! id=", myId)
 
-            # reordering columns
-            cols = ['id', 'daily_nr', 'event_status', 'utc_date', 'utc_time',
-                    'timestamp_ms', 'sidereal_utc',
-                    'revision', 'up_thr', 'dn_thr', 'S', 'avgS', 'N', 'diff', 'avg_diff',
-                    'top_peak_hz', 'std_dev', 'lasting_ms', 'lasting_scans', 'freq_shift',
-                    'echo_area', 'interval_area', 'peaks_count', 'LOS_speed', 'scan_ms',
-                    'diff_start', 'diff_end', 'classification', 'attributes', 'shot_name', 'dump_name']
-            self._adf = self._adf[cols]
-        return True
+                # reordering columns
+                cols = ['id', 'daily_nr', 'event_status', 'utc_date', 'utc_time',
+                        'timestamp_ms', 'sidereal_utc',
+                        'revision', 'up_thr', 'dn_thr', 'S', 'avgS', 'N', 'diff', 'avg_diff',
+                        'top_peak_hz', 'std_dev', 'lasting_ms', 'lasting_scans', 'freq_shift',
+                        'echo_area', 'interval_area', 'peaks_count', 'LOS_speed', 'scan_ms',
+                        'diff_start', 'diff_end', 'classification', 'attributes', 'shot_name', 'dump_name']
+                self._adf = self._adf[cols]
+            return True
+
+        return False # no changes made in attributes
 
     def getEventClassifications(self, fromID: int, toID: int):
         """
@@ -1867,9 +1871,8 @@ class DataSource:
     def getEventData(self, eventID: int):
         """
         Returns a dataframe with event data, having raise, peak and fall data as columns
-
         @param eventID:
-        @return:
+        @return: dataframe with event's data
         """
         print("getEventData({})".format(eventID))
         df = self.getADpartialFrame(idFrom=eventID, idTo=eventID)
@@ -1889,9 +1892,8 @@ class DataSource:
     def getEventAttr(self, eventID: int):
         """
         Returns a dictionary with event attributes, if present. Otherwise returns None
-
         @param eventID:
-        @return:
+        @return: dictionary of dictionaries
         """
         print("getEventAttr({})".format(eventID))
         df = self.getADpartialFrame(idFrom=eventID, idTo=eventID)
@@ -1900,7 +1902,6 @@ class DataSource:
         if attr and len(attr) > 0:
             try:
                 attrDict = json.loads(attr)
-                attrDict['evId'] = eventID
                 return attrDict
 
             except json.JSONDecodeError as e:

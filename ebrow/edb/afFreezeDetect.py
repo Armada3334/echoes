@@ -75,9 +75,7 @@ class FreezeDetect(QDialog):
         """
         datName, datData, dailyNr, utcDate = self._parent.dataSource.extractDumpData(evId)
 
-
         result = dict()
-
         result['none'] = 0
         return result
 

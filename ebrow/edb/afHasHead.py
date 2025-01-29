@@ -185,15 +185,13 @@ class HasHead(QDialog):
             return None
 
         result = dict()
-        result['perc'] = round(percentile, 0)
-        result['tdelta'] = round(timeDelta, 0)
-        result['freq0'] = round(extremeFreq, 0)
-        result['freq1'] = round(maxPowerFreq, 0)
-        result['time0'] = str(extremeTime.time())
-        result['time1'] = str(maxPowerTime.time())
+        result['percentile'] = round(percentile, 0)
+        result['tdelta_ms'] = round(timeDelta, 0)
+        result['extreme_hz'] = round(extremeFreq, 0)
+        result['peak_hz'] = round(maxPowerFreq, 0)
+        result['extreme_time'] = str(extremeTime.time())
+        result['peak_time'] = str(maxPowerTime.time())
         result['freq_shift'] = int(doppler)
-
-
 
         # as result of the hough trasform, this filter must return
         # a JSON string containing the following 5 parameters:
@@ -236,11 +234,8 @@ class HasHead(QDialog):
 
             # dfMap is a table time,freq,S
             result = self._doppler(dfMap, tune+offset, self._percentile, self._timeDelta)
-            if result:
-                result['evId'] = int(evId)
-                return result
-            else:
-                return None     # unable to find head echo
+            return result
+
         else:
             self._parent.updateStatusBar(f"dump file for event#{evId} not available, ignoring  it.")
         return None

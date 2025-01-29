@@ -29,7 +29,7 @@ import pandas as pd
 from pathlib import Path
 from math import isnan
 
-from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QLabel, QWidget, QInputDialog, QAbstractItemView, QTableView
+from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QScrollArea, QLabel, QWidget, QInputDialog, QAbstractItemView, QTableView
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import QSize, Qt, QSortFilterProxyModel, QItemSelectionModel
 
@@ -437,7 +437,11 @@ class ScreenShots:
             tickEverySecs = secTickRanges[int(self._vZoom - 1)]
             cmap = self._parent.cmapDict[self._currentColormap]
 
-            attrDict = self._parent.dataSource.getEventAttr(self._parent.currentID)
+            fullAttrDict = self._parent.dataSource.getEventAttr(self._parent.currentID)
+            attrDict = dict()
+            if 'HasHead' in fullAttrDict.keys():
+                attrDict = fullAttrDict['HasHead']
+
             self._plot = MapPlot(dfMap, dfPower, self._settings, inchWidth, inchHeight, cmap, name, self._plotVmin,
                                  self._plotVmax, tickEveryHz, tickEverySecs, self._showGrid, attrDict)
             self._parent.app.processEvents()
@@ -536,13 +540,13 @@ class ScreenShots:
         # self._parent.busy(True)
         self._ui.chkDatExport.hide()
         df = self._parent.dataSource.getEventData(self._parent.currentID)
-        df.set_axis(['RAISE', 'PEAK', 'FALL'], axis=1)  # , inplace=True)
+        df.set_axis(['Raising front', 'Peak', 'Falling front'], axis=1)  # , inplace=True)
         df.set_axis(['UTC time', 'Upper threshold (calculated)', 'Lower threshold (calculated)', 'S', 'Average S',
                      'N', 'S-N', 'Average S-N', 'Peak frequency [Hz]', 'Standard deviation', 'Event lasting [ms]',
                      'Event lasting [scans]', 'Frequency shift [Hz]', 'Echo area', 'Interval area', 'Peaks count',
                      'LOS speed [m/s]', 'Scan lasting [ms]', 'S-N (begin scan)', 'S-N (end scan)', 'Classification',
                      'Screenshot filename', 'Plot filename'],
-                    axis=0)  # , inplace=True)
+                    axis=0)
 
         # data patching:
         # classification is known only at falling edge, so it should not appear under RAISE and PEAK columns
@@ -557,15 +561,39 @@ class ScreenShots:
         self._dfDetails = df
 
         attrDict = self._parent.dataSource.getEventAttr(self._parent.currentID)
-        if len(attrDict.keys()) > 0:
+        if len(attrDict) > 0:
             for afName, afAttr in attrDict.items():
+                if afName == 'Dummy':
+                    continue
                 df = pd.DataFrame([afAttr])
-                model = PandasModel(df)
+                dft = df.transpose()
+                dft.columns = ['Value']
+
+                # df.set_axis(['Parameter', 'Value'], axis=1)
+                # df.set_axis(afAttr.keys(), axis=0)
+                model = PandasModel(dft)
+
+                # Create a QTableView and set the model
                 qtv = QTableView()
                 qtv.setModel(model)
                 qtv.setStyleSheet("color: rgb(0,255,0); font: 10pt 'Gauge';")
                 qtv.resizeColumnsToContents()
-                self._ui.vlEventDetails.addWidget(qtv)
+
+                # Create a scroll area for the table view
+                scrollArea = QScrollArea()
+                scrollArea.setWidget(qtv)
+                scrollArea.setWidgetResizable(True)
+
+                # Create a vertical layout for the tab
+                layout = QVBoxLayout()
+                layout.addWidget(scrollArea)
+
+                # Create a container widget for the layout
+                containerWidget = QWidget()
+                containerWidget.setLayout(layout)
+
+                # Add a new tab to the QTabWidget
+                self._ui.twDetails.addTab(containerWidget, afName)
 
     def autoExport(self, classFilter):
 

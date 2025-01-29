@@ -78,7 +78,6 @@ class Dummy(QDialog):
         df = self._parent.dataSource.getEventData(evId)
 
         result = dict()
-
         result['none'] = 0
         return result
 

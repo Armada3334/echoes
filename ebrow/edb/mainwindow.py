@@ -794,23 +794,19 @@ class MainWindow(QMainWindow):
             self.updateStatusBar("Opening ok, performing classifications...")
             self.eventDataChanges = [False] * (self.fromId + self.covID)
             if self.dataSource.classifyEvents(self.fromId, self.toId):
-                if self.isBatchReport or self.isBatchXLSX or self.mustCalcAttr:
+                if not self.isBatchRMOB:
                     # attributes are always calculated before generating an automatic report
-                    self.updateStatusBar("Calculating attributes...")
-                    self.dataSource.attributeEvents(self.fromId, self.toId)
-
-                elif not self.isBatchRMOB:
-                    # This is not needed for RMOB exports
-                    if self.confirmMessage("Question",
-                                           "Calculate attributes? This task can take up to several hours, \
-                                           depending on how many dump files are in the database, but it can also \
-                                           be run later in batch mode by specifying --attr on the command line."):
-
-                        self.updateStatusBar("Calculating attributes...")
-                        if not self.dataSource.attributeEvents(self.fromId, self.toId):
+                    # but this is not needed for RMOB exports
+                    result = self.dataSource.attributeEvents(self.fromId, self.toId,
+                                                    silent=(self.isBatchReport or self.isBatchXLSX),
+                                                    overwrite=self.mustCalcAttr)
+                    if not result:
+                        if self.stopRequested:
                             self.updateStatusBar("Attributes calculation stopped by user")
+                        else:
+                            self.updateStatusBar("Attributes already up to date, no recalc needed")
                     else:
-                        self.updateStatusBar("Skipping attributes calculation")
+                        self.updateStatusBar("Attributes up to date, recalc done")
 
             self._ui.pbSave.setEnabled(True)
             self._ui.pbSubset.setEnabled(True)
