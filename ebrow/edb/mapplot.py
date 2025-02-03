@@ -34,8 +34,8 @@ from matplotlib.dates import AutoDateLocator, date2num, MICROSECONDLY, DateForma
 from mplcursors import cursor
 from matplotlib.ticker import MaxNLocator, ScalarFormatter
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+import matplotlib.colors as mcolors
 from PyQt5.QtWidgets import qApp
-from .utilities import PrecisionDateFormatter
 from .settings import Settings
 from .basegraph import BaseGraph
 from .logprint import print
@@ -44,18 +44,22 @@ mp.use('Qt5Agg')
 
 class MapPlot(BaseGraph):
     def __init__(self, dfMap: pd.DataFrame, dfPower: pd.DataFrame, settings: Settings, inchWidth: float,
-                 inchHeight: float, cmap: list, name: str, vmin: float, vmax: float, 
+                 inchHeight: float, cmap: list, name: str, vmin: float, vmax: float,
                  tickEveryHz: int = 1000, tickEverySecs: int = 1, showGrid: bool = True, attrDict: dict = None):
         BaseGraph.__init__(self, settings)
 
         self._df = None
+        self._attrDict = attrDict
+        self._cmap = cmap
+        self._df = dfMap
+
         dfMap = dfMap.reset_index()
 
         # --- horizontal x axis [Hz] ----
         # FFT bins
         freqs = dfMap['frequency'].unique()
         totFreqs = len(freqs)
-        xLims = [freqs[0], freqs[-1]]
+        self._xLims = [freqs[0], freqs[-1]]
         freqSpan = dfMap['frequency'].max() - dfMap['frequency'].min()
 
         nTicks = (freqSpan / tickEveryHz) - 1
@@ -71,7 +75,7 @@ class MapPlot(BaseGraph):
         startTime = np.datetime64(dt)
         dt = datetime.fromtimestamp(scans[-1], tz=timezone.utc)
         endTime = np.datetime64(dt)
-        yLims = date2num([startTime, endTime])
+        self._yLims = date2num([startTime, endTime])
 
         yLoc = AutoDateLocator(interval_multiples=True)
         if tickEverySecs > 120.0:
@@ -79,7 +83,6 @@ class MapPlot(BaseGraph):
             yLoc.intervald[MINUTELY] = [tickEveryMins]
         elif tickEverySecs < 1.0:
             tickEveryUs = tickEverySecs * 1E6
-            # yLoc.intervald[7] = [tickEveryUs]
             yLoc.intervald[MICROSECONDLY] = [tickEveryUs]
         else:
             yLoc.intervald[SECONDLY] = [tickEverySecs]
@@ -91,156 +94,121 @@ class MapPlot(BaseGraph):
 
         # ---- the waterfall flows downwards so the time increase from bottom to top (origin lower)
         data = dfMap[['S']].to_numpy().reshape(totScans, totFreqs)
-        self._min = data.min()
-        self._max = data.max()
+        self._min, self._max = data.min(), data.max()
         np.clip(data, vmin, vmax, data)
 
         colors = self._settings.readSettingAsObject('colorDict')
         plt.figure(figsize=(inchWidth, inchHeight))
-        self._fig, ax = plt.subplots(1)
-        
-        im = ax.imshow(data, cmap=cmap, aspect='auto', vmin=vmin, vmax=vmax, interpolation=None,
-                       origin='lower', extent=[xLims[0], xLims[1], yLims[0], yLims[1]])
+        self._fig, self._ax = plt.subplots(1)
+
+        im = self._ax.imshow(data, cmap=cmap, aspect='auto', vmin=vmin, vmax=vmax, interpolation=None,
+                       origin='lower', extent=[self._xLims[0], self._xLims[1], self._yLims[0], self._yLims[1]])
         print("extent=", im.get_extent())
 
-        ax.xaxis.set_major_locator(xLoc)
-        ax.xaxis.set_major_formatter(xFmt)
-        ax.set_xlabel('frequency [Hz]', labelpad=30)
+        self._ax.xaxis.set_major_locator(xLoc)
+        self._ax.xaxis.set_major_formatter(xFmt)
+        self._ax.set_xlabel('frequency [Hz]', labelpad=30)
 
-        ax.yaxis.set_major_locator(yLoc)
-        ax.yaxis.set_major_formatter(yFmt)
-        ax.set_ylabel('time of day', labelpad=30)
+        self._ax.yaxis.set_major_locator(yLoc)
+        self._ax.yaxis.set_major_formatter(yFmt)
+        self._ax.set_ylabel('time of day', labelpad=30)
+
+        df = self._df.sort_values(by=['time', 'frequency'])
+        pivotTable = df.pivot_table(index='time', columns='frequency', values='S', aggfunc='first')
+        self._image = pivotTable.to_numpy()
+
+        if attrDict and len(attrDict.keys()) > 0:
+            self._plotContourOverlay()
+            self._plotMaxPointOverlay()
+            self._plotExtremePointOverlay()
 
         norm = mp.colors.Normalize(vmin=vmin, vmax=vmax)
         self._fig.colorbar(im, drawedges=False, norm=norm, cmap=cmap)
         title = "Mapped spectrogram from data file " + name
         self._fig.suptitle(title + '\n')
-        ax.tick_params(axis='x', which='both', labelrotation=90, color=colors['majorGrids'].name())
+        self._ax.tick_params(axis='x', which='both', labelrotation=90, color=colors['majorGrids'].name())
 
         if showGrid:
-            ax.grid(which='major', axis='both', color=colors['majorGrids'].name())
+            self._ax.grid(which='major', axis='both', color=colors['majorGrids'].name())
 
         if self._settings.readSettingAsString('cursorEnabled') == 'true':
             cursor(hover=True)
 
         self._fig.set_tight_layout({"pad": 5.0})
-        self._canvas = FigureCanvasQTAgg(self._fig)
-        self._cmap = cmap
-        self._df = dfMap
-        self._attrDict = attrDict
+        self._fig.canvas.draw()
 
-        if len(attrDict.keys()) > 0 :
-            self._plotExtras()
+        self._canvas = FigureCanvasQTAgg(self._fig)
+
+        # if len(attrDict.keys()) > 0 :
+        #    self._plotExtras()
 
         # avoids showing the original fig window
         plt.close('all')
 
-    def _plotExtras(self):
-        """
-        Adds a plot overlay with the contour, max power point, and extreme point.
-        Adjusts colors to avoid conflict with the colormap.
-
-        """
-        # Default colors
-        contourColor = 'green'
-        maxPointColor = 'red'
-        extremePointColor = 'orange'
-
-        # Check for conflicts with colormap colors
-        if self._cmap:
-            availableColors = ['blue', 'magenta', 'cyan', 'yellow', 'black', 'white']
-            for color in [contourColor, maxPointColor, extremePointColor]:
-                if color in self._cmap.colors:  # Access colors directly from cmap
-                    newColor = next((c for c in availableColors if c not in self._cmap.colors), None)
-                    if newColor:
-                        if color == contourColor:
-                            contourColor = newColor
-                        elif color == maxPointColor:
-                            maxPointColor = newColor
-                        elif color == extremePointColor:
-                            extremePointColor = newColor
-
-        ax = self._fig.axes[0]
-
-        # Plot contour
-        extremePoint = (int(self._attrDict['extreme_hz']), int(self._attrDict['extreme_time']))
-        maxPoint = (int(self._attrDict['peak_hz']), int(self._attrDict['peak_time']))
+    def _plotContourOverlay(self):
+        """ Crea un overlay trasparente per i contorni. """
         percentile = int(self._attrDict['percentile'])
         referenceFreq = int(self._attrDict['peak_hz'])
 
-        # Sort the DataFrame by time and frequency
-        df = self._df.sort_values(by=['time', 'frequency'])
+        # --- Percentile threshold ---
+        powerThreshold = np.percentile(self._image, percentile)
+        binaryImage = np.uint8(self._image >= powerThreshold)
 
-        # Create a pivot table
-        pivotTable = df.pivot_table(index='time', columns='frequency', values='S', aggfunc='first')
-
-        # Round the values to two decimal places
-        pivotTable = pivotTable.round(2)
-
-        # Convert the pivot table to a 2D numpy array
-        image = pivotTable.to_numpy()
-
-        # Extract the lists of times and frequencies
-        timeList = pd.to_datetime(pivotTable.index, unit='s')  # Convert to datetime
-        freqList = list(map(float, pivotTable.columns.tolist()))
-
-        # Normalize the image for power values
-        minPower = np.min(image)
-        maxPower = np.max(image)
-        # imageNorm = (image - minPower) / (maxPower - minPower)
-
-        # Calculate a dynamic threshold based on the user-provided percentile
-        powerThreshold = np.percentile(image, percentile)
-
-        # Find points above the power threshold
-        binaryImage = np.uint8(image >= powerThreshold)
-
-        # Find contours in the binary image
+        # --- find the contour ---
         contours, _ = cv2.findContours(binaryImage, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        mainContour = max(contours, key=cv2.contourArea, default=None)
 
-        # Identify the main contour (largest area and near the reference frequency)
-        mainContour = None
-        doppler = 0
-        maxArea = -1
-        for contour in contours:
-            qApp.processEvents()
-            contour = contour.squeeze().astype(np.float32)
-            if contour.ndim == 2 and contour.shape[1] == 2:
-                freqIndices = contour[:, 0]
-                timeIndices = contour[:, 1]
-                avgFreq = np.mean([freqList[int(idx)] for idx in freqIndices if int(idx) < len(freqList)])
-                area = cv2.contourArea(contour)
-                if area > maxArea and abs(avgFreq - referenceFreq) < abs(referenceFreq * 0.1):
-                    maxArea = area
-                    mainContour = contour
-
-        # Find the maximum power point
-        maxPowerIdx = np.unravel_index(np.argmax(image, axis=None), image.shape)
-        maxPowerFreq = freqList[maxPowerIdx[1]]
-        maxPowerTime = timeList[maxPowerIdx[0]]
-
-        referenceFreq = maxPowerFreq
-
-        # Optimize the search for the extreme point
         if mainContour is not None:
-            # Get coordinates of all points in the main contour
-            contourPoints = np.array([[int(pt[0]), int(pt[1])] for pt in mainContour if len(pt) == 2])
-            timeIndices = contourPoints[:, 1]
-            freqIndices = contourPoints[:, 0]
-            ax.plot(freqIndices, timeIndices, color=contourColor, label='Contour', linewidth=2)
+            mainContour = mainContour.squeeze()
+            freqIndices = mainContour[:, 0]
+            timeIndices = mainContour[:, 1]
 
-        # Plot maximum power point
+            # Normalize and scaling
+            numRows, numCols = self._image.shape
+            contourFreqs = self._xLims[0] + (freqIndices / (numCols - 1)) * ( self._xLims[1] - self._xLims[0])
+            contourTimes = self._yLims[0] + (timeIndices / (numRows - 1)) * ( self._yLims[1] - self._yLims[0])
+
+            # --- Draw the contour ---
+            self._ax.plot(contourFreqs, contourTimes, color='green', linewidth=2, alpha=0.5)
+            self._fig.canvas.draw()
+
+    def _plotMaxPointOverlay(self):
+        """ Crea un overlay trasparente per il maxPoint. """
+        try:
+            dtsPeak = self._attrDict['peak_time'][:23]
+            dtPeak = datetime.strptime(dtsPeak, "%Y-%m-%d %H:%M:%S.%f")
+            tsPeak = (dtPeak - dtPeak.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
+        except ValueError:
+            tsPeak = 0
+
+        maxPoint = (self._attrDict['peak_hz'], tsPeak)
+
         if maxPoint:
             maxFreq, maxTime = maxPoint
-            ax.plot(maxFreq, maxTime, 'o', color=maxPointColor, markersize=8, label='Max Power Point')
 
-        # Plot extreme point
+            # Normalize and scaling
+            dtPeakNum = date2num(dtPeak)
+
+            self._ax.plot(maxFreq, dtPeakNum, 'ro', color='white', markersize=8, label='Max Power Point', alpha=0.5)
+            self._fig.canvas.draw()
+
+    def _plotExtremePointOverlay(self):
+        """ Crea un overlay trasparente per l'extremePoint. """
+        try:
+            dtsExtreme = self._attrDict['extreme_time'][:23]
+            dtExtreme = datetime.strptime(dtsExtreme, "%Y-%m-%d %H:%M:%S.%f")
+            tsExtreme = (dtExtreme - dtExtreme.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
+        except ValueError:
+            tsExtreme = 0
+
+        extremePoint = (self._attrDict['extreme_hz'], tsExtreme)
+
         if extremePoint:
             extremeFreq, extremeTime = extremePoint
-            ax.plot(extremeFreq, extremeTime, 'x', color=extremePointColor, markersize=10, label='Extreme Point')
+            dtExtremeNum = date2num(dtExtreme)
+            self._ax.plot(extremeFreq, dtExtremeNum, 'x', color='orange', markersize=10, label='Extreme Point', alpha=0.5)
+            self._fig.canvas.draw()
 
-        # Update the legend to include new elements
-        ax.legend(loc='upper left')
 
     def savePlotDataToDisk(self, fileName):
         df = self._df.set_index('time')

@@ -189,8 +189,8 @@ class HasHead(QDialog):
         result['tdelta_ms'] = round(timeDelta, 0)
         result['extreme_hz'] = round(extremeFreq, 0)
         result['peak_hz'] = round(maxPowerFreq, 0)
-        result['extreme_time'] = str(extremeTime.time())
-        result['peak_time'] = str(maxPowerTime.time())
+        result['extreme_time'] = str(extremeTime)
+        result['peak_time'] = str(maxPowerTime)
         result['freq_shift'] = int(doppler)
 
         # as result of the hough trasform, this filter must return

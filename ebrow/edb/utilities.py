@@ -328,9 +328,9 @@ def getColorMap(name: str = 'echoes'):
     # the black means -1 == data missing that is not
     # included in colormap but set at display time
     colorgramme = [
-        "#0064fe",
-        "#006dfd",
-        "#0079f0",
+        "#0020ff",
+        "#0050fe",
+        "#0070f0",
         "#0087fe",
         "#009eff",
         "#00b0ff",

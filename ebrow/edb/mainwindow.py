@@ -233,7 +233,7 @@ class MainWindow(QMainWindow):
                                                   "Export directory not empty, delete content before usage?")
                     if self.busyCount > 0:
                         # shows the wait cursor again
-                        QApplication.setOverrideCursor(Qt.WaitCursor)
+                        QApplication.setOverrideCursor(Qt.BusyCursor)
 
                     if result == QMessageBox.StandardButton.Yes:
                         if cleanFolder(str(checkThisDir)):
@@ -374,7 +374,7 @@ class MainWindow(QMainWindow):
                     self._spinner.start()
                     self._spinner.raise_()
                 else:
-                    QApplication.setOverrideCursor(Qt.WaitCursor)
+                    QApplication.setOverrideCursor(Qt.BusyCursor)
             self.busyCount += 1
             print("Busy [{}]".format(self.busyCount))
             stillBusy = self.busyCount
