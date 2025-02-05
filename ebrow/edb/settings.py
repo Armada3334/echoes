@@ -48,7 +48,7 @@ class Settings(QSettings):
         self._general = ['geometry', 'lastDBfilePath', 'dateFrom', 'dateTo', 'tooltipDisabled', 'autosaving']
 
         self._screenshots = ['classFilter', 'currentDate', 'horizontalZoom', 'verticalZoom', 'linkedSliders', 'showGrid',
-                             '3Dazimuth', '3Delevation', 'currentColormap']
+                             '3Dazimuth', '3Delevation', 'currentColormap', 'showContour']
 
         self._stats = ['classFilterStat', 'showValues', 'showGridStat', 'smoothPlots', 'subtractSporadicBackground',
                        'compensation', 'horizontalZoomStat', 'verticalZoomStat', 'linkedSlidersStat',
@@ -149,6 +149,7 @@ class Settings(QSettings):
         d['3Dazimuth'] =  self.AZIMUTH_DEFAULT
         d['3Delevation'] =  self.ELEVATION_DEFAULT
         d['currentColormap'] = self._colorMaps[0] # default colormap for screenshots: echoes
+        d['showContour'] = 0
 
         # stats
         d['classFilterStat'] = 'OVER'

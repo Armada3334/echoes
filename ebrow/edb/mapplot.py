@@ -45,7 +45,7 @@ mp.use('Qt5Agg')
 class MapPlot(BaseGraph):
     def __init__(self, dfMap: pd.DataFrame, dfPower: pd.DataFrame, settings: Settings, inchWidth: float,
                  inchHeight: float, cmap: list, name: str, vmin: float, vmax: float,
-                 tickEveryHz: int = 1000, tickEverySecs: int = 1, showGrid: bool = True, attrDict: dict = None):
+                 tickEveryHz: int = 1000, tickEverySecs: int = 1, showGrid: bool = True, showContour: bool = False, attrDict: dict = None):
         BaseGraph.__init__(self, settings)
 
         self._df = None
@@ -117,7 +117,7 @@ class MapPlot(BaseGraph):
         pivotTable = df.pivot_table(index='time', columns='frequency', values='S', aggfunc='first')
         self._image = pivotTable.to_numpy()
 
-        if attrDict and len(attrDict.keys()) > 0:
+        if showContour and attrDict and len(attrDict.keys()) > 0:
             self._plotContourOverlay()
             self._plotMaxPointOverlay()
             self._plotExtremePointOverlay()
@@ -138,9 +138,6 @@ class MapPlot(BaseGraph):
         self._fig.canvas.draw()
 
         self._canvas = FigureCanvasQTAgg(self._fig)
-
-        # if len(attrDict.keys()) > 0 :
-        #    self._plotExtras()
 
         # avoids showing the original fig window
         plt.close('all')
@@ -179,7 +176,7 @@ class MapPlot(BaseGraph):
             dtPeak = datetime.strptime(dtsPeak, "%Y-%m-%d %H:%M:%S.%f")
             tsPeak = (dtPeak - dtPeak.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
         except ValueError:
-            tsPeak = 0
+            return False
 
         maxPoint = (self._attrDict['peak_hz'], tsPeak)
 
@@ -199,7 +196,7 @@ class MapPlot(BaseGraph):
             dtExtreme = datetime.strptime(dtsExtreme, "%Y-%m-%d %H:%M:%S.%f")
             tsExtreme = (dtExtreme - dtExtreme.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
         except ValueError:
-            tsExtreme = 0
+            return False
 
         extremePoint = (self._attrDict['extreme_hz'], tsExtreme)
 
@@ -208,7 +205,7 @@ class MapPlot(BaseGraph):
             dtExtremeNum = date2num(dtExtreme)
             self._ax.plot(extremeFreq, dtExtremeNum, 'x', color='orange', markersize=10, label='Extreme Point', alpha=0.5)
             self._fig.canvas.draw()
-
+        return True
 
     def savePlotDataToDisk(self, fileName):
         df = self._df.set_index('time')

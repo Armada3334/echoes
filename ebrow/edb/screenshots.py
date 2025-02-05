@@ -98,7 +98,10 @@ class ScreenShots:
         self._ui.chkLinked.setChecked(self._linkedSliders)
 
         self._showGrid = self._settings.readSettingAsBool('showGrid')
+        self._showContour = self._settings.readSettingAsBool('showContour')
+
         self._ui.chkGrid.setChecked(self._showGrid)
+        self._ui.chkContour.setChecked(self._showContour)
 
         self._hZoom = self._settings.readSettingAsFloat('horizontalZoom')
         self._vZoom = self._settings.readSettingAsFloat('verticalZoom')
@@ -146,6 +149,7 @@ class ScreenShots:
         self._ui.chkFakeLong.clicked.connect(self._setClassFilter)
         self._ui.chkLinked.clicked.connect(self._toggleLinkedCursors)
         self._ui.chkGrid.clicked.connect(self._toggleGrid)
+        self._ui.chkContour.clicked.connect(self._toggleContour)
         self._ui.rbOverdense.clicked.connect(self._changeClassification)
         self._ui.rbUnderdense.clicked.connect(self._changeClassification)
         self._ui.rbFakeEsd.clicked.connect(self._changeClassification)
@@ -443,7 +447,7 @@ class ScreenShots:
                 attrDict = fullAttrDict['HasHead']
 
             self._plot = MapPlot(dfMap, dfPower, self._settings, inchWidth, inchHeight, cmap, name, self._plotVmin,
-                                 self._plotVmax, tickEveryHz, tickEverySecs, self._showGrid, attrDict)
+                                 self._plotVmax, tickEveryHz, tickEverySecs, self._showGrid, self._showContour, attrDict)
             self._parent.app.processEvents()
             minV, maxV = self._plot.getMinMax()
             if self._plotVmin < minV:
@@ -1152,6 +1156,10 @@ class ScreenShots:
     def _toggleGrid(self, state):
         self._showGrid = (state != 0)
         self._settings.writeSetting('showGrid', self._showGrid)
+
+    def _toggleContour(self, state):
+        self._showContour = (state != 0)
+        self._settings.writeSetting('showContour', self._showContour)
 
     def _cmapChanged(self, newCmapName):
         self._currentColormap = newCmapName

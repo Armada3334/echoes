@@ -1283,19 +1283,19 @@ alternate-background-color: rgb(170, 0, 0);</string>
                    <date>
                     <year>2016</year>
                     <month>9</month>
-                    <day>20</day>
+                    <day>19</day>
                    </date>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>3</hour>
+                    <hour>2</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>0</hour>
+                    <hour>22</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>22</hour>
+                    <hour>20</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -4070,9 +4070,9 @@ alternate-background-color: rgb(170, 0, 0);</string>
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>0</y>
+             <y>-161</y>
              <width>285</width>
-             <height>1126</height>
+             <height>1131</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -8468,6 +8468,16 @@ border: none;
                   <widget class="Line" name="line">
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="chkContour">
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If selected, draws an outline around the echo, then draws a circle at the peak point and an X at the start of the head echo - if one was found. Works only in 2D plots.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>Show contour</string>
                    </property>
                   </widget>
                  </item>
