@@ -332,7 +332,7 @@ Waterfall::~Waterfall()
 
 void Waterfall::GUIinit(void)
 {
-    MYINFO << __func__ << "()";
+    MYINFO << __func__ << "() wf";
     blockAllSignals(true);
 
     init = true;
@@ -413,8 +413,8 @@ void Waterfall::GUIinit(void)
     ui->hsTuneZoom->setValue(zoom);
     MYINFO << "Tune offset set to: " << tuneOffset;
     MYINFO << "Tune zoom set to: " << tuneZoom;
-    slotSetOffset( tuneOffset );
     slotSetZoom(zoom);
+    slotSetOffset( tuneOffset );
 
     slotTakeShot(0,0,0,0,0,0,0, "");
 
@@ -672,7 +672,7 @@ void Waterfall::slotRuntimeChange()
             slotResetEccentricity();
         }
 
-        if(zoomChanged)
+        if(zoomChanged && !as->isLoading())
         {
             MYINFO << "zoomChanged ?";
             //the offset and eccentricity are set back to zero

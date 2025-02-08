@@ -240,8 +240,10 @@ class Settings : public QObject
     QLocale     loc;
     QRecursiveMutex  protectionMutex;    ///<generic mutex to protect against concurrent calls
 
+    bool loading;               //< set high when load() is in execution
+
     int changed;                //< if >0 settings changed, save() must be called before exiting program
-    int srvChanged;             //< counts the configuration changes that must be notified to UDP clients
+    int srvChanged;             //< counts the configuration changes that must be notified to UDP clien
 
     int rtsRevision;            //< number of revision of the rts file loaded
     int rtsFormatRev;           //< number of revision of the rts file format
@@ -550,6 +552,11 @@ public slots:
         return testDevice;
     }
 
+
+    bool isLoading() const
+    {
+        return loading;
+    }
 
     //save/load local settings file only
     void loadLocal();

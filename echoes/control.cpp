@@ -3156,6 +3156,7 @@ void Control::printStats()
 
 void Control::updateRootDir()
 {
+    MYINFO << __func__ << "()";
     QString rootDir = wd.absoluteFilePath( as->getConfigName() );
     dbPath = QString("%1/%2.sqlite3").arg(rootDir, as->getConfigName() );
     bool brandNew = false;

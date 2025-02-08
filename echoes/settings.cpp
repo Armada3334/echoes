@@ -187,6 +187,8 @@ void Settings::reset()
  */
 void Settings::load( QSettings& ini, bool enableNotifications )
 {
+    MYINFO << "loading config";
+    loading = true;
     configFullPath =  ini.fileName();
     configName = QFileInfo( configFullPath ).baseName();
 
@@ -364,7 +366,8 @@ void Settings::load( QSettings& ini, bool enableNotifications )
     }
     changed = 0;
     srvChanged = 0;
-
+    loading = false;
+    MYINFO << "config loaded";
 
 }
 
@@ -1290,7 +1293,7 @@ void Settings::setOffset( int value, bool enableNotifications  )
     if (value != wfOffset)
     {
         wfOffset = value;
-        MYDEBUG << "setOffset(" << value << ")" << MY_ENDL;
+        MYINFO << "setOffset(" << value << ")" << MY_ENDL;
         if(enableNotifications)
         {
             emit notifySetOffset();
