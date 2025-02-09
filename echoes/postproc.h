@@ -89,11 +89,20 @@ protected:
     void startBackupProcess();
 
 public:
-    explicit PostProc(Settings* appSettings, QString& dPath, XQDir workDir);
+    explicit PostProc(Settings* appSettings, XQDir workDir);
 
     ~PostProc();
 
     void run();
+
+    ///
+    /// \brief setDB
+    /// \param dPath
+    ///
+    void setDB(QString& dPath)
+    {
+        dbPath = dPath;
+    }
 
     ///
     /// \brief setWdir

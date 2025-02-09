@@ -1297,7 +1297,7 @@ void MainWindow::slotReopen(const QString* dev)
     {
         if(!init)
         {
-            if ( selDev.contains("audio") )
+            if ( selDev.contains("audio") && !rtsDev.contains("audio"))
             {
                 toAudioDevice = true;
                 MYINFO << "switching to audio device, tune is set to zero and SR and dsBw will take default values";
@@ -1962,8 +1962,11 @@ void MainWindow::slotAdjustResolution()
     //automatically sets the label value after
     //change by the +/- pushbuttons
 
-    ui->lbResolution->setNum( static_cast<double>( as->pround( as->getResolution(), 2 ) ) );
-    ui->lbPoints->setNum(  as->getFFTbins() );
+    double res = static_cast<double>( as->pround( as->getResolution(), 2 ) );
+    ui->lbResolution->setNum( res );
+
+    int bins = as->getFFTbins();
+    ui->lbPoints->setNum( bins  );
     //refreshDownsamplingFreqs(false);
 }
 

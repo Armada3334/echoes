@@ -408,7 +408,7 @@ bool DBif::updateCfgPrefs(Settings* appSettings)
 
     MY_ASSERT(appSettings != nullptr)
     as = appSettings;
-    r.prepare( "INSERT INTO cfg_prefs ( id, dbfs_gain, dbfs_offset, direct_buffers, fault_sound, ping_sound, "
+    r.prepare( "INSERT INTO cfg_prefs ( id, dbfs_gain, dbfs_offset, fault_sound, ping_sound, "
                "main_geometry, db_ticks, hz_ticks, sec_ticks, show_tooltips, utc_delta, server_addr, server_port, max_event_lasting, echoes_ver )"
                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
     r.addBindValue( as->getRTSrevision() );

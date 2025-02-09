@@ -34,7 +34,7 @@ $Id: postproc.cpp 380 2018-12-20 07:39:47Z gmbertani $
 
 
 
-PostProc::PostProc(Settings* appSettings, QString& dPath, XQDir workDir)
+PostProc::PostProc(Settings* appSettings, XQDir workDir)
 {
 
     setObjectName("PostProc thread");
@@ -42,8 +42,6 @@ PostProc::PostProc(Settings* appSettings, QString& dPath, XQDir workDir)
     MY_ASSERT( nullptr !=  appSettings )
     as = appSettings;
     wd = workDir;
-
-    dbPath = dPath;
 
     stopProc = false;
 
@@ -67,9 +65,12 @@ PostProc::~PostProc()
 {
 }
 
+
+
 void PostProc::run()
 {
     MYINFO << "+++++ PostProc thread started";
+    MYINFO << "opening db " << dbPath;
 
     db = new DBif(dbPath, as);
     MY_ASSERT( nullptr !=  db )

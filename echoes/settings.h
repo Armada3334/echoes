@@ -818,9 +818,9 @@ public slots:
     /// \brief setAudioDevice
     /// \param d
     ///
-    void setAudioDevice(int d, bool newOne = false)
+    void setAudioDevice(int dev, bool newOne = false)
     {
-        audioDevice = d;
+        audioDevice = dev;
         netDevice = false;
         testDevice = false;
 

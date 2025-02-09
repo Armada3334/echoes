@@ -197,7 +197,7 @@ Control::Control(Settings* appSettings, XQDir wDir)
     MY_ASSERT( nullptr !=  r)
 
     //data post processor
-    pp = new PostProc( as, dbPath, rd );
+    pp = new PostProc( as, rd );
     MY_ASSERT( nullptr !=  pp)
 
 
@@ -1102,6 +1102,7 @@ void Control::slotControlLoop()
             //there must be no files opened while archiving
 
             pp->setWdir(rd);
+            pp->setDB(dbPath);
             pp->start( QThread::IdlePriority );
             while (pp->isRunning() == false)
             {
