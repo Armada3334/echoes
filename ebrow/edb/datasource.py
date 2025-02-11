@@ -72,6 +72,7 @@ class DataSource:
         self._sdf = None  # automatic_sessions dataframe
         self._dataChangedInMemory = False
         self._settings = settings
+        self._deltaEvents = (0,0)
         self.dataReady = False
         self.cacheNeedsUpdate = False
 
@@ -159,6 +160,7 @@ class DataSource:
                     select = "SELECT id, timestamp_ms FROM automatic_data WHERE id={} AND utc_date='{}'".format(
                         newestRecordID, newestRecordDate)
                     result = q.exec(select)
+                    lastProcessedId = 0
                     if result:
                         q.first()
                         if q.isValid():
@@ -203,6 +205,8 @@ class DataSource:
                                                     columnName = columnList[col]
                                                     field = rec.field(col)
                                                     val = field.value()
+                                                    if columnName == 'id':
+                                                        lastProcessedId = val
                                                     varType = field.type()
                                                     if varType == QMetaType.Double or varType == QMetaType.Float:
                                                         try:
@@ -235,6 +239,8 @@ class DataSource:
                                                 self._adf = pd.concat([self._adf, adfUpdate], ignore_index=True)
                                                 self._adf.reset_index(inplace=True, drop=True)
                                             self._stripIncompleteEvents()
+                                            self._deltaEvents = (newestRecordID+1, lastProcessedId)
+
                                             self._parent.updateStatusBar(
                                                 "Cache file data loaded successfully and integrated with new "
                                                 "events from DB")
@@ -243,6 +249,7 @@ class DataSource:
                                             self.dataReady = True
                                             return True
 
+                        self._deltaEvents = (lastProcessedId, lastProcessedId)
                         self._parent.updateStatusBar("The cache file is aligned with DB, data loaded successfully.")
                         self._parent.updateProgressBar()  # hide progressbar
                         self._parent.busy(False)
@@ -1209,6 +1216,9 @@ class DataSource:
                 ids = self._adf.loc[:, 'id'].unique()
                 return ids.size
         return 0
+
+    def eventsToClassify(self):
+        return self._deltaEvents
 
     def loadTableConfig(self, name: str, rev: int = -1) -> pd.DataFrame:
         """

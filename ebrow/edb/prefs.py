@@ -274,16 +274,15 @@ class Prefs(QWidget):
                     self._attributeFilterEnabled.append(afClassName)
                 item = QStandardItem(afClassName)
                 model.setItem(r, 0, item)
-
-            self._ui.cbAttribSettings.setModel(model)
-            self._ui.cbAttribSettings.setCurrentIndex(0)
-            if not self._attributeFilterObject or len(self._attributeFilterObject) == 0:
-                self._ui.cbAttribSettings.setToolTip("Enabled filters: None")
-                self._ui.pbEditParms.setEnabled(False)
-            else:
-                self._ui.cbAttribSettings.setToolTip("Enabled filters:" + '\n'.join(self._attributeFilterEnabled))
-                self._ui.pbEditParms.setEnabled(True)
-                self._attributeFilters[afClassName] = af
+                self._ui.cbAttribSettings.setModel(model)
+                self._ui.cbAttribSettings.setCurrentIndex(0)
+                if not self._attributeFilterObject or len(self._attributeFilterObject) == 0:
+                    self._ui.cbAttribSettings.setToolTip("Enabled filters: None")
+                    self._ui.pbEditParms.setEnabled(False)
+                else:
+                    self._ui.cbAttribSettings.setToolTip("Enabled filters:" + '\n'.join(self._attributeFilterEnabled))
+                    self._ui.pbEditParms.setEnabled(True)
+                    self._attributeFilters[afClassName] = af
 
     def afDict(self):
         return self._attributeFilters

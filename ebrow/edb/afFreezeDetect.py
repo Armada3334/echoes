@@ -27,6 +27,7 @@ import json
 from PyQt5.QtWidgets import QDialog
 from .ui_affreezedetect import Ui_afFreezeDetect
 from .logprint import print
+from .utilities import splitASCIIdumpFile, splitBinaryDumpFile
 
 
 class FreezeDetect(QDialog):
@@ -74,6 +75,12 @@ class FreezeDetect(QDialog):
         due to missing data
         """
         datName, datData, dailyNr, utcDate = self._parent.dataSource.extractDumpData(evId)
+        if ".datb" in datName:
+            dfMap, dfPower = splitBinaryDumpFile(datData)
+        else:
+            dfMap, dfPower = splitASCIIdumpFile(datData)
+
+        # TBD continue here
 
         result = dict()
         result['none'] = 0

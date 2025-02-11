@@ -760,13 +760,14 @@ class MainWindow(QMainWindow):
                 self.dbOk = True
 
         if not noGUI:
+            self.busy(True)
+
             # database opening required by the user via GUI
             if self.dataSource is None:
                 self.dataSource = DataSource(self, self._settings)
 
             result = self.dataSource.openFileDialog()
 
-            self.busy(True)
             if result == -1:
                 self.updateStatusBar("Failed opening new database file, no DB opened")
                 self.dbOk = False
@@ -779,7 +780,7 @@ class MainWindow(QMainWindow):
                 self.dbOk = True
 
         if self.dbOk:
-            self.getCoverage()
+            self.fromId, self.toId = self.dataSource.eventsToClassify()
             self._ui.twMain.setTabVisible(1, True)  # Screenshots
             self._ui.twMain.setTabVisible(2, True)  # Plots
             self._ui.twMain.setTabVisible(3, True)  # Statistics
@@ -797,6 +798,10 @@ class MainWindow(QMainWindow):
                 if not self.isBatchRMOB:
                     # attributes are always calculated before generating an automatic report
                     # but this is not needed for RMOB exports
+                    #
+                    # FIXME: the range for checking attributes should be all the events
+                    # still provided with dump files.
+                    # When attributes have been already calculated, no recalc should happen.
                     result = self.dataSource.attributeEvents(self.fromId, self.toId,
                                                     silent=(self.isBatchReport or self.isBatchXLSX),
                                                     overwrite=self.mustCalcAttr)
@@ -808,6 +813,7 @@ class MainWindow(QMainWindow):
                     else:
                         self.updateStatusBar("Attributes up to date, recalc done")
 
+            self.getCoverage()
             self._ui.pbSave.setEnabled(True)
             self._ui.pbSubset.setEnabled(True)
             self._ui.pbClassReset.setEnabled(True)
