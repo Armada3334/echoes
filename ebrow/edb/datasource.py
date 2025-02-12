@@ -310,6 +310,9 @@ class DataSource:
         @return:
         """
         if self._db is not None:
+            firstID = 0
+            lastID = 0
+            self._deltaEvents = (firstID, lastID)
             self._parent.busy(True)
             print("_loadAutoDataTableFromDB()")
             q = QSqlQuery(self._db)
@@ -352,6 +355,12 @@ class DataSource:
                         columnName = columnList[col]
                         field = rec.field(col)
                         val = field.value()
+                        if columnName == 'id':
+                            if firstID == 0:
+                                firstID = val
+                            else:
+                                lastID = val
+
                         varType = field.type()
                         if varType == QMetaType.Double or varType == QMetaType.Float:
                             try:
@@ -364,6 +373,7 @@ class DataSource:
                         # discard the first records until finds a raising front
                         if columnName == 'event_status':
                             if firstRaiseFound is False and val != 'Raise':
+                                firstID = lastID
                                 continue
                             else:
                                 firstRaiseFound = True
@@ -397,12 +407,9 @@ class DataSource:
                     if 'attributes' not in self._adf.columns:
                         self._adf = self._adf.assign(attributes='')
 
-                    # if not self._adf.empty:
-                    #    self._adf.set_index('id', inplace=True)
-                    #    self._adf.sort_index(inplace=True, ascending=True)
-
                     print("DataSource._loadAutoDataTableFromDB() ", e.text())
                     self._parent.busy(False)
+                    self._deltaEvents = (firstID, lastID)
                     return True
 
         self._parent.infoMessage("Warning", "This database is empty, choose another one to work with")
@@ -1793,7 +1800,11 @@ class DataSource:
 
                                     # updates the doppler measurement overwriting Echoes generated value
                                     if afName == 'HasHead' and 'freq_shift' in resultDict.keys():
-                                        df.loc[(df.index == idx), 'freq_shift'] = int(resultDict['freq_shift'])
+                                        self._adf.loc[(self._adf.index == idx), 'freq_shift'] = int(resultDict['freq_shift'])
+
+                                    # if acquisition hole has been found, classifies the event as "FAKE LONG"
+                                    if afName == 'FreezeDetect' and len(resultDict.keys()) > 0:
+                                        self._adf.loc[(self._adf.index == idx), 'classification'] = "FAKE LONG"
 
                                 endTime = time.time()
 

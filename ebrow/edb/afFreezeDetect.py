@@ -66,7 +66,33 @@ class FreezeDetect(QDialog):
         """
         self._settings.writeSetting('afFreezeDetectEnabled', self._enabled)
 
+    def _findLargestGap(self, data: list) -> dict:
+        if len(data) < 2:
+            return None
+
+            # Compute the intervals between consecutive values
+        intervals = [data[i] - data[i - 1] for i in range(1, len(data))]
+
+        # Compute the average interval
+        avgInterval = sum(intervals) / len(intervals)
+
+        # Find the largest gap that exceeds twice the average interval
+        largestGap = None
+        maxGapSecs = 0
+
+        for i, interval in enumerate(intervals):
+            if interval >= 2 * avgInterval and interval > maxGapSecs:
+                largestGap = {
+                    "start": data[i],  # Initial time of the gap
+                    "end": data[i + 1],  # Final time of the gap
+                    "secs": interval  # Duration of the gap in seconds
+                }
+                maxGapSecs = interval
+
+        return largestGap  # Returns the largest gap found, or None if no large gaps exist
+
     def evalFilter(self, evId: int) -> dict:
+
         """
         Calculates the attributes for the given event
         The results must be stored by the caller
@@ -74,16 +100,26 @@ class FreezeDetect(QDialog):
         A None value means that the calculation was impossible
         due to missing data
         """
+
+        df = self._parent.dataSource.getEventData(evId)
+        raiseTime = df['utc_time', 'RAISE']
+        fallTime = df['utc_time', 'FALL']
+
         datName, datData, dailyNr, utcDate = self._parent.dataSource.extractDumpData(evId)
         if ".datb" in datName:
             dfMap, dfPower = splitBinaryDumpFile(datData)
         else:
             dfMap, dfPower = splitASCIIdumpFile(datData)
 
-        # TBD continue here
+        gap = self._findLargeGaps(dfPower['time'])
 
         result = dict()
-        result['none'] = 0
+
+        if len(gap.keys()) > 0 and (fallTime >= gap['start'] or raiseTime <= gap['end']):
+            # store the gap only if it matches someway with the raise/fall fronts of the
+            # event, that would mean the event is a fake. Otherwise ignores it
+            result = gap
+            print(f"ID: {evId} embeds a {gap['secs']} seconds long acquisition hole")
         return result
 
     def getParameters(self):

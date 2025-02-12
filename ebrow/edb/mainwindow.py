@@ -781,6 +781,7 @@ class MainWindow(QMainWindow):
 
         if self.dbOk:
             self.fromId, self.toId = self.dataSource.eventsToClassify()
+            self.covID = (self.toId - self.fromId) + 1
             self._ui.twMain.setTabVisible(1, True)  # Screenshots
             self._ui.twMain.setTabVisible(2, True)  # Plots
             self._ui.twMain.setTabVisible(3, True)  # Statistics
