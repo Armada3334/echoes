@@ -35,6 +35,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 from math import isnan
+
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery, QSqlError, QSqlTableModel
 from PyQt5.QtWidgets import QFileDialog, qApp
 from PyQt5.QtCore import QDir, QDate, qUncompress, QMetaType, QResource, QFile, QByteArray
@@ -696,7 +697,28 @@ class DataSource:
                         did = 0
                     return did
             e = QSqlError(q.lastError())
-            print("DataSource.getFirstDumpId() ", e.text())
+            print("DataSource._getFirstDumpId() ", e.text())
+        return 0
+
+    def _getLastDumpId(self) -> int:
+        """
+        Returns the newest event Id having a dump file
+        still stored in automatic_dumps.
+        @return:
+        """
+        if self._db is not None:
+            q = QSqlQuery(self._db)
+            select = "SELECT MAX(id) FROM automatic_dumps"
+            result = q.exec(select)
+            if result:
+                q.first()
+                if q.isValid():
+                    did = q.value(0)
+                    if did == '':
+                        did = 0
+                    return did
+            e = QSqlError(q.lastError())
+            print("DataSource._getLastDumpId() ", e.text())
         return 0
 
     def _computeSegmentAverages(self, df, columnName='N', deltaN=10, minRecs=30):
@@ -1726,12 +1748,13 @@ class DataSource:
         """
 
         lowestID = self._getFirstDumpId()
+        highestID = self._getLastDumpId()
         afDict = self._parent.tabPrefs.afDict()
 
         if fromID < lowestID:
             fromID = lowestID
         if toID < lowestID:
-            toID = lowestID
+            toID = highestID
 
         overOnly = self._settings.readSettingAsBool('afOverOnly')
 
@@ -1764,72 +1787,76 @@ class DataSource:
                                depending on how many dump files are in the database, but it can also \
                                be run later in batch mode by specifying --attr on the command line.")):
 
-                self._parent.updateStatusBar(
-                    "updating attributes on {} events provided with dump files (fakes are ignored)".format(totalRows))
-
                 estimatedTime = 0
-                elapsedTime = 0
+                totalRows = len(fallRecords.index)  # Calculate total rows *before* the loop
+                currentRow = 0
+                self._parent.updateStatusBar(f"Calculating attributes on {totalRows} events")
+                progressPercent = 0
                 for idx in fallRecords.index:
                     if self._parent.stopRequested:
                         return False  # loop interrupted by user
+
                     startTime = 0
-                    currentRow += 1
-                    self._parent.updateProgressBar(currentRow, totalRows)
+                    currentRow += 1  # Keep track of current row, but tqdm handles display
 
                     attributes = fallRecords.loc[idx, 'attributes']
                     myId = fallRecords.loc[idx, 'id']
                     myData = fallRecords.loc[idx]
+
                     if attributes == '' or overwrite:
-                        print("Calculating attributes for eventID#", myId)
-                        # idx indexes the fall event - to browse peak events, idx must be decremented by 1
+                        print(f"Calculating attributes for eventID# {myId}")  # f-string for cleaner printing
+
                         idp = idx - 1
-                        # while to browse raise event, idx must be decremented by 2
                         idr = idx - 2
                         mask = (self._adf['id'] == myId)
                         self._adf.loc[mask, 'attributes'] = ''
                         attrDict = dict()
+
                         for afName in afDict.keys():
-                            print("Executing {} on event#{}".format(afName, myId))
+                            print(f"Executing {afName} on event# {myId}")  # f-string for cleaner printing
                             qApp.processEvents()
                             af = afDict[afName]
+
                             if af.isFilterEnabled():
                                 startTime = time.time()
                                 resultDict = af.evalFilter(myId)
                                 if resultDict is not None:
                                     attrDict[afName] = resultDict
 
-                                    # updates the doppler measurement overwriting Echoes generated value
                                     if afName == 'HasHead' and 'freq_shift' in resultDict.keys():
-                                        self._adf.loc[(self._adf.index == idx), 'freq_shift'] = int(resultDict['freq_shift'])
+                                        self._adf.loc[(self._adf.index == idx), 'freq_shift'] = int(
+                                            resultDict['freq_shift'])
 
-                                    # if acquisition hole has been found, classifies the event as "FAKE LONG"
                                     if afName == 'FreezeDetect' and len(resultDict.keys()) > 0:
-                                        self._adf.loc[(self._adf.index == idx), 'classification'] = "FAKE LONG"
+                                        self._adf.loc[(self._adf['id'] == myId), 'classification'] = "FAKE LONG"
 
                                 endTime = time.time()
 
-                                if estimatedTime == 0 or currentRow % 50 == 0:
-                                    elapsedTime = endTime - startTime
-                                    rowsLeft = totalRows - currentRow
-                                    estimatedTime = int((elapsedTime * rowsLeft) / 60)  # in minutes
-                                    self._parent.updateStatusBar(
-                                        f"still {rowsLeft} rows left, estimated time to finish: {estimatedTime} minutes")
+                                # Remove the old status bar updates as tqdm handles progress
+                                # The following code is no longer needed
+                                # if estimatedTime == 0 or currentRow % 50 == 0:
+                                #     elapsedTime = endTime - startTime
+                                #     rowsLeft = totalRows - currentRow
+                                #     estimatedTime = int((elapsedTime * rowsLeft) / 60)  # in minutes
+                                #     self._parent.updateStatusBar(
+                                #         f"still {rowsLeft} rows left, estimated time to finish: {estimatedTime} minutes")
 
-                        # string dump of the attributeDict
                         if len(attrDict.keys()) > 0:
                             print(attrDict)
                             self._adf.loc[mask, 'attributes'] = json.dumps(attrDict)
                         else:
                             self._adf.loc[mask, 'attributes'] = "{}"
 
-                        # the attributes returned by each filter are joined in a single json string
-                        # and stored in adf['attributes'] in the Fall record
-
                         try:
                             self._parent.eventDataChanges[myId] = True
                             self._dataChangedInMemory = True
                         except IndexError:
                             print("BUG! id=", myId)
+
+                    percent = int((currentRow / totalRows) * 100)
+                    if percent > progressPercent:
+                        self._parent.updateStatusBar(f"progress={percent}%")
+                        progressPercent = percent
 
                 # reordering columns
                 cols = ['id', 'daily_nr', 'event_status', 'utc_date', 'utc_time',
@@ -1888,6 +1915,17 @@ class DataSource:
             self._dataChangedInMemory = True
             return True
         return False
+
+    def getEventEdges(self, eventID: int) -> dict:
+        print(f"getEventEdge({eventID})")
+        df = self.getADpartialFrame(idFrom=eventID, idTo=eventID).reset_index(drop=True)
+        edges = dict()
+
+        if df is not None:
+            edges['raiseTime'] = df.loc[0, 'timestamp_ms']
+            edges['peakTime'] = df.loc[1, 'timestamp_ms']
+            edges['fallTime'] = df.loc[2, 'timestamp_ms']
+        return edges
 
     def getEventData(self, eventID: int):
         """

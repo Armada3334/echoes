@@ -24,7 +24,7 @@
 """
 import os
 import shutil
-import datetime
+
 from importlib import import_module
 
 import numpy as np
@@ -37,6 +37,7 @@ import matplotlib.ticker as ticker
 import matplotlib as mp
 from matplotlib.colors import ListedColormap
 from ctypes import *
+from datetime import datetime, timedelta
 from matplotlib.dates import num2date
 from pathlib import Path
 from .logprint import print
@@ -66,6 +67,7 @@ class ScanFooterV1(Structure):
                 ('maxDbfs', c_float),
                 ('maxDiff', c_float)]
 
+
 class ScanFooterV2(Structure):
     _pack_ = 1
     _fields_ = [('lastCell', c_float),
@@ -83,7 +85,7 @@ class PrecisionDateFormatter(ticker.Formatter):
     """
     Extend the `matplotlib.ticker.Formatter` class to allow for millisecond
     precision when formatting a tick (in days since the epoch) with a
-    `~datetime.datetime.strftime` format string.
+    `~datetime.strftime` format string.
 
     """
 
@@ -92,7 +94,7 @@ class PrecisionDateFormatter(ticker.Formatter):
         Parameters
         ----------
         fmt : str
-            `~datetime.datetime.strftime` format string.
+            `~datetime.strftime` format string.
         """
 
         if tz is None:
@@ -143,9 +145,9 @@ def splitASCIIdumpFile(data: QByteArray):
                 cells[1] = int(cells[1])
                 cells[2] = float(cells[2])
                 cells[3] = timeMs
-                cells[4] = float(cells[4])      # S
-                cells[5] = float(cells[5])      # N
-                cells[6] = float(cells[6])      # S-N
+                cells[4] = float(cells[4])  # S
+                cells[5] = float(cells[5])  # N
+                cells[6] = float(cells[6])  # S-N
                 powerList.append(cells[3:])
                 powerCells = 7
 
@@ -155,12 +157,12 @@ def splitASCIIdumpFile(data: QByteArray):
                 cells[1] = int(cells[1])
                 cells[2] = float(cells[2])
                 cells[3] = timeMs
-                cells[4] = float(cells[4])      # S
-                cells[5] = float(cells[5])      # N
-                cells[6] = float(cells[6])      # S-N
-                cells[4] = float(cells[4])      # avg S-N
-                cells[5] = float(cells[5])      # up threshold
-                cells[6] = float(cells[6])      # dn threshold
+                cells[4] = float(cells[4])  # S
+                cells[5] = float(cells[5])  # N
+                cells[6] = float(cells[6])  # S-N
+                cells[4] = float(cells[4])  # avg S-N
+                cells[5] = float(cells[5])  # up threshold
+                cells[6] = float(cells[6])  # dn threshold
                 powerCells = 10
 
     dfMap = pd.DataFrame(mapList, columns=['time', 'frequency', 'S'])
@@ -475,13 +477,22 @@ def getFromModule(moduleName, attrName):
 
 def addDateDelta(date: str, deltaDays: int):
     # convert string to date object
-    dt = datetime.datetime.strptime(date, "%Y-%m-%d")
-    td = datetime.timedelta(days=deltaDays)
+    dt = datetime.strptime(date, "%Y-%m-%d")
+    td = timedelta(days=deltaDays)
     dt = dt + td
     return dt.strftime("%Y-%m-%d")
+
 
 def toTypePoints(pixel: int):
     return pixel / 1.33
 
+
 def toChars(pixel: int):
     return pixel / 8
+
+
+def timeToSeconds(timeStr):
+    """Convert time string DD/MM/YYYY;HH:MM:SS.MSEC to seconds since 1970."""
+    timeFormat = "%d/%m/%Y;%H:%M:%S.%f"
+    dt = datetime.strptime(timeStr, timeFormat)
+    return (dt - datetime(1970, 1, 1)).total_seconds()

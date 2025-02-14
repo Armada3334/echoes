@@ -716,7 +716,10 @@ class MainWindow(QMainWindow):
         self.updateProgressBar(0)
         for xchg in self.eventDataChanges:
             if xchg is True:
-                self.dataSource.setEventClassification(idx, self.classifications.loc[idx, 'classification'])
+                try:
+                    self.dataSource.setEventClassification(idx, self.classifications.loc[idx, 'classification'])
+                except:
+                    print("idx=", idx)
             idx += 1
             updated += 1
             self.updateProgressBar(idx, total)
@@ -795,24 +798,24 @@ class MainWindow(QMainWindow):
             self._settings.writeSetting('lastDBfilePath', self.dataSource.fullPath())
             self.updateStatusBar("Opening ok, performing classifications...")
             self.eventDataChanges = [False] * (self.fromId + self.covID)
-            if self.dataSource.classifyEvents(self.fromId, self.toId):
-                if not self.isBatchRMOB:
-                    # attributes are always calculated before generating an automatic report
-                    # but this is not needed for RMOB exports
-                    #
-                    # FIXME: the range for checking attributes should be all the events
-                    # still provided with dump files.
-                    # When attributes have been already calculated, no recalc should happen.
-                    result = self.dataSource.attributeEvents(self.fromId, self.toId,
-                                                    silent=(self.isBatchReport or self.isBatchXLSX),
-                                                    overwrite=self.mustCalcAttr)
-                    if not result:
-                        if self.stopRequested:
-                            self.updateStatusBar("Attributes calculation stopped by user")
-                        else:
-                            self.updateStatusBar("Attributes already up to date, no recalc needed")
+            self.dataSource.classifyEvents(self.fromId, self.toId)
+            if not self.isBatchRMOB:
+                # attributes are always calculated before generating an automatic report
+                # but this is not needed for RMOB exports
+                #
+                # FIXME: the range for checking attributes should be all the events
+                # still provided with dump files.
+                # When attributes have been already calculated, no recalc should happen.
+                result = self.dataSource.attributeEvents(self.fromId, self.toId,
+                                                silent=(self.isBatchReport or self.isBatchXLSX),
+                                                overwrite=self.mustCalcAttr)
+                if not result:
+                    if self.stopRequested:
+                        self.updateStatusBar("Attributes calculation stopped by user")
                     else:
-                        self.updateStatusBar("Attributes up to date, recalc done")
+                        self.updateStatusBar("Attributes already up to date, no recalc needed")
+                else:
+                    self.updateStatusBar("Attributes up to date, recalc done")
 
             self.getCoverage()
             self._ui.pbSave.setEnabled(True)

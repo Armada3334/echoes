@@ -213,9 +213,12 @@ class HasHead(QDialog):
         # df = self._parent.dataSource.getEventData(evId)
         dfMap = None
         df = self._parent.dataSource.getADpartialFrame(idFrom=evId, idTo=evId, wantFakes=False)
-        idx = df.loc[(df['event_status'] =='Fall')].index[0]
+        if len(df) == 0:
+            print("this event is fake, ignoring it")
+            return None
 
-        rtsRevision = df.loc[idx, 'revision']
+        rec = df.loc[(df['event_status'] =='Fall')].reset_index(drop=True)
+        rtsRevision = rec.loc[0, 'revision']
         datName, datData, dailyNr, utcDate = self._parent.dataSource.extractDumpData(evId)
 
         if datName is not None and datData is not None:

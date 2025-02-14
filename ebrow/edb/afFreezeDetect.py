@@ -27,7 +27,7 @@ import json
 from PyQt5.QtWidgets import QDialog
 from .ui_affreezedetect import Ui_afFreezeDetect
 from .logprint import print
-from .utilities import splitASCIIdumpFile, splitBinaryDumpFile
+from .utilities import splitASCIIdumpFile, splitBinaryDumpFile, timeToSeconds
 
 
 class FreezeDetect(QDialog):
@@ -48,6 +48,7 @@ class FreezeDetect(QDialog):
         self._ui.pbOk.clicked.connect(self.accept)
         self._settings = settings
         self._enabled = False
+        self._missedScans = 4
         self._load()
         print("FreezeDetect loaded")
 
@@ -58,6 +59,8 @@ class FreezeDetect(QDialog):
         """
         self._enabled = self._settings.readSettingAsBool('afFreezeDetectEnabled')
         self._ui.chkEnabled.setChecked(self._enabled)
+        self._missedScans = self._settings.readSettingAsInt('afFreezeDetectMissedScans')
+        self._ui.sbMultiplier.setValue(self._missedScans)
 
     def _save(self):
         """
@@ -65,6 +68,7 @@ class FreezeDetect(QDialog):
         to settings file
         """
         self._settings.writeSetting('afFreezeDetectEnabled', self._enabled)
+        self._settings.writeSetting('afFreezeDetectMissedScans', self._missedScans)
 
     def _findLargestGap(self, data: list) -> dict:
         if len(data) < 2:
@@ -81,7 +85,7 @@ class FreezeDetect(QDialog):
         maxGapSecs = 0
 
         for i, interval in enumerate(intervals):
-            if interval >= 2 * avgInterval and interval > maxGapSecs:
+            if interval >= self._missedScans * avgInterval and interval > maxGapSecs:
                 largestGap = {
                     "start": data[i],  # Initial time of the gap
                     "end": data[i + 1],  # Final time of the gap
@@ -101,9 +105,9 @@ class FreezeDetect(QDialog):
         due to missing data
         """
 
-        df = self._parent.dataSource.getEventData(evId)
-        raiseTime = df['utc_time', 'RAISE']
-        fallTime = df['utc_time', 'FALL']
+        edges = self._parent.dataSource.getEventEdges(evId)
+        raiseTime = timeToSeconds(edges['raiseTime'])
+        fallTime = timeToSeconds(edges['fallTime'])
 
         datName, datData, dailyNr, utcDate = self._parent.dataSource.extractDumpData(evId)
         if ".datb" in datName:
@@ -111,11 +115,11 @@ class FreezeDetect(QDialog):
         else:
             dfMap, dfPower = splitASCIIdumpFile(datData)
 
-        gap = self._findLargeGaps(dfPower['time'])
+        gap = self._findLargestGap(dfPower['time'])
 
         result = dict()
 
-        if len(gap.keys()) > 0 and (fallTime >= gap['start'] or raiseTime <= gap['end']):
+        if len(gap.keys()) > 0 and (fallTime >= gap['start'] >= raiseTime or fallTime >= gap['end'] >= raiseTime):
             # store the gap only if it matches someway with the raise/fall fronts of the
             # event, that would mean the event is a fake. Otherwise ignores it
             result = gap
@@ -130,6 +134,7 @@ class FreezeDetect(QDialog):
         self._load()
         self.exec()
         self._enabled = self._ui.chkEnabled.isChecked()
+        self._missedScans = self._ui.sbMultiplier.value()
         self._save()
         return None
 
