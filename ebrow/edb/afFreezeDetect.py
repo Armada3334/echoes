@@ -119,11 +119,12 @@ class FreezeDetect(QDialog):
 
         result = dict()
 
-        if len(gap.keys()) > 0 and (fallTime >= gap['start'] >= raiseTime or fallTime >= gap['end'] >= raiseTime):
-            # store the gap only if it matches someway with the raise/fall fronts of the
-            # event, that would mean the event is a fake. Otherwise ignores it
-            result = gap
-            print(f"ID: {evId} embeds a {gap['secs']} seconds long acquisition hole")
+        if gap:
+            if (fallTime >= gap['start'] >= raiseTime or fallTime >= gap['end'] >= raiseTime):
+                # store the gap only if it matches someway with the raise/fall fronts of the
+                # event, that would mean the event is a fake. Otherwise ignores it
+                result = gap
+                print(f"ID: {evId} embeds a {gap['secs']} seconds long acquisition hole")
         return result
 
     def getParameters(self):

@@ -368,8 +368,10 @@ class MainWindow(QMainWindow):
                 self._ui.pbAdd.setEnabled(False)
                 self._ui.pbDel.setEnabled(False)
                 self._ui.pbCalc.setEnabled(False)
+                self._ui.pbQuit.setEnabled(False)
                 self._ui.dtFrom.setEnabled(False)
                 self._ui.dtTo.setEnabled(False)
+
                 if spinner and self._spinner is not None:
                     self._spinner.start()
                     self._spinner.raise_()
@@ -392,6 +394,7 @@ class MainWindow(QMainWindow):
                     # self.updateStatusBar("Ready (force={})".format(force))
                     self._ui.pbOpen.setEnabled(True)
                     self._ui.pbStop.setEnabled(False)
+                    self._ui.pbQuit.setEnabled(True)
 
                     if self.dbOk:
                         self._ui.pbShotExp.setEnabled(True)
@@ -605,7 +608,7 @@ class MainWindow(QMainWindow):
         self._ui.dtFrom.setDate(qDateFrom)
 
     def _quit(self):
-        if not self.isQuitting:
+        if self.busyCount == 0 and not self.isQuitting :
             self.isQuitting = True
             if self.dataSource is not None:
                 if not (self.isBatchRMOB or self.isBatchReport or self.isBatchXLSX):
@@ -736,16 +739,6 @@ class MainWindow(QMainWindow):
         @param noGUI:
         @return:
         """
-
-        '''
-        
-        try:
-            self._ui.dtFrom.dateChanged.disconnect()
-            self._ui.dtTo.dateChanged.disconnect()
-        except TypeError:
-            pass
-        '''
-
         if self.dbFile is None:
             name = self._settings.readSettingAsString('lastDBfilePath')
         else:
