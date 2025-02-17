@@ -1837,7 +1837,7 @@ class DataSource:
                             print(attrDict)
                             self._adf.loc[mask, 'attributes'] = json.dumps(attrDict)
                         else:
-                            self._adf.loc[mask, 'attributes'] = "{}"
+                            self._adf.loc[mask, 'attributes'] = ""
 
                         try:
                             self._parent.eventDataChanges[myId] = True

@@ -67,7 +67,7 @@ class Dummy(QDialog):
         """
         self._settings.writeSetting('afDummyEnabled', self._enabled)
 
-    def evalFilter(self, evId: int) -> dict:
+    def evalFilter(self, evId: int):
         """
         Calculates the attributes for the given event
         The results must be stored by the caller
@@ -77,8 +77,9 @@ class Dummy(QDialog):
         """
         df = self._parent.dataSource.getEventData(evId)
 
-        result = dict()
-        result['none'] = 0
+        result = None
+        # result = dict()
+        # result['none'] = 0
         return result
 
     def getParameters(self):

@@ -564,40 +564,45 @@ class ScreenShots:
         self._updateClassification()
         self._dfDetails = df
 
+        for i in range(self._ui.twDetails.count() - 1, 0, -1):
+            self._ui.twDetails.removeTab(i)
+
         attrDict = self._parent.dataSource.getEventAttr(self._parent.currentID)
         if len(attrDict) > 0:
+            # backwards iteration to avoid indexes issues
             for afName, afAttr in attrDict.items():
                 if afName == 'Dummy':
                     continue
                 df = pd.DataFrame([afAttr])
-                dft = df.transpose()
-                dft.columns = ['Value']
+                if len(df) > 1:
+                    dft = df.transpose()
+                    dft.columns = ['Value']
 
-                # df.set_axis(['Parameter', 'Value'], axis=1)
-                # df.set_axis(afAttr.keys(), axis=0)
-                model = PandasModel(dft)
+                    # df.set_axis(['Parameter', 'Value'], axis=1)
+                    # df.set_axis(afAttr.keys(), axis=0)
+                    model = PandasModel(dft)
 
-                # Create a QTableView and set the model
-                qtv = QTableView()
-                qtv.setModel(model)
-                qtv.setStyleSheet("color: rgb(0,255,0); font: 10pt 'Gauge';")
-                qtv.resizeColumnsToContents()
+                    # Create a QTableView and set the model
+                    qtv = QTableView()
+                    qtv.setModel(model)
+                    qtv.setStyleSheet("color: rgb(0,255,0); font: 10pt 'Gauge';")
+                    qtv.resizeColumnsToContents()
 
-                # Create a scroll area for the table view
-                scrollArea = QScrollArea()
-                scrollArea.setWidget(qtv)
-                scrollArea.setWidgetResizable(True)
+                    # Create a scroll area for the table view
+                    scrollArea = QScrollArea()
+                    scrollArea.setWidget(qtv)
+                    scrollArea.setWidgetResizable(True)
 
-                # Create a vertical layout for the tab
-                layout = QVBoxLayout()
-                layout.addWidget(scrollArea)
+                    # Create a vertical layout for the tab
+                    layout = QVBoxLayout()
+                    layout.addWidget(scrollArea)
 
-                # Create a container widget for the layout
-                containerWidget = QWidget()
-                containerWidget.setLayout(layout)
+                    # Create a container widget for the layout
+                    containerWidget = QWidget()
+                    containerWidget.setLayout(layout)
 
-                # Add a new tab to the QTabWidget
-                self._ui.twDetails.addTab(containerWidget, afName)
+                    # Add a new tab to the QTabWidget
+                    self._ui.twDetails.addTab(containerWidget, afName)
 
     def autoExport(self, classFilter):
 

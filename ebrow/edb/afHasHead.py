@@ -200,7 +200,7 @@ class HasHead(QDialog):
         # doppler = frequency shift = (freq0 - freq1)
         return result
 
-    def evalFilter(self, evId: int) -> str:
+    def evalFilter(self, evId: int):
         """
         Calculates the frequency shift of the head echo from a DATB if present.
         The results must be stored by the caller.

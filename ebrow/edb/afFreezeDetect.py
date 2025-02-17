@@ -95,7 +95,7 @@ class FreezeDetect(QDialog):
 
         return largestGap  # Returns the largest gap found, or None if no large gaps exist
 
-    def evalFilter(self, evId: int) -> dict:
+    def evalFilter(self, evId: int):
 
         """
         Calculates the attributes for the given event
@@ -117,15 +117,13 @@ class FreezeDetect(QDialog):
 
         gap = self._findLargestGap(dfPower['time'])
 
-        result = dict()
-
         if gap:
-            if (fallTime >= gap['start'] >= raiseTime or fallTime >= gap['end'] >= raiseTime):
+            if fallTime >= gap['start'] >= raiseTime or fallTime >= gap['end'] >= raiseTime:
                 # store the gap only if it matches someway with the raise/fall fronts of the
                 # event, that would mean the event is a fake. Otherwise ignores it
-                result = gap
                 print(f"ID: {evId} embeds a {gap['secs']} seconds long acquisition hole")
-        return result
+                return gap
+        return None
 
     def getParameters(self):
         """
