@@ -73,6 +73,7 @@ class DataSource:
         self._sdf = None  # automatic_sessions dataframe
         self._dataChangedInMemory = False
         self._settings = settings
+        self._lastID = 0
         self._deltaEvents = (0,0)
         self.dataReady = False
         self.cacheNeedsUpdate = False
@@ -131,10 +132,15 @@ class DataSource:
             self._adf = df
             self._parent.updateStatusBar("Reading newer events from DB")
             # self._parent.busy(False)
-            return self._loadPartialAutoDataTableFromDB(oldestRecordID, oldestRecordDate, newestRecordID,
+            self._loadPartialAutoDataTableFromDB(oldestRecordID, oldestRecordDate, newestRecordID,
                                                         newestRecordDate)
-        self._parent.updateStatusBar("Cache file {} not existing, loading the DB to rebuild it".format(self._adPath))
-        return self._loadAutoDataTableFromDB()
+        else:
+            self._parent.updateStatusBar("Cache file {} not existing, loading the DB to rebuild it".format(self._adPath))
+            self._loadAutoDataTableFromDB()
+
+        if self.dataReady:
+            self._lastID = self._adf.iat[-1, self._adf.columns.get_loc('id')]
+        return self.dataReady
 
     def _loadPartialAutoDataTableFromDB(self, oldestRecordID: int, oldestRecordDate: str, newestRecordID: int,
                                         newestRecordDate: str):
@@ -1249,6 +1255,9 @@ class DataSource:
     def eventsToClassify(self):
         return self._deltaEvents
 
+    def lastEvent(self):
+        return self._lastID
+
     def loadTableConfig(self, name: str, rev: int = -1) -> pd.DataFrame:
         """
         Extracts a configuration table
@@ -1837,7 +1846,7 @@ class DataSource:
                             print(attrDict)
                             self._adf.loc[mask, 'attributes'] = json.dumps(attrDict)
                         else:
-                            self._adf.loc[mask, 'attributes'] = ""
+                            self._adf.loc[mask, 'attributes'] = "{}"    # attributes processed, even if none found
 
                         try:
                             self._parent.eventDataChanges[myId] = True

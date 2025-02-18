@@ -83,6 +83,7 @@ class MainWindow(QMainWindow):
         self.toDailyNr = 0
         self.fromId = 0
         self.toId = 0
+        self.lastEvent = 0
         self.coverage = 0
         self.isQuitting = False
         self.isReporting = False
@@ -657,7 +658,7 @@ class MainWindow(QMainWindow):
                         self.updateStatusBar("Saving changes to cache...")
                         if self.dataSource.updateFile():
                             self.updateStatusBar("Changes saved")
-                            self.eventDataChanges = [False] * (self.fromId + self.covID)
+                            self.eventDataChanges = [False] * (self.lastEvent + 1)
                             self.busy(False)
                             return True
                     self.busy(False)
@@ -692,7 +693,7 @@ class MainWindow(QMainWindow):
                 self._settings.save()
                 self.updateStatusBar("Clearing classifications and attributes...")
                 if self.dataSource.resetClassifications():
-                    self.eventDataChanges = [False] * (self.fromId + self.covID)
+                    self.eventDataChanges = [False] * (self.lastEvent + 1)
                     self.updateStatusBar("Performing classifications...")
                     self.dataSource.classifyEvents(self.fromId, self.toId)
                     if self.confirmMessage("Question",
@@ -776,6 +777,7 @@ class MainWindow(QMainWindow):
                 self.dbOk = True
 
         if self.dbOk:
+            self.lastEvent = self.dataSource.lastEvent()
             self.fromId, self.toId = self.dataSource.eventsToClassify()
             self.covID = (self.toId - self.fromId) + 1
             self._ui.twMain.setTabVisible(1, True)  # Screenshots
@@ -790,7 +792,7 @@ class MainWindow(QMainWindow):
             self.updateStatusBar("DB: {}".format(self.dataSource.fullPath()))
             self._settings.writeSetting('lastDBfilePath', self.dataSource.fullPath())
             self.updateStatusBar("Opening ok, performing classifications...")
-            self.eventDataChanges = [False] * (self.fromId + self.covID)
+            self.eventDataChanges = [False] * (self.lastEvent + 1)
             self.dataSource.classifyEvents(self.fromId, self.toId)
             if not self.isBatchRMOB:
                 # attributes are always calculated before generating an automatic report

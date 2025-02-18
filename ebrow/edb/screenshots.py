@@ -568,13 +568,13 @@ class ScreenShots:
             self._ui.twDetails.removeTab(i)
 
         attrDict = self._parent.dataSource.getEventAttr(self._parent.currentID)
-        if len(attrDict) > 0:
+        if attrDict and len(attrDict) > 0:
             # backwards iteration to avoid indexes issues
             for afName, afAttr in attrDict.items():
                 if afName == 'Dummy':
                     continue
                 df = pd.DataFrame([afAttr])
-                if len(df) > 1:
+                if len(df) > 0:
                     dft = df.transpose()
                     dft.columns = ['Value']
 
