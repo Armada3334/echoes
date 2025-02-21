@@ -64,10 +64,12 @@ class Stats:
     TAB_LASTINGS_BY_DAY = 6
     TAB_LASTINGS_BY_HOUR = 7
     TAB_LASTINGS_BY_10M = 8
-    TAB_SESSIONS_REGISTER = 9
-    TAB_RMOB_MONTH = 10
-    TAB_SPORADIC_BG_BY_HOUR = 11
-    TAB_SPORADIC_BG_BY_10M = 12
+    TAB_MASS_INDEX_BY_POWERS = 9
+    TAB_MASS_INDEX_BY_LASTINGS = 10
+    TAB_SESSIONS_REGISTER = 11
+    TAB_RMOB_MONTH = 12
+    TAB_SPORADIC_BG_BY_HOUR = 13
+    TAB_SPORADIC_BG_BY_10M = 14
 
     GRAPH_PLOT = 0
     GRAPH_HEATMAP = 1
@@ -180,7 +182,7 @@ class Stats:
                 "fullScale": -1
             },
             self.TAB_POWERS_BY_DAY: {
-                "title": "Average S-N, in the covered dates, daily totals",
+                "title": "Average S, in the covered dates, daily totals",
                 "resolution": "day",
                 "dataFunction": self._dataSource.dailyPowersByClassification,
                 "dataArgs": {"filters": self._classFilter,
@@ -190,7 +192,7 @@ class Stats:
                              },
                 "seriesFunction": lambda df: df['Average'].squeeze(),
                 "seriesArgs": {},
-                "yLabel": "Filtered average powers by hour [dBfs]",
+                "yLabel": "Filtered average S by hour [dBfs]",
                 "fullScale": -1
             },
             self.TAB_LASTINGS_BY_DAY: {
@@ -237,7 +239,7 @@ class Stats:
                 "fullScale": -1
             },
             self.TAB_POWERS_BY_HOUR: {
-                "title": "Average S-N by hour",
+                "title": "Average S by hour",
                 "resolution": "hour",
                 "dataFunction": self._dataSource.makePowersDf,
                 "dataArgs": {"dtStart": self._parent.fromDate,
@@ -246,7 +248,7 @@ class Stats:
                              "filters": self._classFilter},
                 "seriesFunction": self._dataSource.tableTimeSeries,
                 "seriesArgs": {"columns": range(0, 24)},
-                "yLabel": "Filtered average powers by hour [dBfs]",
+                "yLabel": "Filtered average s by hour [dBfs]",
                 "fullScale": -1
             },
             self.TAB_LASTINGS_BY_HOUR: {
@@ -279,7 +281,7 @@ class Stats:
             },
 
             self.TAB_POWERS_BY_10M: {
-                "title": "Average S-N by 10-minute intervals",
+                "title": "Average S by 10-minute intervals",
                 "resolution": "10m",
                 "dataFunction": self._dataSource.makePowersDf,
                 "dataArgs": {"dtStart": self._parent.fromDate,
@@ -288,7 +290,7 @@ class Stats:
                              "filters": self._classFilter},
                 "seriesFunction": self._dataSource.tableTimeSeries,
                 "seriesArgs": {"columns": range(0, 144)},
-                "yLabel": "Filtered average powers by 10 min [dBfs]",
+                "yLabel": "Filtered average S by 10 min [dBfs]",
                 "fullScale": -1
             },
 
@@ -543,6 +545,78 @@ class Stats:
         self._parent.busy(False)
         return calcDone
 
+    def averageSporadicByThresholds(self, df: pd.DataFrame, filters: str, dtRes='h', metric='power'):
+
+        """
+        Calculates the average sporadic background by creating dataframes with the same dtRes, metric, and thresholds
+        related to each SB period and averaging all them.
+
+
+        Returns:
+            pd.DataFrame: A DataFrame with the average sporadic background counts.
+                          Returns None if the input list is empty or the sbdf DataFrames are inconsistent.
+
+        """
+
+        prog = 0
+        sdList = self._settings.readSettingAsObject('sporadicDates')
+        if len(sdList) > 0:
+            sporadicDatesList = json.loads(sdList)
+            sbdfList = list()
+            for intervalStr in sporadicDatesList:
+                qApp.processEvents()
+                dates = intervalStr.split(" -> ")
+                sbdf = self.calculateSporadicByThresholds(df, filters, dates[0], dates[1], dtRes, metric)
+                sbdfList.append(sbdf)
+
+        # Concatenate sbdf DataFrames and calculate the mean
+        combinedSbdf = pd.concat(sbdfList, keys=range(len(sbdfList)))  # Add keys for grouping
+        sbf = combinedSbdf.groupby(level=1).mean()  # Group by time unit and calculate mean
+        return sbf
+
+    def calculateSporadicByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str=None, dateTo: str=None,
+                                      dtRes='h', metric='power'):
+        """
+        Calculates sporadic averages by thresholds using dailyCountsByThresholds().
+
+        For each time unit, calculates the average count across all days for each threshold.
+
+        Args:
+            df (pd.DataFrame): Input DataFrame with meteoric data.
+            filters (str): Filter string for event classification.
+            dateFrom (str, optional): Start date (inclusive). Defaults to None.
+            dateTo (str, optional): End date (inclusive). Defaults to None.
+            dtRes (str, optional): Time resolution ('D', 'h', '10T'). Defaults to 'h'.
+            metric (str, optional): Counting metric ('power', 'lasting'). Defaults to 'power'.
+
+        Returns:
+            pd.DataFrame: DataFrame with sporadic averages by thresholds.
+        """
+
+        # Get daily counts by thresholds
+        odf = self._dataSource.dailyCountsByThresholds(df, filters, dateFrom, dateTo, dtRes, metric)
+
+        # Calculate sporadic averages by thresholds
+        sbdf = pd.DataFrame()
+
+        if dtRes == 'D':
+            sbdf = pd.DataFrame(odf.mean(axis=0)).T
+            sbdf.index = ['Day']
+
+        else:
+            # Get the list of thresholds (column names) from odf
+            thresholds = odf.columns  # Get the column names (thresholds)
+            for timeUnit in odf.index.get_level_values('time_unit').unique():
+                dailyCountsForTimeUnit = odf.xs(timeUnit, level='time_unit')
+                averageCounts = dailyCountsForTimeUnit.mean(axis=0)
+
+                # Create the row with the correct columns***
+                if timeUnit not in sbdf.index:  # Check if the time unit row exists
+                    sbdf.loc[timeUnit, thresholds] = 0.0  # Initialize with 0.0
+
+                sbdf.loc[timeUnit, thresholds] = averageCounts  # Assign to existing columns
+        return sbdf
+
     def updateAndSendRMOBfiles(self):
         self.updateRMOBfiles(sendOk=True)
 
@@ -790,6 +864,24 @@ class Stats:
             elif 'OVER' in self._classFilter:
                 self._dataFrame = df.filter(items=['OVER'], axis=0)
 
+        if row == self.TAB_MASS_INDEX_BY_POWERS:
+            sbf = None
+            if self._considerBackground:
+                # calculates a dataframe with sporadic background by thresholds
+                sbf = self.averageSporadicByThresholds(df, self._classFilter, dtRes='h', metric='power')
+            self._dataFrame = self._dataSource.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
+                                                                       self._parent.toDate, dtRes='h', metric='power',
+                                                                       sporadicBackgroundDf=sbf)
+
+        if row == self.TAB_MASS_INDEX_BY_LASTINGS:
+            sbf = None
+            if self._considerBackground:
+                # calculates a dataframe with sporadic background by thresholds
+                sbf = self.averageSporadicByThresholds(df, self._classFilter, dtRes='h', metric='lasting')
+            self._dataFrame = self._dataSource.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
+                                                                       self._parent.toDate, dtRes='h', metric='lasting',
+                                                                       sporadicBackgroundDf=sbf)
+
         self._ui.tvTabs.setEnabled(True)
         model = PandasModel(self._dataFrame)
         self._ui.tvTabs.setModel(model)
@@ -817,6 +909,8 @@ class Stats:
                 366,  # daily lastings by day
                 15,  # daily lastings by hour
                 7,  # daily lastings by 10min
+                15, # mass index by powers
+                15, # mass index by lastings
                 0,  # session table, no graphics
                 1,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
@@ -836,6 +930,8 @@ class Stats:
                 366,  # daily lastings by day
                 15,  # daily lastings by hour
                 7,  # daily lastings by 10min
+                15, # mass index by powers
+                15, # mass index by lastings
                 0,  # session table, no graphics
                 31,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
@@ -855,6 +951,8 @@ class Stats:
                 366,  # daily lastings by day
                 15,  # daily lastings by hour
                 7,  # daily lastings by 10min
+                15,  # mass index by powers
+                15,  # mass index by lastings
                 0,  # session table, no graphics
                 1,  # RMOB month, current day only
                 1,  # daily sporadic background by hour

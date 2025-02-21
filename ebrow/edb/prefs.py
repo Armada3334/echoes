@@ -131,6 +131,14 @@ class Prefs(QWidget):
         self._ui.pbEditParms.pressed.connect(self._editAttributeParms)
 
         self._ui.chkOverOnly.clicked.connect(lambda checked: self._settings.writeSetting('afOverOnly', checked))
+
+        self._ui.sbMIlastCount.valueChanged.connect(lambda val: self._settings.writeSetting('miLastCount', val))
+        self._ui.sbMIlastLo.valueChanged.connect(lambda val: self._settings.writeSetting('miLastLo', val))
+        self._ui.sbMIlastHi.valueChanged.connect(lambda val: self._settings.writeSetting('miLastHi', val))
+        self._ui.sbMIpowCount.valueChanged.connect(lambda val: self._settings.writeSetting('miPowCount', val))
+        self._ui.sbMIpowLo.valueChanged.connect(lambda val: self._settings.writeSetting('miPowLo', val))
+        self._ui.sbMIpowHi.valueChanged.connect(lambda val: self._settings.writeSetting('miPowHi', val))
+
         self.updateTabPrefs()
 
     def updateTabPrefs(self):
@@ -162,6 +170,13 @@ class Prefs(QWidget):
             button.setStyleSheet(ss)
             button.setWhatsThis(colorKey)
             group.addButton(button)
+
+        self._ui.sbMIlastCount.setValue(self._settings.readSettingAsInt('miLastCount'))
+        self._ui.sbMIlastLo.setValue(self._settings.readSettingAsInt('miLastLo'))
+        self._ui.sbMIlastHi.setValue(self._settings.readSettingAsInt('miLastHi'))
+        self._ui.sbMIpowCount.setValue(self._settings.readSettingAsInt('miPowCount'))
+        self._ui.sbMIpowLo.setValue(self._settings.readSettingAsInt('miPowLo'))
+        self._ui.sbMIpowHi.setValue(self._settings.readSettingAsInt('miPowHi'))
 
         self._ui.chkRFIfilter.setChecked(self._settings.readSettingAsBool('RFIfilter'))
         self._ui.chkESDfilter.setChecked(self._settings.readSettingAsBool('ESDfilter'))
@@ -286,6 +301,7 @@ class Prefs(QWidget):
 
     def afDict(self):
         return self._attributeFilters
+
 
     def _addDateInterval(self, intervalStr: str = None):
         if intervalStr is None:

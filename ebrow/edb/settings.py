@@ -24,6 +24,8 @@
 
 """
 import os
+
+import numpy as np
 from PyQt5.QtGui import QColor, QPixmap
 from PyQt5.QtCore import Qt, QRect, QSettings, QDate, QLocale
 from .logprint import print
@@ -79,9 +81,13 @@ class Settings(QSettings):
 
         self._colorMaps = ['echoes', 'colorgramme', 'gray', 'cividis', 'inferno', 'magma', 'plasma', 'viridis']
 
+        self._massIndexes = ['miLastCount', 'miLastLo', 'miLastHi', 'miPowCount', 'miPowLo', 'miPowHi']
+
         self._groups = {'General': self._general, 'Plotting styles': self._plotStyles, 'Site infos': self._siteInfos,
                         'Screenshots': self._screenshots, 'Stats': self._stats, 'Filters': self._filters,
-                        'Report': self._report, 'Attributes': self._attrFilters}
+                        'Report': self._report, 'Attributes': self._attrFilters, 'Mass Indexes': self._massIndexes}
+
+
 
         d = dict()
 
@@ -215,6 +221,14 @@ class Settings(QSettings):
         d['afHasHeadPercentile'] = 90
         d['afHasHeadTimeDelta'] = 300
 
+        # mass indexes thresholds
+        d['miLastCount'] = 10
+        d['miLastLo'] = 50
+        d['miLastHi'] = 30000
+        d['miPowCount'] = 10
+        d['miPowLo'] = -150
+        d['miPowHi'] = 0
+
         self._defaults = d
         self._settings = d
 
@@ -229,6 +243,23 @@ class Settings(QSettings):
     def writeSetting(self, key: str, value: any):
         print("writeSetting(key={}, value={})".format(key, value))
         self._settings[key] = value
+
+    def lastingThresholds(self):
+        d = self._settings
+        lo = int(d['miLastLo'])
+        hi = int(d['miLastHi'])
+        count = int(d['miLastCount'])
+        # lasting thresholds are generated in logarithmic sequence
+        return [round(x, 1) for x in np.logspace(np.log10(lo), np.log10(hi), count)]
+
+    def powerThresholds(self):
+        d = self._settings
+        lo = int(d['miPowLo'])
+        hi = int(d['miPowHi'])
+        count = int(d['miPowCount'])
+        # power thresholds, being in dBm, are already in logarithmic sequence
+        return [round(x, 1) for x in np.linspace(lo, hi, count)]
+
 
     def readSettingAsObject(self, key: str):
         d = self._settings

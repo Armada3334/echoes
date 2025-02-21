@@ -281,11 +281,11 @@ void Settings::load( QSettings& ini, bool enableNotifications )
     tooltips            = ini.value("TooltipsShown", DEFAULT_TOOLTIPS).toInt();
     pingOn              = ini.value("EnablePing", DEFAULT_PING).toInt();
     faultSoundOn        = ini.value("EnableFaultSound", DEFAULT_FAULT_SOUND).toInt();
-
-    dbFSoffset          = ini.value("DbfsOffset", DEFAULT_DBFS_OFFSET).toInt();
-
     createDATdumps      = ini.value("DATdumps", DEFAULT_DAT_DUMPS).toInt();
 
+    QString sDbfsOffset = ini.value("DbfsOffset", DEFAULT_DBFS_OFFSET).toString();
+    dbFSoffset          = sDbfsOffset.toFloat(&ok);
+    MY_ASSERT(ok == true)
 
     QString sDbfsGain   = ini.value("DbfsGain", DEFAULT_DBFS_GAIN).toString();
     dbFSgain            = sDbfsGain.toFloat(&ok);
@@ -467,7 +467,6 @@ void Settings::save( QSettings& ini, bool enableNotifications  )
     ini.setValue( "TooltipsShown", tooltips );
     ini.setValue( "EnablePing", pingOn );
     ini.setValue( "EnableFaultSound", faultSoundOn );
-    ini.setValue( "DbfsOffset", dbFSoffset );
     ini.setValue( "DATdumps", createDATdumps );
     ini.setValue( "DatagramDelay", datagramDelay );
     ini.setValue( "ServerPort", serverPort );
@@ -485,6 +484,11 @@ void Settings::save( QSettings& ini, bool enableNotifications  )
     QString sDbfsGain;
     sDbfsGain.setNum(dbFSgain);
     ini.setValue( "DbfsGain", sDbfsGain );
+
+    QString sDbfsOffset;
+    sDbfsOffset.setNum(dbFSoffset);
+    ini.setValue( "DbfsOffset", sDbfsOffset );
+
     ini.endGroup();
 
     //waterfall window
@@ -1666,11 +1670,13 @@ void Settings::setPalette( int value )
 }
 
 
-void Settings::setDbfsOffset(int value, bool enableNotifications)
+void Settings::setDbfsOffset(double value, bool enableNotifications)
 {
     if (value != dbFSoffset)
     {
-        dbFSoffset = value;
+        //The value comes from a QDoubleSpinBox so it's a double
+        //and must be converted to float
+        dbFSoffset = static_cast<float>(value);;
         MYDEBUG << "setDbfsOffset(" << value << ")" << MY_ENDL;
         if(enableNotifications == true)
         {

@@ -204,7 +204,7 @@ MainWindow::MainWindow(Settings* appSettings, Control* appControl, QWidget *pare
     connect( ui->chkTooltips,       SIGNAL( stateChanged(int) ),        as, SLOT( setTooltips       (int) ) );
     connect( ui->chkEnablePing,     SIGNAL( stateChanged(int) ),        as, SLOT( setPing           (int) ) );
     connect( ui->chkEnableFaultSound,SIGNAL( stateChanged(int) ),       as, SLOT( setFaultSound     (int) ) );
-    connect( ui->sbDbOff,           SIGNAL( valueChanged(int) ),        as, SLOT( setDbfsOffset     (int)));
+    connect( ui->sbDbOff,           SIGNAL( valueChanged(double) ),     as, SLOT( setDbfsOffset     (double)));
     connect( ui->sbDbGain,          SIGNAL( valueChanged(double) ),     as, SLOT( setDbfsGain       (double)));
     connect( ui->sbServerPort,      SIGNAL( valueChanged(int) ),        as, SLOT( setServerPort     (int)));
     connect( ui->sbUDPdelay ,       SIGNAL( valueChanged(int) ),        as, SLOT( setDatagramDelay  (int)));
@@ -766,8 +766,8 @@ void MainWindow::slotGUIinit()
     i = as->getNoiseLimit();
     ui->sbNoiseLimit->setValue(i);
 
-    i = as->getDbfsOffset();
-    ui->sbDbOff->setValue(i);
+    d = as->getDbfsOffset();
+    ui->sbDbOff->setValue(d);
 
     d = as->getDbfsGain();
     ui->sbDbGain->setValue(d);

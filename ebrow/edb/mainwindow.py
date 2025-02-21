@@ -59,7 +59,7 @@ class MainWindow(QMainWindow):
     WINDOW_TITLE = "Echoes Data Browser"
     DEFAULT_PROGRESS_STEP = 1
 
-    def __init__(self, app: QApplication, dbFile: str = None, mustCalcAttr: bool = False, isBatchRMOB: bool = False, isBatchReport: bool = False,
+    def __init__(self, app: QApplication, dbFile: str = None, isBatchRMOB: bool = False, isBatchReport: bool = False,
                  isBatchXLSX=False, verboseLog: bool = True):
         super(MainWindow, self).__init__()
 
@@ -93,7 +93,7 @@ class MainWindow(QMainWindow):
         logPrintVerbose(verboseLog)
 
         self.cmapDict = createCustomColormapsDict()
-        self.mustCalcAttr = mustCalcAttr
+        self.mustCalcAttr = False
         self.isBatchRMOB = isBatchRMOB
         self.isBatchReport = isBatchReport
         self.isBatchXLSX = isBatchXLSX
@@ -123,6 +123,7 @@ class MainWindow(QMainWindow):
         self._ui.pbLastMonth.setEnabled(False)
         self._ui.pbLastYear.setEnabled(False)
         self._ui.pbClassReset.setEnabled(False)
+        self._ui.pbAttrReset.setEnabled(False)
 
         self.appPath = os.path.dirname(os.path.realpath(__file__))
         print("appPath=", self.appPath)
@@ -365,6 +366,7 @@ class MainWindow(QMainWindow):
                 self._ui.pbSubset.setEnabled(False)
                 self._ui.pbOpen.setEnabled(False)
                 self._ui.pbClassReset.setEnabled(False)
+                self._ui.pbAttrReset.setEnabled(False)
                 self._ui.pbEditParms.setEnabled(False)
                 self._ui.pbAdd.setEnabled(False)
                 self._ui.pbDel.setEnabled(False)
@@ -413,6 +415,7 @@ class MainWindow(QMainWindow):
                         self._ui.pbSave.setEnabled(True)
                         self._ui.pbSubset.setEnabled(True)
                         self._ui.pbClassReset.setEnabled(True)
+                        self._ui.pbAttrReset.setEnabled(True)
                         self._ui.pbEditParms.setEnabled(True)
                         self._ui.pbAdd.setEnabled(True)
                         self._ui.pbDel.setEnabled(True)
@@ -811,11 +814,13 @@ class MainWindow(QMainWindow):
                         self.updateStatusBar("Attributes already up to date, no recalc needed")
                 else:
                     self.updateStatusBar("Attributes up to date, recalc done")
+                self._ui.pbAttrReset.clicked.connect(self.dataSource.deleteAttributes)
 
             self.getCoverage()
             self._ui.pbSave.setEnabled(True)
             self._ui.pbSubset.setEnabled(True)
             self._ui.pbClassReset.setEnabled(True)
+            self._ui.pbAttrReset.setEnabled(True)
             self._ui.pbLastMonth.setEnabled(False)
             self._ui.pbLastYear.setEnabled(False)
 

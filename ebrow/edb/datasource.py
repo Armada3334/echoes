@@ -1082,8 +1082,164 @@ class DataSource:
         m.select()
         return m
 
+
+    def dailyCountsByThresholds(self, df, filters, dateFrom=None, dateTo=None, dtRes='h', metric='power',
+                                sporadicBackgroundDf=None):
+        """
+        Calculates daily counts of meteoric events exceeding given thresholds (power or duration).
+
+        Args:
+            df (pd.DataFrame): Input DataFrame with meteoric data.
+            filters (str): Filter string for event classification (not used in this example).
+            dateFrom (str, optional): Start date (inclusive). Defaults to None.
+            dateTo (str, optional): End date (inclusive). Defaults to None.
+            dtRes (str, optional): Time resolution ('D', 'h', '10T'). Defaults to 'h'.
+            metric (str, optional): Counting metric ('power', 'lasting'). Defaults to 'power'.
+            averagesRow (bool, optional): Add an averages row. Defaults to False.
+            averagesColumn (bool, optional): Add an averages column. Defaults to False.
+            sporadicBackgroundDf (pd.DataFrame, optional): DataFrame with background values. Defaults to None.
+
+        Returns:
+            pd.DataFrame: DataFrame with daily counts by thresholds.
+        """
+        if metric == 'power':
+            thresholds = self._settings.powerThresholds()
+            eventStatusFilter = 'Peak'
+            valueColumn = 'S'
+        elif metric == 'lasting':
+            thresholds = self._settings.lastingThresholds()
+            eventStatusFilter = 'Fall'
+            valueColumn = 'lasting_ms'
+        else:
+            raise ValueError("Invalid metric. Choose 'power' or 'lasting'.")
+
+        # Convert date strings to datetime objects for comparison
+        if dateFrom:
+            dateFrom = pd.to_datetime(dateFrom)
+        if dateTo:
+            dateTo = pd.to_datetime(dateTo)
+
+        # Adjust dateFrom if the range exceeds 15 days
+        if dateFrom and dateTo:
+            dateRange = (dateTo - dateFrom).days
+            if dateRange > 15:
+                dateFrom = dateTo - pd.Timedelta(days=15)  # Set dateFrom to 15 days before dateTo
+                print(f"Warning: Date range exceeds 15 days. Processing last 15 days, starting from {dateFrom}.")
+
+        # Filter by event_status and date range
+        shortDf = df[df['event_status'] == eventStatusFilter].copy()
+        if dateFrom:
+            shortDf = shortDf[pd.to_datetime(shortDf['utc_date']) >= dateFrom]
+        if dateTo:
+            shortDf = shortDf[pd.to_datetime(shortDf['utc_date']) <= dateTo]
+
+        # Filter by classification
+        if filters:
+            strippedFilters = [f.strip() for f in filters.split(',')]  # Split filters string
+            shortDf = shortDf[shortDf['classification'].isin(strippedFilters)]
+
+        # Create a list of all date and time unit combinations
+        dateTimeUnits = []
+        for date in shortDf['utc_date'].unique():
+            if dtRes == 'D':
+                qApp.processEvents()
+                timeUnit = date
+                dateTimeUnits.append((date, timeUnit))  # Date resolution, time unit is the date itself
+            elif dtRes == 'h':
+                for hour in range(24):
+                    qApp.processEvents()
+                    timeUnit = f"{hour:02d}h"
+                    dateTimeUnits.append((date, timeUnit))
+            elif dtRes == '10T':
+                for hour in range(24):
+                    for minute in range(0, 60, 10):
+                        qApp.processEvents()
+                        timeUnit = f"{hour:02d}:{minute:02d}"
+                        dateTimeUnits.append((date, timeUnit))
+            else:
+                raise ValueError("Invalid dtRes. Choose 'D', 'h', or '10T'.")
+
+        # Initialize odf with zeros for ALL date and time unit combinations and thresholds
+        odf = pd.DataFrame(index=pd.MultiIndex.from_tuples(dateTimeUnits, names=['utc_date', 'time_unit']))
+        for threshold in thresholds:
+            qApp.processEvents()
+            if metric == 'power':
+                colName = f"{threshold:.1f}"
+            else:
+                colName = str(threshold)
+            odf[colName] = 0  # Initialize all columns to 0
+
+        # Sort thresholds in descending order (for range checking)
+        sortedThresholds = sorted(thresholds, reverse=True)
+
+        # Iterate through ALL date/time unit combinations
+        for utcDate, timeUnit in odf.index:  # Iterate through the MultiIndex
+            # Filter shortDf for the current date and time unit
+            dailyShortDf = shortDf[(shortDf['utc_date'] == utcDate) & (
+                shortDf['utc_time'].str.startswith(timeUnit[:2]))] if dtRes == 'h' else shortDf[
+                (shortDf['utc_date'] == utcDate)]  # Aggiunto filtro per timeUnit
+
+            for _, row in dailyShortDf.iterrows():  # Itero solo sulle righe filtrate per data e timeUnit correnti
+                value = row[valueColumn]
+
+                for i, threshold in enumerate(sortedThresholds):
+                    qApp.processEvents()
+                    if metric == 'power':
+                        colName = f"{threshold:.1f}"
+                    else:
+                        colName = str(threshold)
+
+                    # Check if the value is within the correct range for this threshold
+                    if i == 0:  # First threshold (rightmost column: no upper bound)
+                        if value > threshold:
+                            odf.loc[(utcDate, timeUnit), colName] += 1
+                    else:  # Subsequent thresholds (check upper bound)
+                        upperBound = sortedThresholds[i - 1]
+                        if threshold < value <= upperBound:
+                            odf.loc[(utcDate, timeUnit), colName] += 1
+
+            # Convert counts to integers, handling NaN values (after the loop)
+            for col in odf.columns:
+                odf[col] = odf[col].fillna(0).astype(int)
+        # Convert counts to integers, handling NaN values (after the loop)
+        for col in odf.columns:
+            odf[col] = odf[col].fillna(0).astype(int)
+
+        # Convert counts to integers, handling NaN values
+        for col in odf.columns:
+            qApp.processEvents()
+            odf[col] = odf[col].fillna(0).astype(int)
+
+        if sporadicBackgroundDf is not None:
+            # Check sporadicBackgroundDf dimensions
+            if len(sporadicBackgroundDf.columns) != len(thresholds):
+                raise ValueError("sporadicBackgroundDf must have the same number of columns as thresholds.")
+
+            for timeUnit in odf.index:
+                for threshold in thresholds:
+                    if metric == 'power':
+                        colName = f"{threshold:.1f}"  # Format power thresholds with one decimal
+                    else:
+                        colName = str(threshold)  # Lasting thresholds as integers
+                    # Access using tuple index
+                    backgroundValue = sporadicBackgroundDf.loc[(timeUnit[0], timeUnit[1]), colName] if (
+                            (timeUnit[0], timeUnit[1]) in sporadicBackgroundDf.index) else 0
+                    odf.loc[timeUnit, colName] -= backgroundValue
+
+            for timeUnit in odf.index:
+                for threshold in thresholds:
+                    qApp.processEvents()
+                    if metric == 'power':
+                        colName = f"{threshold:.1f}"  # Format power thresholds with one decimal
+                    else:
+                        colName = str(threshold)  # Lasting thresholds as integers
+                    backgroundValue = sporadicBackgroundDf.loc[timeUnit, colName] if timeUnit in sporadicBackgroundDf.index else 0
+                    odf.loc[timeUnit, colName] -= backgroundValue
+        return odf
+
+
     def dailyCountsByClassification(self, df, filters, dateFrom=None, dateTo=None, totalRow=False, totalColumn=False,
-                                    compensate=False, considerBackground=False):
+                                        compensate=False, considerBackground=False):
         return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='count',
                                                       totalRow=totalRow, totalColumn=totalColumn,
                                                       compensate=compensate, considerBackground=considerBackground)
@@ -1151,15 +1307,18 @@ class DataSource:
 
                 if metric == 'count':
                     value = tempDf.shape[0]
+                    if value < 0:
+                        value = 0
                 elif metric == 'power':
-                    value = tempDf['diff'].mean() if tempDf.shape[0] > 0 else 0
+                    value = tempDf['S'].mean() if tempDf.shape[0] > 0 else 0
                 elif metric == 'lasting':
                     value = round(tempDf['lasting_ms'].mean()) if tempDf.shape[0] > 0 else 0
+                    if value < 0:
+                        value = 0
                 else:
                     raise ValueError(f"Unsupported metric: {metric}")
 
-                if value < 0:
-                    value = 0
+
                 if value == 0 and 'ACQ ACT' in filterList and not self.acqWasRunning(dt, 86400):
                     value = np.nan
 
@@ -1214,6 +1373,8 @@ class DataSource:
         # Riassegna i nomi delle colonne
         newDf.columns = classList
         return newDf
+
+
 
     def totalsByClassification(self, filters: str, considerBackground: bool = False,
                                compensate: bool = False) -> pd.DataFrame:
@@ -2458,7 +2619,7 @@ class DataSource:
 
     def makePowersDf(self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, filters: str = '',
                      highestAvgRow: bool = False, highestAvgColumn: bool = False):
-        return self._makeAverageDf(df, dtStart, dtEnd, dtRes, 'diff', 1, filters, highestAvgRow, highestAvgColumn)
+        return self._makeAverageDf(df, dtStart, dtEnd, dtRes, 'S', 1, filters, highestAvgRow, highestAvgColumn)
 
     def makeLastingsDf(self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, filters: str = '',
                        highestAvgRow: bool = False, highestAvgColumn: bool = False):
@@ -2480,3 +2641,11 @@ class DataSource:
         dtTo = datetime.fromisoformat(self._parent.toDate)
         dtTarget = datetime.fromisoformat(target)
         return dtFrom <= dtTarget <= dtTo
+
+
+    def deleteAttributes(self):
+        if len(self._adf):
+            self._adf['attributes'] = ''
+            self.cacheNeedsUpdate = True
+            self._parent.updateStatusBar("Attributes deleted, press Update Data Source or quit the program to update the cache file")
+

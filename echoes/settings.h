@@ -317,7 +317,7 @@ class Settings : public QObject
     int     pingOn;              //< ping sound enabling (events notification)
     int     faultSoundOn;        //< acquisition fault notification sound enabling
     int     thresholdsBehavior;  //< thresholds behavior: absolute, differential, automatic
-    int     dbFSoffset;          //< dBm calibration: offset applied to power values from FFT
+    float   dbFSoffset;          //< dBm calibration: offset applied to power values from FFT
     float   dbFSgain;            //< dBb calibration: gain applied to power values from FFT
     int     serverPort;          //< dongle server port
     int     createDATdumps;      //< create ASCII DAT dumps instead of binary ones (DATB)
@@ -495,7 +495,7 @@ public slots:
     int getPalette()        const { return palette   ; }
     int getThresholdsBehavior()     const { return thresholdsBehavior; }
     int getNoiseLimit()             const { return noiseLimit   ; }
-    int getDbfsOffset()             const { return dbFSoffset   ; }
+    float getDbfsOffset()           const { return dbFSoffset   ; }
     float getDbfsGain()             const { return dbFSgain   ; }
     int getServerPort()             const { return serverPort   ; }
     QHostAddress getServerAddress() const { return serverAddr; }
@@ -901,7 +901,7 @@ public slots:
     ///
     float getMinDbfs()
     {
-        return static_cast<float>( dbFSoffset * 1.5 );
+        return static_cast<float>( dbFSoffset * 1.5F );
     }
 
     ///
@@ -1071,7 +1071,7 @@ public slots:
     void setTooltips        ( int value );
     void setPing            ( int value );
     void setFaultSound      ( int value );
-    void setDbfsOffset      ( int value,    bool enableNotifications = true   );
+    void setDbfsOffset      ( double value, bool enableNotifications = true   );
     void setDbfsGain        ( double value, bool enableNotifications = true   );
     void setServerPort      ( int value  );
     void setServerAddress   ( const QString& ipAddr  );
