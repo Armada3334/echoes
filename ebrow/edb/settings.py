@@ -252,14 +252,28 @@ class Settings(QSettings):
         # lasting thresholds are generated in logarithmic sequence
         return [round(x, 1) for x in np.logspace(np.log10(lo), np.log10(hi), count)]
 
-    def powerThresholds(self):
-        d = self._settings
-        lo = int(d['miPowLo'])
-        hi = int(d['miPowHi'])
-        count = int(d['miPowCount'])
-        # power thresholds, being in dBm, are already in logarithmic sequence
-        return [round(x, 1) for x in np.linspace(lo, hi, count)]
+    def powerThresholds(self, wantMw=False):
+        """
+        Returns a list of power thresholds.
 
+        Args:
+            wantMw (bool, optional): If True, converts thresholds from dBm to mW. Defaults to False.
+
+        Returns:
+            list: A list of power thresholds (dBm or mW).
+        """
+        settings = self._settings  # Use camelCase for variable name
+        lowDb = int(settings['miPowLo'])  # Use camelCase for variable name
+        highDb = int(settings['miPowHi'])  # Use camelCase for variable name
+        count = int(settings['miPowCount'])
+
+        thresholdsDb = np.linspace(lowDb, highDb, count)  # Power thresholds in dBm
+
+        if wantMw:
+            thresholdsMw = 10 ** (thresholdsDb / 10)  # Convert dBm to mW
+            return [round(x, 8) for x in thresholdsMw]  # Round to 8 decimal places for mW
+        else:
+            return [round(x, 1) for x in thresholdsDb]  # Round to 1 decimal place for dBm
 
     def readSettingAsObject(self, key: str):
         d = self._settings

@@ -32,8 +32,11 @@ import platform
 from pathlib import Path
 from datetime import datetime
 
+import numpy as np
+from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 import pandas as pd
+
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QPainter, QPixmap, QFont
 from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QInputDialog, qApp
@@ -46,6 +49,7 @@ from .hm_rmob import HeatmapRMOB
 from .bg_rmob import BargraphRMOB
 from .bargraph import Bargraph
 from .statplot import StatPlot
+from .miplot import MIPlot
 from .pandasmodel import PandasModel
 from .utilities import notice, cryptDecrypt, mkExportFolder
 from .logprint import print, fprint
@@ -308,6 +312,21 @@ class Stats:
                 "fullScale": -1
             },
 
+            # FIXME: visualizzazione grafica del fit
+            self.TAB_MASS_INDEX_BY_POWERS: {
+                "title": "Mass indexes by power thresholds",
+                "resolution": "D",
+                "dataFunction": self._dataSource.makeLastingsDf,
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": '10T',
+                             "filters": self._classFilter},
+                "seriesFunction": self._dataSource.tableTimeSeries,
+                "seriesArgs": {"columns": range(0, 144)},
+                "yLabel": "Filtered average lastings by 10min. [ms]",
+                "fullScale": -1
+            },
+
             self.TAB_SPORADIC_BG_BY_HOUR: {
                 "title": "Sporadic background by hour",
                 "resolution": "hour",
@@ -559,10 +578,10 @@ class Stats:
         """
 
         prog = 0
+        sbdfList = list()
         sdList = self._settings.readSettingAsObject('sporadicDates')
         if len(sdList) > 0:
             sporadicDatesList = json.loads(sdList)
-            sbdfList = list()
             for intervalStr in sporadicDatesList:
                 qApp.processEvents()
                 dates = intervalStr.split(" -> ")
@@ -574,7 +593,7 @@ class Stats:
         sbf = combinedSbdf.groupby(level=1).mean()  # Group by time unit and calculate mean
         return sbf
 
-    def calculateSporadicByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str=None, dateTo: str=None,
+    def calculateSporadicByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
                                       dtRes='h', metric='power'):
         """
         Calculates sporadic averages by thresholds using dailyCountsByThresholds().
@@ -878,9 +897,9 @@ class Stats:
             if self._considerBackground:
                 # calculates a dataframe with sporadic background by thresholds
                 sbf = self.averageSporadicByThresholds(df, self._classFilter, dtRes='h', metric='lasting')
-            self._dataFrame = self._dataSource.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
-                                                                       self._parent.toDate, dtRes='h', metric='lasting',
-                                                                       sporadicBackgroundDf=sbf)
+            self._dataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
+                                                           self._parent.toDate, dtRes='h', metric='lasting',
+                                                           sporadicBackgroundDf=sbf)
 
         self._ui.tvTabs.setEnabled(True)
         model = PandasModel(self._dataFrame)
@@ -909,8 +928,8 @@ class Stats:
                 366,  # daily lastings by day
                 15,  # daily lastings by hour
                 7,  # daily lastings by 10min
-                15, # mass index by powers
-                15, # mass index by lastings
+                15,  # mass index by powers
+                15,  # mass index by lastings
                 0,  # session table, no graphics
                 1,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
@@ -930,8 +949,8 @@ class Stats:
                 366,  # daily lastings by day
                 15,  # daily lastings by hour
                 7,  # daily lastings by 10min
-                15, # mass index by powers
-                15, # mass index by lastings
+                15,  # mass index by powers
+                15,  # mass index by lastings
                 0,  # session table, no graphics
                 31,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
@@ -1480,7 +1499,7 @@ class Stats:
         Generate a XY plot based on the selected data and configuration.
         """
         # Mapping tableRow values to configuration parameters
-        tableRowConfig =self._get2DgraphsConfig()
+        tableRowConfig = self._get2DgraphsConfig()
 
         # Show colormap settings and get the current colormap
         self._showColormapSetting(True)
@@ -1758,7 +1777,8 @@ class Stats:
 
         # Create the Heatmap object
         if tableRow == self.TAB_RMOB_MONTH:
-            heatmap = HeatmapRMOB(dataFrame, self._settings, inchWidth, inchHeight, self._parent.cmapDict['colorgramme'])
+            heatmap = HeatmapRMOB(dataFrame, self._settings, inchWidth, inchHeight,
+                                  self._parent.cmapDict['colorgramme'])
         else:
             heatmap = Heatmap(dataFrame, self._settings, inchWidth, inchHeight, colormap, title, resolution,
                               self._showValues, self._showGrid, self._considerBackground)
@@ -1799,3 +1819,238 @@ class Stats:
             self._diagram.setWidget(canvas)
             layout.addWidget(self._diagram)
         self._plot = pie
+
+    def _powerLawCdf(self, power, k, alpha):
+        """
+        Power-law cumulative distribution function (CDF).
+
+        Args:
+            power (float/np.ndarray): Power value(s).
+            k (float): Scaling factor.
+            alpha (float): Exponent (mass index).
+
+        Returns:
+            float/np.ndarray: CDF value(s).
+        """
+        return k * power ** (-alpha)
+
+    def _calculateMassIndex(self, df, thresholds):
+        """
+        Calculates the mass index for each day using power-law CDF fitting.
+
+        Args:
+            df (pd.DataFrame): Pandas DataFrame containing the data.
+            thresholds (list): List of power thresholds (S values).
+
+        Returns:
+            pd.DataFrame: Pandas DataFrame with the calculated mass index for each day.
+                          Returns None if fitting fails for all days.
+        """
+
+        results = {}
+        for ms in df.columns:  # Iterate through millisecond columns
+            eventCounts = df[ms].values
+
+            thresholdsUsed = np.array(thresholds)
+
+            # Sort thresholds and counts (descending)
+            sortedIndices = np.argsort(thresholdsUsed)[::-1]
+            thresholdsUsed = thresholdsUsed[sortedIndices]
+            eventCounts = eventCounts[sortedIndices]
+
+            try:
+                # Improved initial guesses (p0) and bounds
+                p0 = [np.mean(eventCounts), 1]  # Initial k based on mean counts
+                bounds = ([0, 0], [np.inf, 10])  # Alpha bounded to avoid large values
+                popt, pcov = curve_fit(self._powerLawCdf, thresholdsUsed, eventCounts, check_finite=True,
+                                       nan_policy='omit')
+                k, alpha = popt
+                results[ms] = alpha
+
+            except RuntimeError as e:  # Catch specific RuntimeError
+                print(f"Fit did not converge for ms {ms}: {e}")  # Print the specific error message
+                results[ms] = np.nan
+            except Exception as e:
+                print(f"Error during fit for ms {ms}: {e}")  # Print the specific error message
+                results[ms] = np.nan
+
+        if not results:
+            return None
+
+        return pd.DataFrame(results, index=['alpha']).T
+
+    def dailyCountsByThresholds(self, df, filters, dateFrom=None, dateTo=None, dtRes='h', metric='power',
+                                sporadicBackgroundDf=None):
+        """
+        Calculates daily counts of meteoric events exceeding given thresholds (power or duration).
+
+        Args:
+            df (pd.DataFrame): Input DataFrame with meteoric data.
+            filters (str): Filter string for event classification (not used in this example).
+            dateFrom (str, optional): Start date (inclusive). Defaults to None.
+            dateTo (str, optional): End date (inclusive). Defaults to None.
+            dtRes (str, optional): Time resolution ('D', 'h', '10T'). Defaults to 'h'.
+            metric (str, optional): Counting metric ('power', 'lasting'). Defaults to 'power'.
+            sporadicBackgroundDf (pd.DataFrame, optional): DataFrame with background values. Defaults to None.
+
+        Returns:
+            pd.DataFrame: DataFrame with daily counts by thresholds.
+        """
+        if metric == 'power':
+            thresholds = self._settings.powerThresholds()
+            eventStatusFilter = 'Peak'
+            valueColumn = 'S'
+        elif metric == 'lasting':
+            thresholds = self._settings.lastingThresholds()
+            eventStatusFilter = 'Fall'
+            valueColumn = 'lasting_ms'
+        else:
+            raise ValueError("Invalid metric. Choose 'power' or 'lasting'.")
+
+        # Convert date strings to datetime objects for comparison
+        if dateFrom:
+            dateFrom = pd.to_datetime(dateFrom)
+        if dateTo:
+            dateTo = pd.to_datetime(dateTo)
+
+        # Adjust dateFrom if the range exceeds 15 days
+        if dateFrom and dateTo:
+            dateRange = (dateTo - dateFrom).days
+            if dateRange > 15:
+                dateFrom = dateTo - pd.Timedelta(days=15)  # Set dateFrom to 15 days before dateTo
+                print(f"Warning: Date range exceeds 15 days. Processing last 15 days, starting from {dateFrom}.")
+
+        # Filter by event_status and date range
+        shortDf = df[df['event_status'] == eventStatusFilter].copy()
+        if dateFrom:
+            shortDf = shortDf[pd.to_datetime(shortDf['utc_date']) >= dateFrom]
+        if dateTo:
+            shortDf = shortDf[pd.to_datetime(shortDf['utc_date']) <= dateTo]
+
+        # Filter by classification
+        if filters:
+            strippedFilters = [f.strip() for f in filters.split(',')]  # Split filters string
+            shortDf = shortDf[shortDf['classification'].isin(strippedFilters)]
+
+        # Create a list of all date and time unit combinations
+        dateTimeUnits = []
+        for date in shortDf['utc_date'].unique():
+            if dtRes == 'D':
+                qApp.processEvents()
+                timeUnit = date
+                dateTimeUnits.append((date, timeUnit))  # Date resolution, time unit is the date itself
+            elif dtRes == 'h':
+                for hour in range(24):
+                    qApp.processEvents()
+                    timeUnit = f"{hour:02d}h"
+                    dateTimeUnits.append((date, timeUnit))
+            elif dtRes == '10T':
+                for hour in range(24):
+                    for minute in range(0, 60, 10):
+                        qApp.processEvents()
+                        timeUnit = f"{hour:02d}:{minute:02d}"
+                        dateTimeUnits.append((date, timeUnit))
+            else:
+                raise ValueError("Invalid dtRes. Choose 'D', 'h', or '10T'.")
+
+        # Initialize odf with zeros for ALL date and time unit combinations and thresholds
+        odf = pd.DataFrame(index=pd.MultiIndex.from_tuples(dateTimeUnits, names=['utc_date', 'time_unit']))
+        for threshold in thresholds:
+            qApp.processEvents()
+            if metric == 'power':
+                colName = f"{threshold:.1f}"
+            else:
+                colName = str(threshold)
+            odf[colName] = 0  # Initialize all columns to 0
+
+        # Sort thresholds in descending order (for range checking)
+        sortedThresholds = sorted(thresholds, reverse=True)
+
+        # Iterate through ALL date/time unit combinations
+        for utcDate, timeUnit in odf.index:  # Iterate through the MultiIndex
+            # Filter shortDf for the current date and time unit
+            dailyShortDf = shortDf[(shortDf['utc_date'] == utcDate) & (
+                shortDf['utc_time'].str.startswith(timeUnit[:2]))] if dtRes == 'h' else shortDf[
+                (shortDf['utc_date'] == utcDate)]  # Aggiunto filtro per timeUnit
+
+            for _, row in dailyShortDf.iterrows():  # Itero solo sulle righe filtrate per data e timeUnit correnti
+                value = row[valueColumn]
+
+                for i, threshold in enumerate(sortedThresholds):
+                    qApp.processEvents()
+                    if metric == 'power':
+                        colName = f"{threshold:.1f}"
+                    else:
+                        colName = str(threshold)
+
+                    # Check if the value is within the correct range for this threshold
+                    if i == 0:  # First threshold (rightmost column: no upper bound)
+                        if value > threshold:
+                            odf.loc[(utcDate, timeUnit), colName] += 1
+                    else:  # Subsequent thresholds (check upper bound)
+                        upperBound = sortedThresholds[i - 1]
+                        if threshold < value <= upperBound:
+                            odf.loc[(utcDate, timeUnit), colName] += 1
+
+            # Convert counts to integers, handling NaN values (after the loop)
+            for col in odf.columns:
+                odf[col] = odf[col].fillna(0).astype(int)
+        # Convert counts to integers, handling NaN values (after the loop)
+        for col in odf.columns:
+            odf[col] = odf[col].fillna(0).astype(int)
+
+        # Convert counts to integers, handling NaN values
+        for col in odf.columns:
+            qApp.processEvents()
+            odf[col] = odf[col].fillna(0).astype(int)
+
+        if sporadicBackgroundDf is not None:
+            # Check sporadicBackgroundDf dimensions
+            if len(sporadicBackgroundDf.columns) != len(thresholds):
+                raise ValueError("sporadicBackgroundDf must have the same number of columns as thresholds.")
+
+            for timeUnit in odf.index:
+                for threshold in thresholds:
+                    if metric == 'power':
+                        colName = f"{threshold:.1f}"  # Format power thresholds with one decimal
+                    else:
+                        colName = str(threshold)  # Lasting thresholds as integers
+                    # Access using tuple index
+                    backgroundValue = sporadicBackgroundDf.loc[(timeUnit[0], timeUnit[1]), colName] if (
+                            (timeUnit[0], timeUnit[1]) in sporadicBackgroundDf.index) else 0
+                    odf.loc[timeUnit, colName] -= backgroundValue
+
+            for timeUnit in odf.index:
+                for threshold in thresholds:
+                    qApp.processEvents()
+                    if metric == 'power':
+                        colName = f"{threshold:.1f}"  # Format power thresholds with one decimal
+                    else:
+                        colName = str(threshold)  # Lasting thresholds as integers
+                    backgroundValue = sporadicBackgroundDf.loc[
+                        timeUnit, colName] if timeUnit in sporadicBackgroundDf.index else 0
+                    odf.loc[timeUnit, colName] -= backgroundValue
+
+        try:
+            # Calculate mass index
+            massIndices = self.calculateMassIndex(odf, thresholds)
+
+            if massIndices is None:  # Handle the case where calculateMassIndex returns None
+                print("Mass index calculation failed. Not adding to the DataFrame.")
+                return odf  # Return the dailyCounts DataFrame as is
+
+            # Transpose massIndices to have thresholds as columns
+            massIndices = massIndices.T
+
+            # Rename the index of massIndices to something like 'Mass Index'
+            massIndices.index = ['Mass Index']
+
+            # Concatenate dailyCounts and massIndices (append mass index as a new row)
+            ndf = pd.concat([odf, massIndices])
+            odf = ndf
+
+        except Exception as e:
+            print(f"Error in dailyCountsByThresholds: {e}")
+            return None
+
+        return odf
