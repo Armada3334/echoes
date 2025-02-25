@@ -888,7 +888,7 @@ class Stats:
             if self._considerBackground:
                 # calculates a dataframe with sporadic background by thresholds
                 sbf = self.averageSporadicByThresholds(df, self._classFilter, dtRes='h', metric='power')
-            self._dataFrame = self._dataSource.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
+            self._dataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
                                                                        self._parent.toDate, dtRes='h', metric='power',
                                                                        sporadicBackgroundDf=sbf)
 
@@ -1832,6 +1832,7 @@ class Stats:
         Returns:
             float/np.ndarray: CDF value(s).
         """
+        print(f"k={k}, power={power}, alpha={alpha}")
         return k * power ** (-alpha)
 
     def _calculateMassIndex(self, df, thresholds):
@@ -1848,31 +1849,29 @@ class Stats:
         """
 
         results = {}
-        for ms in df.columns:  # Iterate through millisecond columns
-            eventCounts = df[ms].values
 
-            thresholdsUsed = np.array(thresholds)
+        for timeUnit, row in df.iterrows():  # Iterate over time units (rows)
+            eventCounts = row.values  # Counts for the current time unit
+            thresholdsUsed = np.array(thresholds)  # Use all thresholds
 
-            # Sort thresholds and counts (descending)
+            # Sort thresholds and counts in descending order
             sortedIndices = np.argsort(thresholdsUsed)[::-1]
             thresholdsUsed = thresholdsUsed[sortedIndices]
             eventCounts = eventCounts[sortedIndices]
 
             try:
-                # Improved initial guesses (p0) and bounds
-                p0 = [np.mean(eventCounts), 1]  # Initial k based on mean counts
-                bounds = ([0, 0], [np.inf, 10])  # Alpha bounded to avoid large values
-                popt, pcov = curve_fit(self._powerLawCdf, thresholdsUsed, eventCounts, check_finite=True,
-                                       nan_policy='omit')
+                # Perform power-law fit
+                popt, pcov = curve_fit(self._powerLawCdf, thresholdsUsed, eventCounts, p0=[1, 1],
+                                       bounds=([0, 0], [np.inf, 10]), maxfev=5000, nan_policy='raise')
                 k, alpha = popt
-                results[ms] = alpha
-
-            except RuntimeError as e:  # Catch specific RuntimeError
-                print(f"Fit did not converge for ms {ms}: {e}")  # Print the specific error message
-                results[ms] = np.nan
+                results[timeUnit] = alpha  # Mass index for the time unit
+                results[timeUnit] =  results[timeUnit] * (-4 / 3) + 1  # ps. Mario Sandri
+            except RuntimeError as e:
+                print(f"Fit did not converge for {timeUnit}: {e}")
+                results[timeUnit] = np.nan
             except Exception as e:
-                print(f"Error during fit for ms {ms}: {e}")  # Print the specific error message
-                results[ms] = np.nan
+                print(f"Error during fit for {timeUnit}: {e}")
+                results[timeUnit] = np.nan
 
         if not results:
             return None
@@ -1882,20 +1881,16 @@ class Stats:
     def dailyCountsByThresholds(self, df, filters, dateFrom=None, dateTo=None, dtRes='h', metric='power',
                                 sporadicBackgroundDf=None):
         """
-        Calculates daily counts of meteoric events exceeding given thresholds (power or duration).
+        Calculates daily event counts per threshold, adds totals per threshold, mass index, and average mass index.
 
         Args:
-            df (pd.DataFrame): Input DataFrame with meteoric data.
-            filters (str): Filter string for event classification (not used in this example).
-            dateFrom (str, optional): Start date (inclusive). Defaults to None.
-            dateTo (str, optional): End date (inclusive). Defaults to None.
-            dtRes (str, optional): Time resolution ('D', 'h', '10T'). Defaults to 'h'.
-            metric (str, optional): Counting metric ('power', 'lasting'). Defaults to 'power'.
-            sporadicBackgroundDf (pd.DataFrame, optional): DataFrame with background values. Defaults to None.
+            dtRes (str, optional): Time resolution ('day', 'hour', '10m'). Defaults to 'day'.
 
         Returns:
-            pd.DataFrame: DataFrame with daily counts by thresholds.
+            pd.DataFrame: DataFrame with counts, totals per threshold, mass index, and average mass index.
+                          Returns None on error.
         """
+
         if metric == 'power':
             thresholds = self._settings.powerThresholds()
             eventStatusFilter = 'Peak'
@@ -1955,13 +1950,14 @@ class Stats:
 
         # Initialize odf with zeros for ALL date and time unit combinations and thresholds
         odf = pd.DataFrame(index=pd.MultiIndex.from_tuples(dateTimeUnits, names=['utc_date', 'time_unit']))
-        for threshold in thresholds:
-            qApp.processEvents()
-            if metric == 'power':
+        if metric == 'power':
+            for threshold in thresholds:
                 colName = f"{threshold:.1f}"
-            else:
+                odf[colName] = 0  # Initialize all columns to 0
+        else:
+            for threshold in thresholds:
                 colName = str(threshold)
-            odf[colName] = 0  # Initialize all columns to 0
+                odf[colName] = 0  # Initialize all columns to 0
 
         # Sort thresholds in descending order (for range checking)
         sortedThresholds = sorted(thresholds, reverse=True)
@@ -1971,13 +1967,12 @@ class Stats:
             # Filter shortDf for the current date and time unit
             dailyShortDf = shortDf[(shortDf['utc_date'] == utcDate) & (
                 shortDf['utc_time'].str.startswith(timeUnit[:2]))] if dtRes == 'h' else shortDf[
-                (shortDf['utc_date'] == utcDate)]  # Aggiunto filtro per timeUnit
+                (shortDf['utc_date'] == utcDate)]
 
-            for _, row in dailyShortDf.iterrows():  # Itero solo sulle righe filtrate per data e timeUnit correnti
+            for _, row in dailyShortDf.iterrows():  # Iterate only on rows filtered by data and current timeUnit
                 value = row[valueColumn]
 
                 for i, threshold in enumerate(sortedThresholds):
-                    qApp.processEvents()
                     if metric == 'power':
                         colName = f"{threshold:.1f}"
                     else:
@@ -1992,16 +1987,8 @@ class Stats:
                         if threshold < value <= upperBound:
                             odf.loc[(utcDate, timeUnit), colName] += 1
 
-            # Convert counts to integers, handling NaN values (after the loop)
-            for col in odf.columns:
-                odf[col] = odf[col].fillna(0).astype(int)
         # Convert counts to integers, handling NaN values (after the loop)
         for col in odf.columns:
-            odf[col] = odf[col].fillna(0).astype(int)
-
-        # Convert counts to integers, handling NaN values
-        for col in odf.columns:
-            qApp.processEvents()
             odf[col] = odf[col].fillna(0).astype(int)
 
         if sporadicBackgroundDf is not None:
@@ -2032,22 +2019,43 @@ class Stats:
                     odf.loc[timeUnit, colName] -= backgroundValue
 
         try:
+            # Calculate total events per time unit (convert to integer)
+            odf['Totals'] = odf.sum(axis=1).astype(int)
+
+            # Calculate totals per threshold
+            totalsPerThreshold = odf.drop('Totals', axis=1).sum(axis=0)
+            totalsPerThreshold.name = 'Totals'
+
+            if metric == 'power':
+                # Convert thresholds to mW before curve_fit() because it can't afford negative thresholds
+                thresholds = self._settings.powerThresholds(wantMw=True)
+
             # Calculate mass index
-            massIndices = self.calculateMassIndex(odf, thresholds)
+            massIndices = self._calculateMassIndex(odf.drop('Totals', axis=1), thresholds)
 
-            if massIndices is None:  # Handle the case where calculateMassIndex returns None
+            if massIndices is None:
                 print("Mass index calculation failed. Not adding to the DataFrame.")
-                return odf  # Return the dailyCounts DataFrame as is
+                return odf
 
-            # Transpose massIndices to have thresholds as columns
-            massIndices = massIndices.T
+            # Add mass index as a column (round to 8 decimal places)
+            odf['Mass Index'] = massIndices['alpha'].round(8).values
 
-            # Rename the index of massIndices to something like 'Mass Index'
-            massIndices.index = ['Mass Index']
+            # Handle zero counts in time unit by setting mass index to NaN
+            odf.loc[odf['Totals'] == 0, 'Mass Index'] = np.nan
 
-            # Concatenate dailyCounts and massIndices (append mass index as a new row)
-            ndf = pd.concat([odf, massIndices])
-            odf = ndf
+            # Add totals per threshold
+            odf = pd.concat([odf, pd.DataFrame(totalsPerThreshold).T])
+
+            # Calculate total events in the penultimate cell
+            odf.loc['Totals', 'Totals'] = odf['Totals'].sum()
+
+            # Convert 'Totals' column to integer after concat
+            odf['Totals'] = odf['Totals'].astype(int)
+
+            # Calculate average mass index in the last cell
+            odf.loc['Totals', 'Mass Index'] = odf['Mass Index'].mean().round(8)
+
+            return odf
 
         except Exception as e:
             print(f"Error in dailyCountsByThresholds: {e}")

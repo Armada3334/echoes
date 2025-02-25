@@ -270,8 +270,9 @@ class Settings(QSettings):
         thresholdsDb = np.linspace(lowDb, highDb, count)  # Power thresholds in dBm
 
         if wantMw:
-            thresholdsMw = 10 ** (thresholdsDb / 10)  # Convert dBm to mW
-            return [round(x, 8) for x in thresholdsMw]  # Round to 8 decimal places for mW
+            # thresholdsMw = 10 ** (thresholdsDb / 10)  # Convert dBm to mW
+            # return [round(x, 8) for x in thresholdsMw]  # Round to 8 decimal places for mW
+            return [float(format(10**(threshold / 10), '.15f')) for threshold in thresholdsDb]
         else:
             return [round(x, 1) for x in thresholdsDb]  # Round to 1 decimal place for dBm
 
