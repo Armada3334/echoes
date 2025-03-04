@@ -56,7 +56,7 @@ class Settings(QSettings):
                        'compensation', 'horizontalZoomStat', 'verticalZoomStat', 'linkedSlidersStat',
                        'currentColormapStat', 'RMOBfilePrefix',
                        'sporadicDates', 'sporadicBackgroundDaily', 'sporadicBackgroundByHour',
-                       'sporadicBackgroundBy10min']
+                       'sporadicBackgroundBy10min', 'MItimeUnitSize']
 
         self._plotStyles = ['fontFamily', 'fontSize', 'fontStyle','majorLineStyle', 'majorLineWidth', 'minorLineStyle',
                             'minorLineWidth', 'dataLineStyle', 'dataLineWidth',
@@ -173,6 +173,7 @@ class Settings(QSettings):
         d['sporadicBackgroundDaily'] = ''
         d['sporadicBackgroundByHour'] = ''
         d['sporadicBackgroundBy10min'] = ''
+        d['MItimeUnitSize'] = 1
 
         # filters
         d['RFIfilter'] = True

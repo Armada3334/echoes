@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>14</hour>
+                    <hour>11</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>22</hour>
+                    <hour>16</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>20</hour>
+                    <hour>14</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -11291,7 +11291,7 @@ font: 10pt &quot;Gauge&quot;;
              <x>0</x>
              <y>0</y>
              <width>285</width>
-             <height>851</height>
+             <height>883</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_10">
@@ -11532,6 +11532,42 @@ font: 10pt &quot;Gauge&quot;;
                   <string>Compensate with sporadic background</string>
                  </property>
                 </widget>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_67" stretch="7,3">
+                 <item>
+                  <widget class="QLabel" name="label_5">
+                   <property name="text">
+                    <string>Time unit size</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="sbTUsize">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>24</height>
+                    </size>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time unit size for mass distribution index calculations&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="suffix">
+                    <string> hour(s)</string>
+                   </property>
+                   <property name="minimum">
+                    <number>1</number>
+                   </property>
+                   <property name="maximum">
+                    <number>24</number>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
                </item>
               </layout>
              </widget>

@@ -106,6 +106,7 @@ class Stats:
         self._compensation = False
         self._ui.chkSubSB.setEnabled(False)
         self._ui.chkCompensation.setEnabled(False)
+        self._ui.sbTUsize.setEnabled(False)
         self._px = plt.rcParams['figure.dpi']  # from inches to pixels
         self._szBase = None
         self._maxCoverages = list()
@@ -163,6 +164,7 @@ class Stats:
         self._ui.hsHzoom_3.valueChanged.connect(self._changeHzoom)
         self._ui.hsVzoom_3.valueChanged.connect(self._changeVzoom)
         self._ui.chkLinked_3.clicked.connect(self._toggleLinkedCursors)
+        self._ui.sbTUsize.valueChanged.connect(lambda val: self._settings.writeSetting('MItimeUnitSize', val))
 
         self._showDiagramSettings(False)
         self._showColormapSetting(False)
@@ -368,6 +370,9 @@ class Stats:
             if len(avg10minStr) > 0:
                 self.avg10minDf = pd.DataFrame.from_dict(json.loads(avg10minStr))
                 enableSB |= 4
+
+            timeUnitSize = self._settings.readSettingAsObject('MItimeUnitSize')
+            self._ui.sbTUsize.setValue(timeUnitSize)
 
             # hides the sporadic background data if none are defined in ebrow.ini
             itemSBhour = self._ui.lwTabs.item(self.TAB_SPORADIC_BG_BY_HOUR)
@@ -792,6 +797,7 @@ class Stats:
         self._dataSource = self._parent.dataSource
         row = self._ui.lwTabs.currentRow()
         self._ui.tvTabs.setEnabled(False)
+        self._ui.sbTUsize.setEnabled(False)
         # self._ui.pbRMOB.setEnabled(False)
         if self._classFilter == '':
             # nothing to show
@@ -885,20 +891,24 @@ class Stats:
 
         if row == self.TAB_MASS_INDEX_BY_POWERS:
             sbf = None
+            self._ui.sbTUsize.setEnabled(True)
             if self._considerBackground:
                 # calculates a dataframe with sporadic background by thresholds
                 sbf = self.averageSporadicByThresholds(df, self._classFilter, dtRes='h', metric='power')
             self._dataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
-                                                                       self._parent.toDate, dtRes='h', metric='power',
-                                                                       sporadicBackgroundDf=sbf)
+                                                           self._parent.toDate,
+                                                           TUsize=self._ui.sbTUsize.value(), metric='power',
+                                                           sporadicBackgroundDf=sbf)
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
             sbf = None
+            self._ui.sbTUsize.setEnabled(True)
             if self._considerBackground:
                 # calculates a dataframe with sporadic background by thresholds
                 sbf = self.averageSporadicByThresholds(df, self._classFilter, dtRes='h', metric='lasting')
             self._dataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
-                                                           self._parent.toDate, dtRes='h', metric='lasting',
+                                                           self._parent.toDate,
+                                                           TUsize=self._ui.sbTUsize.value(), metric='lasting',
                                                            sporadicBackgroundDf=sbf)
 
         self._ui.tvTabs.setEnabled(True)
@@ -1428,6 +1438,13 @@ class Stats:
             self._diagram.ensureVisible(int(pixWidth / 2), int(pixHeight / 2))
         self._ui.hsHzoom_3.blockSignals(False)
 
+    def _changeTUsize(self):
+        """
+
+        """
+        pass
+
+
     def _calcFigSizeInch(self):
         """
         recalc the container (scrollarea) containing the figure
@@ -1878,18 +1895,26 @@ class Stats:
 
         return pd.DataFrame(results, index=['alpha']).T
 
-    def dailyCountsByThresholds(self, df, filters, dateFrom=None, dateTo=None, dtRes='h', metric='power',
-                                sporadicBackgroundDf=None):
+    def dailyCountsByThresholds(self, df, filters, dateFrom=None, dateTo=None, TUsize=1, metric='power',
+                            sporadicBackgroundDf=None):
         """
-        Calculates daily event counts per threshold, adds totals per threshold, mass index, and average mass index.
+        Calculates event counts per threshold, adds totals per threshold, mass index, and average mass index.
 
         Args:
-            dtRes (str, optional): Time resolution ('day', 'hour', '10m'). Defaults to 'day'.
+            df (pd.DataFrame): DataFrame with event data.
+            filters (str): Comma-separated list of classification filters.
+            dateFrom (str, optional): Start date for filtering. Defaults to None.
+            dateTo (str, optional): End date for filtering. Defaults to None.
+            TUsize (int, optional): Time unit size in hours (1-24). Defaults to 1.
+            metric (str, optional): Metric to use ('power' or 'lasting'). Defaults to 'power'.
+            sporadicBackgroundDf (pd.DataFrame, optional): DataFrame with sporadic background data. Defaults to None.
 
         Returns:
             pd.DataFrame: DataFrame with counts, totals per threshold, mass index, and average mass index.
                           Returns None on error.
         """
+        if not 1 <= TUsize <= 24:
+            TUsize = 1
 
         if metric == 'power':
             thresholds = self._settings.powerThresholds()
@@ -1930,23 +1955,10 @@ class Stats:
         # Create a list of all date and time unit combinations
         dateTimeUnits = []
         for date in shortDf['utc_date'].unique():
-            if dtRes == 'D':
+            for hour in range(0, 24, TUsize):
                 qApp.processEvents()
-                timeUnit = date
-                dateTimeUnits.append((date, timeUnit))  # Date resolution, time unit is the date itself
-            elif dtRes == 'h':
-                for hour in range(24):
-                    qApp.processEvents()
-                    timeUnit = f"{hour:02d}h"
-                    dateTimeUnits.append((date, timeUnit))
-            elif dtRes == '10T':
-                for hour in range(24):
-                    for minute in range(0, 60, 10):
-                        qApp.processEvents()
-                        timeUnit = f"{hour:02d}:{minute:02d}"
-                        dateTimeUnits.append((date, timeUnit))
-            else:
-                raise ValueError("Invalid dtRes. Choose 'D', 'h', or '10T'.")
+                timeUnit = f"{hour:02d}h-{hour + TUsize:02d}h"  # es. "00h-01h", "01h-02h", ecc.
+                dateTimeUnits.append((date, timeUnit))
 
         # Initialize odf with zeros for ALL date and time unit combinations and thresholds
         odf = pd.DataFrame(index=pd.MultiIndex.from_tuples(dateTimeUnits, names=['utc_date', 'time_unit']))
@@ -1963,11 +1975,11 @@ class Stats:
         sortedThresholds = sorted(thresholds, reverse=True)
 
         # Iterate through ALL date/time unit combinations
+        # Iterate through ALL date/time unit combinations
         for utcDate, timeUnit in odf.index:  # Iterate through the MultiIndex
             # Filter shortDf for the current date and time unit
             dailyShortDf = shortDf[(shortDf['utc_date'] == utcDate) & (
-                shortDf['utc_time'].str.startswith(timeUnit[:2]))] if dtRes == 'h' else shortDf[
-                (shortDf['utc_date'] == utcDate)]
+                shortDf['utc_time'].str.startswith(timeUnit[:2]))]
 
             for _, row in dailyShortDf.iterrows():  # Iterate only on rows filtered by data and current timeUnit
                 value = row[valueColumn]
@@ -2054,8 +2066,6 @@ class Stats:
 
             # Calculate average mass index in the last cell
             odf.loc['Totals', 'Mass Index'] = odf['Mass Index'].mean().round(8)
-
-            return odf
 
         except Exception as e:
             print(f"Error in dailyCountsByThresholds: {e}")
