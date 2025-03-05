@@ -273,7 +273,16 @@ class Settings(QSettings):
         if wantMw:
             # thresholdsMw = 10 ** (thresholdsDb / 10)  # Convert dBm to mW
             # return [round(x, 8) for x in thresholdsMw]  # Round to 8 decimal places for mW
-            return [float(format(10**(threshold / 10), '.15f')) for threshold in thresholdsDb]
+            thresholdsMw =  [float(format(10**(threshold / 10), '.15f')) for threshold in thresholdsDb]
+            # thresholds with non-positive values must be ignored
+            badIdx = list()
+            for idx in range(0, len(thresholdsMw)):
+                if thresholdsMw[idx] <= 0.0:
+                    badIdx.append(idx)
+            badIdx.reverse()
+            for idx in badIdx:
+                del thresholdsMw[idx]
+            return thresholdsMw
         else:
             return [round(x, 1) for x in thresholdsDb]  # Round to 1 decimal place for dBm
 

@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>11</hour>
+                    <hour>10</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>16</hour>
+                    <hour>14</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>14</hour>
+                    <hour>12</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -4071,7 +4071,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>285</width>
+             <width>265</width>
              <height>1131</height>
             </rect>
            </property>
@@ -11538,7 +11538,7 @@ font: 10pt &quot;Gauge&quot;;
                  <item>
                   <widget class="QLabel" name="label_5">
                    <property name="text">
-                    <string>Time unit size</string>
+                    <string>Time unit size for MI calc:</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>

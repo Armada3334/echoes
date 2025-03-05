@@ -33,12 +33,12 @@ from pathlib import Path
 from datetime import datetime
 
 import numpy as np
-from scipy.optimize import curve_fit
+# from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QPainter, QPixmap, QFont
+from PyQt5.QtGui import QPainter, QPixmap, QFont, QColor
 from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QInputDialog, qApp
 from PyQt5.QtCore import Qt
 
@@ -54,6 +54,22 @@ from .pandasmodel import PandasModel
 from .utilities import notice, cryptDecrypt, mkExportFolder
 from .logprint import print, fprint
 
+'''
+def powerLawCdf(power, k, alpha):
+    """
+    Power-law cumulative distribution function (CDF).
+
+    Args:
+        power (float/np.ndarray): Power value(s).
+        k (float): Scaling factor.
+        alpha (float): Exponent (mass index).
+
+    Returns:
+        float/np.ndarray: CDF value(s).
+    """
+    print(f"k={k}, power={power}, alpha={alpha}")
+    return k * power ** (-alpha)
+'''
 
 class Stats:
     STTW_TABLES = 0
@@ -106,7 +122,7 @@ class Stats:
         self._compensation = False
         self._ui.chkSubSB.setEnabled(False)
         self._ui.chkCompensation.setEnabled(False)
-        self._ui.sbTUsize.setEnabled(False)
+        # self._ui.sbTUsize.setEnabled(False)
         self._px = plt.rcParams['figure.dpi']  # from inches to pixels
         self._szBase = None
         self._maxCoverages = list()
@@ -371,7 +387,7 @@ class Stats:
                 self.avg10minDf = pd.DataFrame.from_dict(json.loads(avg10minStr))
                 enableSB |= 4
 
-            timeUnitSize = self._settings.readSettingAsObject('MItimeUnitSize')
+            timeUnitSize = self._settings.readSettingAsInt('MItimeUnitSize')
             self._ui.sbTUsize.setValue(timeUnitSize)
 
             # hides the sporadic background data if none are defined in ebrow.ini
@@ -792,12 +808,14 @@ class Stats:
 
     def showDataTable(self):
         self._parent.busy(True)
+        rowColorDict=dict()
+        columnColorDict=dict()
         self._ui.gbClassFilter_2.show()
         self._ui.gbDiagrams_2.hide()
         self._dataSource = self._parent.dataSource
         row = self._ui.lwTabs.currentRow()
         self._ui.tvTabs.setEnabled(False)
-        self._ui.sbTUsize.setEnabled(False)
+        # self._ui.sbTUsize.setEnabled(False)
         # self._ui.pbRMOB.setEnabled(False)
         if self._classFilter == '':
             # nothing to show
@@ -814,46 +832,66 @@ class Stats:
                                                                            totalColumn=True,
                                                                            compensate=self._compensation,
                                                                            considerBackground=self._considerBackground)
+            rowColorDict['Total'] = QColor(Qt.cyan)
+            columnColorDict['Total'] = QColor(Qt.cyan)
 
         if row == self.TAB_COUNTS_BY_HOUR:
             self._dataFrame = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
                                                             filters=self._classFilter,
+                                                            totalRow = True,
+                                                            totalColumn = True,
                                                             compensate=self._compensation,
                                                             considerBackground=self._considerBackground)
+            rowColorDict['Total'] = QColor(Qt.cyan)
+            columnColorDict['Total'] = QColor(Qt.cyan)
 
         if row == self.TAB_COUNTS_BY_10M:
             self._dataFrame = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='10T',
                                                             filters=self._classFilter,
+                                                            totalRow=True,
+                                                            totalColumn=True,
                                                             compensate=self._compensation,
                                                             considerBackground=self._considerBackground)
             self._dataFrame = self._dataSource.splitAndStackDataframe(self._dataFrame, maxColumns=24)
+            rowColorDict['Total'] = QColor(Qt.cyan)
+            columnColorDict['Total'] = QColor(Qt.cyan)
 
         if row == self.TAB_POWERS_BY_DAY:
             self._dataFrame = self._dataSource.dailyPowersByClassification(df, self._classFilter, self._parent.fromDate,
                                                                            self._parent.toDate,
                                                                            highestAvgRow=True, highestAvgColumn=True)
+            rowColorDict['Average'] = QColor(Qt.cyan)
+            columnColorDict['Average'] = QColor(Qt.cyan)
 
         if row == self.TAB_POWERS_BY_HOUR:
             self._dataFrame = self._dataSource.makePowersDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
                                                             filters=self._classFilter,
                                                             highestAvgRow=True, highestAvgColumn=True)
+            rowColorDict['Highest average'] = QColor(Qt.cyan)
+            columnColorDict['Highest average'] = QColor(Qt.cyan)
 
         if row == self.TAB_POWERS_BY_10M:
             self._dataFrame = self._dataSource.makePowersDf(df, self._parent.fromDate, self._parent.toDate, dtRes='10T',
                                                             filters=self._classFilter,
                                                             highestAvgRow=True, highestAvgColumn=True)
             self._dataFrame = self._dataSource.splitAndStackDataframe(self._dataFrame, maxColumns=24)
+            rowColorDict['Highest average'] = QColor(Qt.cyan)
+            columnColorDict['Highest average'] = QColor(Qt.cyan)
 
         if row == self.TAB_LASTINGS_BY_DAY:
             self._dataFrame = self._dataSource.dailyLastingsByClassification(df, self._classFilter,
                                                                              self._parent.fromDate,
                                                                              self._parent.toDate, highestAvgRow=True,
                                                                              highestAvgColumn=True)
+            rowColorDict['Average'] = QColor(Qt.cyan)
+            columnColorDict['Average'] = QColor(Qt.cyan)
 
         if row == self.TAB_LASTINGS_BY_HOUR:
             self._dataFrame = self._dataSource.makeLastingsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
                                                               filters=self._classFilter, highestAvgRow=True,
                                                               highestAvgColumn=True)
+            rowColorDict['Highest average'] = QColor(Qt.cyan)
+            columnColorDict['Highest average'] = QColor(Qt.cyan)
 
         if row == self.TAB_LASTINGS_BY_10M:
             self._dataFrame = self._dataSource.makeLastingsDf(df, self._parent.fromDate, self._parent.toDate,
@@ -861,6 +899,8 @@ class Stats:
                                                               filters=self._classFilter,
                                                               highestAvgRow=True, highestAvgColumn=True)
             self._dataFrame = self._dataSource.splitAndStackDataframe(self._dataFrame, maxColumns=24)
+            rowColorDict['Highest average'] = QColor(Qt.cyan)
+            columnColorDict['Highest average'] = QColor(Qt.cyan)
 
         if row == self.TAB_SESSIONS_REGISTER:
             # filters not applicable here
@@ -888,10 +928,11 @@ class Stats:
                 self._dataFrame = df.filter(items=['UNDER'], axis=0)
             elif 'OVER' in self._classFilter:
                 self._dataFrame = df.filter(items=['OVER'], axis=0)
+            rowColorDict['Total'] = QColor(Qt.cyan)
 
         if row == self.TAB_MASS_INDEX_BY_POWERS:
             sbf = None
-            self._ui.sbTUsize.setEnabled(True)
+            # self._ui.sbTUsize.setEnabled(True)
             if self._considerBackground:
                 # calculates a dataframe with sporadic background by thresholds
                 sbf = self.averageSporadicByThresholds(df, self._classFilter, dtRes='h', metric='power')
@@ -899,10 +940,13 @@ class Stats:
                                                            self._parent.toDate,
                                                            TUsize=self._ui.sbTUsize.value(), metric='power',
                                                            sporadicBackgroundDf=sbf)
+            rowColorDict['Totals'] = QColor(Qt.cyan)
+            columnColorDict['Totals'] = QColor(Qt.cyan)
+            columnColorDict['Mass Index'] = QColor(Qt.green)
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
             sbf = None
-            self._ui.sbTUsize.setEnabled(True)
+            # self._ui.sbTUsize.setEnabled(True)
             if self._considerBackground:
                 # calculates a dataframe with sporadic background by thresholds
                 sbf = self.averageSporadicByThresholds(df, self._classFilter, dtRes='h', metric='lasting')
@@ -910,9 +954,12 @@ class Stats:
                                                            self._parent.toDate,
                                                            TUsize=self._ui.sbTUsize.value(), metric='lasting',
                                                            sporadicBackgroundDf=sbf)
+            rowColorDict['Totals'] = QColor(Qt.cyan)
+            columnColorDict['Totals'] = QColor(Qt.cyan)
+            columnColorDict['Mass Index'] = QColor(Qt.green)
 
         self._ui.tvTabs.setEnabled(True)
-        model = PandasModel(self._dataFrame)
+        model = PandasModel(self._dataFrame, rowColors=rowColorDict, columnColors=columnColorDict)
         self._ui.tvTabs.setModel(model)
         self._parent.busy(False)
 
@@ -1444,7 +1491,6 @@ class Stats:
         """
         pass
 
-
     def _calcFigSizeInch(self):
         """
         recalc the container (scrollarea) containing the figure
@@ -1837,28 +1883,14 @@ class Stats:
             layout.addWidget(self._diagram)
         self._plot = pie
 
-    def _powerLawCdf(self, power, k, alpha):
-        """
-        Power-law cumulative distribution function (CDF).
-
-        Args:
-            power (float/np.ndarray): Power value(s).
-            k (float): Scaling factor.
-            alpha (float): Exponent (mass index).
-
-        Returns:
-            float/np.ndarray: CDF value(s).
-        """
-        print(f"k={k}, power={power}, alpha={alpha}")
-        return k * power ** (-alpha)
-
+    '''
     def _calculateMassIndex(self, df, thresholds):
         """
         Calculates the mass index for each day using power-law CDF fitting.
 
         Args:
             df (pd.DataFrame): Pandas DataFrame containing the data.
-            thresholds (list): List of power thresholds (S values).
+            thresholds (list): List of power thresholds.
 
         Returns:
             pd.DataFrame: Pandas DataFrame with the calculated mass index for each day.
@@ -1866,6 +1898,8 @@ class Stats:
         """
 
         results = {}
+        doneItems = 0
+        self._parent.updateStatusBar("Calculating mass indices")
 
         for timeUnit, row in df.iterrows():  # Iterate over time units (rows)
             eventCounts = row.values  # Counts for the current time unit
@@ -1878,14 +1912,63 @@ class Stats:
 
             try:
                 # Perform power-law fit
-                popt, pcov = curve_fit(self._powerLawCdf, thresholdsUsed, eventCounts, p0=[1, 1],
-                                       bounds=([0, 0], [np.inf, 10]), maxfev=5000, nan_policy='raise')
+                popt, pcov = curve_fit(powerLawCdf, thresholdsUsed, eventCounts, p0=[1, 1],
+                                       bounds=([0, 0], [np.inf, 10]), maxfev=3000, nan_policy='raise')
                 k, alpha = popt
                 results[timeUnit] = alpha  # Mass index for the time unit
-                results[timeUnit] =  results[timeUnit] * (-4 / 3) + 1  # ps. Mario Sandri
+                results[timeUnit] = results[timeUnit] * (-4 / 3) + 1  # ps. Mario Sandri
             except RuntimeError as e:
                 print(f"Fit did not converge for {timeUnit}: {e}")
                 results[timeUnit] = np.nan
+            except Exception as e:
+                print(f"Error during fit for {timeUnit}: {e}")
+                results[timeUnit] = np.nan
+
+            doneItems += 1
+            self._parent.updateProgressBar(doneItems, len(df))
+        if not results:
+            return None
+
+        return pd.DataFrame(results, index=['alpha']).T
+    '''
+
+    import pandas as pd
+    import numpy as np
+
+    def _calculateMassIndex(self, df, thresholds):
+        """
+        Calculates the mass index for each time unit (row) in the DataFrame using numpy.polyfit().
+
+        Args:
+            df (pd.DataFrame): DataFrame with counts for time units (rows) and thresholds (columns).
+            thresholds (list): List of thresholds (linear power or duration).
+
+        Returns:
+            pd.DataFrame: DataFrame with mass indices for time units.
+        """
+
+        results = {}
+        for timeUnit, row in df.iterrows():  # Iterate over time units (rows)
+            eventCounts = row.values  # Counts for the current time unit
+            unsortedThresholdsUsed = np.array(thresholds)  # Use all thresholds
+
+            # Sort thresholds and counts in descending order
+            sortedIndices = np.argsort(unsortedThresholdsUsed)[::-1]
+            thresholdsUsed = unsortedThresholdsUsed[sortedIndices]
+            eventCounts = eventCounts[sortedIndices]
+
+            # Convert counts to log10, handling zeros
+            logCounts = np.log10(np.where(eventCounts > 0, eventCounts, 1))
+
+            # Convert thresholds to log10
+            logThresholds = np.log10(thresholdsUsed)
+
+            try:
+                # Perform linear regression using numpy.polyfit()
+                coefficients = np.polyfit(logThresholds, logCounts, 1)
+                slope = coefficients[0]  # Slope is the coefficient of x
+                results[timeUnit] = 1 - ((abs(slope) * 4.0) / 3.0)      # Mass index is the absolute value of the slope
+
             except Exception as e:
                 print(f"Error during fit for {timeUnit}: {e}")
                 results[timeUnit] = np.nan
@@ -1896,7 +1979,7 @@ class Stats:
         return pd.DataFrame(results, index=['alpha']).T
 
     def dailyCountsByThresholds(self, df, filters, dateFrom=None, dateTo=None, TUsize=1, metric='power',
-                            sporadicBackgroundDf=None):
+                                sporadicBackgroundDf=None):
         """
         Calculates event counts per threshold, adds totals per threshold, mass index, and average mass index.
 
@@ -1914,7 +1997,7 @@ class Stats:
                           Returns None on error.
         """
         if not 1 <= TUsize <= 24:
-            TUsize = 1
+            raise ValueError("Invalid time unit size, must be 1 <= TUsize <= 24")
 
         if metric == 'power':
             thresholds = self._settings.powerThresholds()
@@ -1938,7 +2021,9 @@ class Stats:
             dateRange = (dateTo - dateFrom).days
             if dateRange > 15:
                 dateFrom = dateTo - pd.Timedelta(days=15)  # Set dateFrom to 15 days before dateTo
-                print(f"Warning: Date range exceeds 15 days. Processing last 15 days, starting from {dateFrom}.")
+                self._parent.infoMessage("Warning",
+                                         "The selected coverage exceeds the 15 days limit for mass indexes calculation.\n"
+                                         f"The days preceeding {dateFrom} won't be considered")
 
         # Filter by event_status and date range
         shortDf = df[df['event_status'] == eventStatusFilter].copy()
@@ -1975,11 +2060,19 @@ class Stats:
         sortedThresholds = sorted(thresholds, reverse=True)
 
         # Iterate through ALL date/time unit combinations
-        # Iterate through ALL date/time unit combinations
+        self._parent.updateStatusBar("Calculating cumulative counts by time unit")
+        doneItems = 0
         for utcDate, timeUnit in odf.index:  # Iterate through the MultiIndex
-            # Filter shortDf for the current date and time unit
-            dailyShortDf = shortDf[(shortDf['utc_date'] == utcDate) & (
-                shortDf['utc_time'].str.startswith(timeUnit[:2]))]
+            # Extract start and end hour from timeUnit
+            startHour = int(timeUnit[:2])
+            endHour = startHour + TUsize
+
+            # Filter shortDf for the current date and time unit RANGE
+            dailyShortDf = shortDf[
+                (shortDf['utc_date'] == utcDate) &
+                (shortDf['utc_time'].str.slice(0, 2).astype(int) >= startHour) &
+                (shortDf['utc_time'].str.slice(0, 2).astype(int) < endHour)
+                ]
 
             for _, row in dailyShortDf.iterrows():  # Iterate only on rows filtered by data and current timeUnit
                 value = row[valueColumn]
@@ -1999,6 +2092,9 @@ class Stats:
                         if threshold < value <= upperBound:
                             odf.loc[(utcDate, timeUnit), colName] += 1
 
+            doneItems += 1
+            self._parent.updateProgressBar(doneItems, len(odf.index))
+
         # Convert counts to integers, handling NaN values (after the loop)
         for col in odf.columns:
             odf[col] = odf[col].fillna(0).astype(int)
@@ -2008,17 +2104,8 @@ class Stats:
             if len(sporadicBackgroundDf.columns) != len(thresholds):
                 raise ValueError("sporadicBackgroundDf must have the same number of columns as thresholds.")
 
-            for timeUnit in odf.index:
-                for threshold in thresholds:
-                    if metric == 'power':
-                        colName = f"{threshold:.1f}"  # Format power thresholds with one decimal
-                    else:
-                        colName = str(threshold)  # Lasting thresholds as integers
-                    # Access using tuple index
-                    backgroundValue = sporadicBackgroundDf.loc[(timeUnit[0], timeUnit[1]), colName] if (
-                            (timeUnit[0], timeUnit[1]) in sporadicBackgroundDf.index) else 0
-                    odf.loc[timeUnit, colName] -= backgroundValue
-
+            self._parent.updateStatusBar("Subtracting sporadic background by thresholds")
+            doneItems = 0
             for timeUnit in odf.index:
                 for threshold in thresholds:
                     qApp.processEvents()
@@ -2030,7 +2117,12 @@ class Stats:
                         timeUnit, colName] if timeUnit in sporadicBackgroundDf.index else 0
                     odf.loc[timeUnit, colName] -= backgroundValue
 
+                doneItems += 1
+                self._parent.updateProgressBar(doneItems, len(odf.index))
+
         try:
+            self._parent.updateStatusBar("Calculating counts totals")
+
             # Calculate total events per time unit (convert to integer)
             odf['Totals'] = odf.sum(axis=1).astype(int)
 
@@ -2039,15 +2131,19 @@ class Stats:
             totalsPerThreshold.name = 'Totals'
 
             if metric == 'power':
-                # Convert thresholds to mW before curve_fit() because it can't afford negative thresholds
-                thresholds = self._settings.powerThresholds(wantMw=True)
+                # Convert thresholds to linear values to avoid calculate log(0)
+                thresholdsMw = self._settings.powerThresholds(wantMw=True)
+                if len(thresholdsMw) < len(thresholds):
+                    self._parent.updateStatusBar("Converting power thresholds to mW partially failed")
+                    print("thresholds in dB:", thresholds)
+                    print("thresholds in mW:", thresholdsMw)
+                    thresholds = thresholdsMw
 
             # Calculate mass index
             massIndices = self._calculateMassIndex(odf.drop('Totals', axis=1), thresholds)
 
             if massIndices is None:
-                print("Mass index calculation failed. Not adding to the DataFrame.")
-                return odf
+                raise ValueError("Mass index calculation failed.")
 
             # Add mass index as a column (round to 8 decimal places)
             odf['Mass Index'] = massIndices['alpha'].round(8).values
