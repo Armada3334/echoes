@@ -44,6 +44,7 @@ class Prefs(QWidget):
         self._loadCbCountry()
         self._settings = settings
         self._plottingColors = dict()
+        self._tableColors = dict()
         self._RMOBclient = "UNKNOWN"
         self._pressedButton = None
         self._tabStats = self._parent.tabStats
@@ -60,15 +61,28 @@ class Prefs(QWidget):
         self._colorButtons = [self._ui.pbScolor, self._ui.pbNcolor, self._ui.pbDiffColor, self._ui.pbAvgDiffColor,
                               self._ui.pbUpperColor, self._ui.pbLowerColor, self._ui.pbCountsColor,
                               self._ui.pbGridsColor, self._ui.pbMinColor, self._ui.pbBackColor]
+
+        self._tableColorButtons = [self._ui.pbFgColor, self._ui.pbAltFgColor, self._ui.pbBgColor]
+
         self._colorKeys = ['S', 'N', 'diff', 'avgDiff', 'upperThr', 'lowerThr', 'counts', 'majorGrids', 'minorGrids',
                            'background']
+
+        self._tableColorKeys = ['tableFg', 'tableAltFg', 'tableBg']
+
         self._colorDict = self._settings.readSettingAsObject('colorDict')
+        self._tableColorDict = self._settings.readSettingAsObject('tableColorDict')
 
         self._ui.cbFontFamily.currentTextChanged.connect(
             lambda text: self._settings.writeSetting('fontFamily', text))
 
+        self._ui.cbTabFontFamily.currentTextChanged.connect(
+            lambda text: self._settings.writeSetting('tableFontFamily', text))
+
         self._ui.cbFontStyle.currentTextChanged.connect(
             lambda text: self._settings.writeSetting('fontStyle', text))
+
+        self._ui.cbTabFontStyle.currentTextChanged.connect(
+            lambda text: self._settings.writeSetting('tableFontStyle', text))
 
         self._ui.cbDataLineStyle.currentTextChanged.connect(
             lambda text: self._settings.writeSetting('dataLineStyle', text))
@@ -78,6 +92,7 @@ class Prefs(QWidget):
             lambda text: self._settings.writeSetting('minorLineStyle', text))
 
         self._ui.sbFontSize.valueChanged.connect(lambda val: self._settings.writeSetting('fontSize', val))
+        self._ui.sbTabFontSize.valueChanged.connect(lambda val: self._settings.writeSetting('tableFontSize', val))
         self._ui.sbDataLineWidth.valueChanged.connect(lambda val: self._settings.writeSetting('dataLineWidth', val))
         self._ui.sbMajorLineWidth.valueChanged.connect(lambda val: self._settings.writeSetting('majorLineWidth', val))
         self._ui.sbMinorLineWidth.valueChanged.connect(lambda val: self._settings.writeSetting('minorLineWidth', val))
@@ -160,8 +175,8 @@ class Prefs(QWidget):
         self._ui.pbCalc.setEnabled(self._parent.dbOk)
         self._ui.lbSBok.setVisible(enableSB == 7)
 
-        group = QButtonGroup(self)
-        group.buttonClicked.connect(self._openColorDialog)
+        plotColorGroup = QButtonGroup(self)
+        plotColorGroup.buttonClicked.connect(self._openPlotColorDialog)
         for i in range(0, len(self._colorKeys)):
             colorKey = self._colorKeys[i]
             colorName = self._colorDict[colorKey].name()
@@ -169,7 +184,18 @@ class Prefs(QWidget):
             button = self._colorButtons[i]
             button.setStyleSheet(ss)
             button.setWhatsThis(colorKey)
-            group.addButton(button)
+            plotColorGroup.addButton(button)
+
+        tableColorGroup = QButtonGroup(self)
+        tableColorGroup.buttonClicked.connect(self._openTableColorDialog)
+        for i in range(0, len(self._tableColorKeys)):
+            colorKey = self._tableColorKeys[i]
+            colorName = self._tableColorDict[colorKey].name()
+            ss = self._ssBase.format(colorName)
+            button = self._tableColorButtons[i]
+            button.setStyleSheet(ss)
+            button.setWhatsThis(colorKey)
+            tableColorGroup.addButton(button)
 
         self._ui.sbMIlastCount.setValue(self._settings.readSettingAsInt('miLastCount'))
         self._ui.sbMIlastLo.setValue(self._settings.readSettingAsInt('miLastLo'))
@@ -195,6 +221,10 @@ class Prefs(QWidget):
         self._ui.cbFontFamily.setCurrentText(self._settings.readSettingAsString('fontFamily'))
         self._ui.sbFontSize.setValue(self._settings.readSettingAsInt('fontSize'))
         self._ui.cbFontStyle.setCurrentText(self._settings.readSettingAsString('fontStyle'))
+
+        self._ui.cbTabFontFamily.setCurrentText(self._settings.readSettingAsString('tableFontFamily'))
+        self._ui.sbTabFontSize.setValue(self._settings.readSettingAsInt('tableFontSize'))
+        self._ui.cbTabFontStyle.setCurrentText(self._settings.readSettingAsString('tableFontStyle'))
 
         self._ui.cbDataLineStyle.setCurrentText(self._settings.readSettingAsString('dataLineStyle'))
         self._ui.cbMajorLineStyle.setCurrentText(self._settings.readSettingAsString('majorLineStyle'))
@@ -302,7 +332,6 @@ class Prefs(QWidget):
     def afDict(self):
         return self._attributeFilters
 
-
     def _addDateInterval(self, intervalStr: str = None):
         if intervalStr is None:
             did = DateIntervalDialog(self._ui)
@@ -333,13 +362,21 @@ class Prefs(QWidget):
         if done:
             self.updateTabPrefs()
 
-    def _openColorDialog(self, button):
+    def _openPlotColorDialog(self, button):
         print("clicked button#", button)
         color = QColorDialog.getColor()
         if color.isValid():
             button.setStyleSheet(self._ssBase.format(color.name()))
             colorKey = button.whatsThis()
             self._colorDict[colorKey] = QColor(color.name())
+
+    def _openTableColorDialog(self, button):
+        print("clicked button#", button)
+        color = QColorDialog.getColor()
+        if color.isValid():
+            button.setStyleSheet(self._ssBase.format(color.name()))
+            colorKey = button.whatsThis()
+            self._tableColorDict[colorKey] = QColor(color.name())
 
     def _selectLogo(self):
         logoTuple = QFileDialog.getOpenFileName(

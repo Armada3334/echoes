@@ -30,8 +30,8 @@ from PyQt5.QtGui import QColor, QPixmap
 from PyQt5.QtCore import Qt, QRect, QSettings, QDate, QLocale
 from .logprint import print
 
-class Settings(QSettings):
 
+class Settings(QSettings):
     DBFS_RANGE_MIN = -150
     DBFS_RANGE_MAX = 20
     ZOOM_MIN = 0.5
@@ -44,12 +44,13 @@ class Settings(QSettings):
         QSettings.__init__(self, iniFullPath, QSettings.IniFormat)
         self._locale = QLocale()
         print("Local country {}, language {}".format(QLocale.countryToString(self._locale.country()),
-                                                               QLocale.languageToString(self._locale.language())))
+                                                     QLocale.languageToString(self._locale.language())))
 
         self._iniFilePath = iniFullPath
         self._general = ['geometry', 'lastDBfilePath', 'dateFrom', 'dateTo', 'tooltipDisabled', 'autosaving']
 
-        self._screenshots = ['classFilter', 'currentDate', 'horizontalZoom', 'verticalZoom', 'linkedSliders', 'showGrid',
+        self._screenshots = ['classFilter', 'currentDate', 'horizontalZoom', 'verticalZoom', 'linkedSliders',
+                             'showGrid',
                              '3Dazimuth', '3Delevation', 'currentColormap', 'showContour']
 
         self._stats = ['classFilterStat', 'showValues', 'showGridStat', 'smoothPlots', 'subtractSporadicBackground',
@@ -58,9 +59,11 @@ class Settings(QSettings):
                        'sporadicDates', 'sporadicBackgroundDaily', 'sporadicBackgroundByHour',
                        'sporadicBackgroundBy10min', 'MItimeUnitSize']
 
-        self._plotStyles = ['fontFamily', 'fontSize', 'fontStyle','majorLineStyle', 'majorLineWidth', 'minorLineStyle',
+        self._plotStyles = ['fontFamily', 'fontSize', 'fontStyle', 'majorLineStyle', 'majorLineWidth', 'minorLineStyle',
                             'minorLineWidth', 'dataLineStyle', 'dataLineWidth',
-                            'cursorEnabled',  'separator']
+                            'cursorEnabled', 'separator']
+
+        self._tableStyles = ['tableFontFamily', 'tableFontSize', 'tableFontStyle']
 
         self._siteInfos = ['stationName', 'owner', 'country', 'city', 'latitude', 'longitude', 'latitudeDeg',
                            'longitudeDeg', 'altitude', 'logoPath',
@@ -68,7 +71,8 @@ class Settings(QSettings):
                            'computer',
                            'email', 'notes']
 
-        self._filters = ["RFIfilter", "RFIfilterThreshold", 'ESDfilter', 'ESDfilterThreshold', 'SATfilter', 'SATfilterThreshold', 'CAR1filter',
+        self._filters = ["RFIfilter", "RFIfilterThreshold", 'ESDfilter', 'ESDfilterThreshold', 'SATfilter',
+                         'SATfilterThreshold', 'CAR1filter',
                          'CAR1filterThreshold', 'CAR2filter', 'CAR2filterThreshold',
                          'underdenseMs', 'overdenseSec', 'carrierSec', 'acqActive']
 
@@ -83,11 +87,10 @@ class Settings(QSettings):
 
         self._massIndexes = ['miLastCount', 'miLastLo', 'miLastHi', 'miPowCount', 'miPowLo', 'miPowHi']
 
-        self._groups = {'General': self._general, 'Plotting styles': self._plotStyles, 'Site infos': self._siteInfos,
+        self._groups = {'General': self._general, 'Plotting styles': self._plotStyles,
+                        'Table styles': self._tableStyles, 'Site infos': self._siteInfos,
                         'Screenshots': self._screenshots, 'Stats': self._stats, 'Filters': self._filters,
                         'Report': self._report, 'Attributes': self._attrFilters, 'Mass Indexes': self._massIndexes}
-
-
 
         d = dict()
 
@@ -108,7 +111,7 @@ class Settings(QSettings):
             d['fontFamily'] = 'Liberation Serif'
 
         d['fontSize'] = 9
-        d['fontStyle'] = 'Normal'   # 'Italic Bold' is still possible
+        d['fontStyle'] = 'Normal'  # 'Italic Bold' is still possible
         d['dataLineStyle'] = 'solid'
         d['majorLineStyle'] = 'solid'
         d['minorLineStyle'] = 'solid'
@@ -123,6 +126,19 @@ class Settings(QSettings):
                           'avgDiff': QColor('#800000'), 'upperThr': QColor('#FFFF00'), 'lowerThr': QColor('#00FF00'),
                           'counts': QColor('#008080'), 'majorGrids': QColor('#696969'),
                           'minorGrids': QColor('#696969'), 'background': QColor('#FFFFFF')}
+
+        # table styles
+        if os.name == 'nt':
+            d['tableFontFamily'] = 'Gauge'
+        else:
+            d['tableFontFamily'] = 'Gauge'
+
+        d['tableFontSize'] = 9
+        d['tableFontStyle'] = 'Normal'  # 'Italic Bold' is still possible
+
+        # tables colors
+        d['tableColorDict'] = {'tableFg': QColor('#00ffff'), 'tableAltFg': QColor('#008000'),
+                               'tableBg': QColor('#000000')}
 
         # siteinfos
         d['stationName'] = ''
@@ -149,12 +165,12 @@ class Settings(QSettings):
         d['currentDate'] = ''
         d['classFilter'] = 'OVER'
         d['horizontalZoom'] = self.ZOOM_DEFAULT
-        d['verticalZoom'] =  self.ZOOM_DEFAULT
+        d['verticalZoom'] = self.ZOOM_DEFAULT
         d['linkedSliders'] = 0
         d['showGrid'] = 0
-        d['3Dazimuth'] =  self.AZIMUTH_DEFAULT
-        d['3Delevation'] =  self.ELEVATION_DEFAULT
-        d['currentColormap'] = self._colorMaps[0] # default colormap for screenshots: echoes
+        d['3Dazimuth'] = self.AZIMUTH_DEFAULT
+        d['3Delevation'] = self.ELEVATION_DEFAULT
+        d['currentColormap'] = self._colorMaps[0]  # default colormap for screenshots: echoes
         d['showContour'] = 0
 
         # stats
@@ -167,9 +183,9 @@ class Settings(QSettings):
         d['horizontalZoomStat'] = self.ZOOM_DEFAULT
         d['verticalZoomStat'] = self.ZOOM_DEFAULT
         d['linkedSlidersStat'] = 0
-        d['currentColormapStat'] = self._colorMaps[1] # default colormap for statistics: colorgramme
+        d['currentColormapStat'] = self._colorMaps[1]  # default colormap for statistics: colorgramme
         d['RMOBfilePrefix'] = 'UNKNOWN'
-        d['sporadicDates'] = ''     # date intervals for sporadic backgroud calculation
+        d['sporadicDates'] = ''  # date intervals for sporadic backgroud calculation
         d['sporadicBackgroundDaily'] = ''
         d['sporadicBackgroundByHour'] = ''
         d['sporadicBackgroundBy10min'] = ''
@@ -273,7 +289,7 @@ class Settings(QSettings):
         if wantMw:
             # thresholdsMw = 10 ** (thresholdsDb / 10)  # Convert dBm to mW
             # return [round(x, 8) for x in thresholdsMw]  # Round to 8 decimal places for mW
-            thresholdsMw =  [float(format(10**(threshold / 10), '.15f')) for threshold in thresholdsDb]
+            thresholdsMw = [float(format(10 ** (threshold / 10), '.15f')) for threshold in thresholdsDb]
             # thresholds with non-positive values must be ignored
             badIdx = list()
             for idx in range(0, len(thresholdsMw)):
@@ -348,6 +364,15 @@ class Settings(QSettings):
             self._settings['colorDict'][key] = color
         self.endGroup()
 
+        self.beginGroup('Table styles')
+        colorNames = self._getDictValues(self._defaults['tableColorDict'], "Table colors")
+        self._settings['tableColorDict'] = dict()
+        for key in colorNames.keys():
+            name = colorNames[key]
+            color = QColor(name)
+            self._settings['tableColorDict'][key] = color
+        self.endGroup()
+
     def save(self):
         for group in self._groups.keys():
             self.beginGroup(group)
@@ -363,6 +388,15 @@ class Settings(QSettings):
             colorNames[key] = name
         self.beginGroup('Plotting styles')
         self._setDictValues(colorNames, "Plotting colors")
+        self.endGroup()
+        self.sync()
+
+        colorNames = dict()
+        for key in self._settings['tableColorDict'].keys():
+            name = self._settings['tableColorDict'][key].name()
+            colorNames[key] = name
+        self.beginGroup('Table styles')
+        self._setDictValues(colorNames, "Table colors")
         self.endGroup()
         self.sync()
 

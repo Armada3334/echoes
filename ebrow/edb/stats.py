@@ -71,6 +71,7 @@ def powerLawCdf(power, k, alpha):
     return k * power ** (-alpha)
 '''
 
+
 class Stats:
     STTW_TABLES = 0
     STTW_DIAGRAMS = 1
@@ -585,76 +586,45 @@ class Stats:
         self._parent.busy(False)
         return calcDone
 
-    def averageSporadicByThresholds(self, df: pd.DataFrame, filters: str, dtRes='h', metric='power'):
+    import pandas as pd
+    from PyQt5.QtCore import QCoreApplication
 
+    def _sporadicAveragesByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
+                                      TUsize: int = 1, metric: str = 'power', aggregateSporadic: bool = False):
         """
-        Calculates the average sporadic background by creating dataframes with the same dtRes, metric, and thresholds
-        related to each SB period and averaging all them.
-
-
-        Returns:
-            pd.DataFrame: A DataFrame with the average sporadic background counts.
-                          Returns None if the input list is empty or the sbdf DataFrames are inconsistent.
-
-        """
-
-        prog = 0
-        sbdfList = list()
-        sdList = self._settings.readSettingAsObject('sporadicDates')
-        if len(sdList) > 0:
-            sporadicDatesList = json.loads(sdList)
-            for intervalStr in sporadicDatesList:
-                qApp.processEvents()
-                dates = intervalStr.split(" -> ")
-                sbdf = self.calculateSporadicByThresholds(df, filters, dates[0], dates[1], dtRes, metric)
-                sbdfList.append(sbdf)
-
-        # Concatenate sbdf DataFrames and calculate the mean
-        combinedSbdf = pd.concat(sbdfList, keys=range(len(sbdfList)))  # Add keys for grouping
-        sbf = combinedSbdf.groupby(level=1).mean()  # Group by time unit and calculate mean
-        return sbf
-
-    def calculateSporadicByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
-                                      dtRes='h', metric='power'):
-        """
-        Calculates sporadic averages by thresholds using dailyCountsByThresholds().
-
-        For each time unit, calculates the average count across all days for each threshold.
+        Calculates sporadic averages by thresholds, either for a single date range or for multiple sporadic periods.
 
         Args:
             df (pd.DataFrame): Input DataFrame with meteoric data.
             filters (str): Filter string for event classification.
             dateFrom (str, optional): Start date (inclusive). Defaults to None.
             dateTo (str, optional): End date (inclusive). Defaults to None.
-            dtRes (str, optional): Time resolution ('D', 'h', '10T'). Defaults to 'h'.
+            TUsize (int, optional): Time unit size in minutes. Defaults to 1.
             metric (str, optional): Counting metric ('power', 'lasting'). Defaults to 'power'.
+            aggregateSporadic (bool, optional): If True, averages across multiple sporadic periods. Defaults to False.
 
         Returns:
             pd.DataFrame: DataFrame with sporadic averages by thresholds.
         """
+        if aggregateSporadic:
+            sbdfList = []
+            sdList = self._settings.readSettingAsObject('sporadicDates')
+            if len(sdList) > 0:
+                sporadicDatesList = json.loads(sdList)
+                for intervalStr in sporadicDatesList:
+                    qApp.processEvents()
+                    dates = intervalStr.split(" -> ")
+                    sbdf = self._sporadicAveragesByThresholds(df, filters, dates[0], dates[1], TUsize, metric, False)
+                    sbdfList.append(sbdf)
 
-        # Get daily counts by thresholds
-        odf = self._dataSource.dailyCountsByThresholds(df, filters, dateFrom, dateTo, dtRes, metric)
+                # Concatenate results and compute mean
+                combinedSbdf = pd.concat(sbdfList, keys=range(len(sbdfList)))
+                return combinedSbdf.groupby(level=1).mean()
+            return None
 
-        # Calculate sporadic averages by thresholds
-        sbdf = pd.DataFrame()
-
-        if dtRes == 'D':
-            sbdf = pd.DataFrame(odf.mean(axis=0)).T
-            sbdf.index = ['Day']
-
-        else:
-            # Get the list of thresholds (column names) from odf
-            thresholds = odf.columns  # Get the column names (thresholds)
-            for timeUnit in odf.index.get_level_values('time_unit').unique():
-                dailyCountsForTimeUnit = odf.xs(timeUnit, level='time_unit')
-                averageCounts = dailyCountsForTimeUnit.mean(axis=0)
-
-                # Create the row with the correct columns***
-                if timeUnit not in sbdf.index:  # Check if the time unit row exists
-                    sbdf.loc[timeUnit, thresholds] = 0.0  # Initialize with 0.0
-
-                sbdf.loc[timeUnit, thresholds] = averageCounts  # Assign to existing columns
+        # Calculate sporadic averages for a given date range
+        odf = self._dataSource.dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric)
+        sbdf = odf.groupby(level='time_unit').mean()
         return sbdf
 
     def updateAndSendRMOBfiles(self):
@@ -808,11 +778,34 @@ class Stats:
 
     def showDataTable(self):
         self._parent.busy(True)
-        rowColorDict=dict()
-        columnColorDict=dict()
+        rowColorDict = dict()
+        columnColorDict = dict()
         self._ui.gbClassFilter_2.show()
         self._ui.gbDiagrams_2.hide()
         self._dataSource = self._parent.dataSource
+        colors = self._settings.readSettingAsObject('tableColorDict')
+        emphasizedTextColor = colors['tableFg']
+        emphasizedAltTextColor = colors['tableAltFg']
+        emphasizedBackColor = colors['tableBg']
+        tuSize = self._ui.sbTUsize.value()
+
+        rowColorDict = {
+            '*': {'alignment': 'center'},
+            'Total': {'fgColor': QColor(emphasizedTextColor), 'bgColor': QColor(emphasizedBackColor)},
+            'Totals': {'fgColor': QColor(emphasizedTextColor), 'bgColor': QColor(emphasizedBackColor)},
+            'Average': {'fgColor': QColor(emphasizedTextColor), 'bgColor': QColor(emphasizedBackColor)},
+            'Highest average': {'fgColor': QColor(emphasizedTextColor), 'bgColor': QColor(emphasizedBackColor)},
+        }
+
+        columnColorDict = {
+            '*': {'alignment': 'center'},
+            'Total': {'fgColor': QColor(emphasizedTextColor), 'bgColor': QColor(emphasizedBackColor)},
+            'Totals': {'fgColor': QColor(emphasizedTextColor), 'bgColor': QColor(emphasizedBackColor)},
+            'Average': {'fgColor': QColor(emphasizedTextColor), 'bgColor': QColor(emphasizedBackColor)},
+            'Highest average': {'fgColor': QColor(emphasizedTextColor), 'bgColor': QColor(emphasizedBackColor)},
+            'Mass index': {'fgColor': QColor(emphasizedAltTextColor), 'bgColor': QColor(emphasizedBackColor)},
+        }
+
         row = self._ui.lwTabs.currentRow()
         self._ui.tvTabs.setEnabled(False)
         # self._ui.sbTUsize.setEnabled(False)
@@ -832,18 +825,14 @@ class Stats:
                                                                            totalColumn=True,
                                                                            compensate=self._compensation,
                                                                            considerBackground=self._considerBackground)
-            rowColorDict['Total'] = QColor(Qt.cyan)
-            columnColorDict['Total'] = QColor(Qt.cyan)
 
         if row == self.TAB_COUNTS_BY_HOUR:
             self._dataFrame = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
                                                             filters=self._classFilter,
-                                                            totalRow = True,
-                                                            totalColumn = True,
+                                                            totalRow=True,
+                                                            totalColumn=True,
                                                             compensate=self._compensation,
                                                             considerBackground=self._considerBackground)
-            rowColorDict['Total'] = QColor(Qt.cyan)
-            columnColorDict['Total'] = QColor(Qt.cyan)
 
         if row == self.TAB_COUNTS_BY_10M:
             self._dataFrame = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='10T',
@@ -852,46 +841,35 @@ class Stats:
                                                             totalColumn=True,
                                                             compensate=self._compensation,
                                                             considerBackground=self._considerBackground)
+
             self._dataFrame = self._dataSource.splitAndStackDataframe(self._dataFrame, maxColumns=24)
-            rowColorDict['Total'] = QColor(Qt.cyan)
-            columnColorDict['Total'] = QColor(Qt.cyan)
 
         if row == self.TAB_POWERS_BY_DAY:
             self._dataFrame = self._dataSource.dailyPowersByClassification(df, self._classFilter, self._parent.fromDate,
                                                                            self._parent.toDate,
                                                                            highestAvgRow=True, highestAvgColumn=True)
-            rowColorDict['Average'] = QColor(Qt.cyan)
-            columnColorDict['Average'] = QColor(Qt.cyan)
 
         if row == self.TAB_POWERS_BY_HOUR:
             self._dataFrame = self._dataSource.makePowersDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
                                                             filters=self._classFilter,
                                                             highestAvgRow=True, highestAvgColumn=True)
-            rowColorDict['Highest average'] = QColor(Qt.cyan)
-            columnColorDict['Highest average'] = QColor(Qt.cyan)
 
         if row == self.TAB_POWERS_BY_10M:
             self._dataFrame = self._dataSource.makePowersDf(df, self._parent.fromDate, self._parent.toDate, dtRes='10T',
                                                             filters=self._classFilter,
                                                             highestAvgRow=True, highestAvgColumn=True)
             self._dataFrame = self._dataSource.splitAndStackDataframe(self._dataFrame, maxColumns=24)
-            rowColorDict['Highest average'] = QColor(Qt.cyan)
-            columnColorDict['Highest average'] = QColor(Qt.cyan)
 
         if row == self.TAB_LASTINGS_BY_DAY:
             self._dataFrame = self._dataSource.dailyLastingsByClassification(df, self._classFilter,
                                                                              self._parent.fromDate,
                                                                              self._parent.toDate, highestAvgRow=True,
                                                                              highestAvgColumn=True)
-            rowColorDict['Average'] = QColor(Qt.cyan)
-            columnColorDict['Average'] = QColor(Qt.cyan)
 
         if row == self.TAB_LASTINGS_BY_HOUR:
             self._dataFrame = self._dataSource.makeLastingsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
                                                               filters=self._classFilter, highestAvgRow=True,
                                                               highestAvgColumn=True)
-            rowColorDict['Highest average'] = QColor(Qt.cyan)
-            columnColorDict['Highest average'] = QColor(Qt.cyan)
 
         if row == self.TAB_LASTINGS_BY_10M:
             self._dataFrame = self._dataSource.makeLastingsDf(df, self._parent.fromDate, self._parent.toDate,
@@ -899,8 +877,6 @@ class Stats:
                                                               filters=self._classFilter,
                                                               highestAvgRow=True, highestAvgColumn=True)
             self._dataFrame = self._dataSource.splitAndStackDataframe(self._dataFrame, maxColumns=24)
-            rowColorDict['Highest average'] = QColor(Qt.cyan)
-            columnColorDict['Highest average'] = QColor(Qt.cyan)
 
         if row == self.TAB_SESSIONS_REGISTER:
             # filters not applicable here
@@ -928,38 +904,34 @@ class Stats:
                 self._dataFrame = df.filter(items=['UNDER'], axis=0)
             elif 'OVER' in self._classFilter:
                 self._dataFrame = df.filter(items=['OVER'], axis=0)
-            rowColorDict['Total'] = QColor(Qt.cyan)
 
         if row == self.TAB_MASS_INDEX_BY_POWERS:
             sbf = None
             # self._ui.sbTUsize.setEnabled(True)
             if self._considerBackground:
                 # calculates a dataframe with sporadic background by thresholds
-                sbf = self.averageSporadicByThresholds(df, self._classFilter, dtRes='h', metric='power')
+                sbf = self._sporadicAveragesByThresholds(df, self._classFilter, TUsize=tuSize, metric='power',
+                                                         aggregateSporadic=True)
             self._dataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
                                                            self._parent.toDate,
-                                                           TUsize=self._ui.sbTUsize.value(), metric='power',
+                                                           TUsize=tuSize, metric='power',
                                                            sporadicBackgroundDf=sbf)
-            rowColorDict['Totals'] = QColor(Qt.cyan)
-            columnColorDict['Totals'] = QColor(Qt.cyan)
-            columnColorDict['Mass Index'] = QColor(Qt.green)
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
             sbf = None
             # self._ui.sbTUsize.setEnabled(True)
             if self._considerBackground:
                 # calculates a dataframe with sporadic background by thresholds
-                sbf = self.averageSporadicByThresholds(df, self._classFilter, dtRes='h', metric='lasting')
+                sbf = self._sporadicAveragesByThresholds(df, self._classFilter, TUsize=tuSize, metric='lasting',
+                                                         aggregateSporadic=True)
             self._dataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
                                                            self._parent.toDate,
-                                                           TUsize=self._ui.sbTUsize.value(), metric='lasting',
+                                                           TUsize=tuSize, metric='lasting',
                                                            sporadicBackgroundDf=sbf)
-            rowColorDict['Totals'] = QColor(Qt.cyan)
-            columnColorDict['Totals'] = QColor(Qt.cyan)
-            columnColorDict['Mass Index'] = QColor(Qt.green)
 
         self._ui.tvTabs.setEnabled(True)
-        model = PandasModel(self._dataFrame, rowColors=rowColorDict, columnColors=columnColorDict)
+        model = PandasModel(self._dataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
+        # model = PandasModel(self._dataFrame)
         self._ui.tvTabs.setModel(model)
         self._parent.busy(False)
 
@@ -1932,10 +1904,7 @@ class Stats:
         return pd.DataFrame(results, index=['alpha']).T
     '''
 
-    import pandas as pd
-    import numpy as np
-
-    def _calculateMassIndex(self, df, thresholds):
+    def _calculateMassIndex(self, df: pd.DataFrame, thresholds: list):
         """
         Calculates the mass index for each time unit (row) in the DataFrame using numpy.polyfit().
 
@@ -1967,7 +1936,9 @@ class Stats:
                 # Perform linear regression using numpy.polyfit()
                 coefficients = np.polyfit(logThresholds, logCounts, 1)
                 slope = coefficients[0]  # Slope is the coefficient of x
-                results[timeUnit] = 1 - ((abs(slope) * 4.0) / 3.0)      # Mass index is the absolute value of the slope
+                k = 2.166  # according to Flavio Falcinelli sample code
+                results[timeUnit] = 1 - (
+                        ((abs(slope) - k) * 4.0) / 3.0)  # derived from Mario Sandri's thesis chap.6 formula 6.16
 
             except Exception as e:
                 print(f"Error during fit for {timeUnit}: {e}")
@@ -1978,7 +1949,7 @@ class Stats:
 
         return pd.DataFrame(results, index=['alpha']).T
 
-    def dailyCountsByThresholds(self, df, filters, dateFrom=None, dateTo=None, TUsize=1, metric='power',
+    def dailyCountsByThresholds(self, df, filters, dateFrom=None, dateTo=None, TUsize: int = 1, metric: str = 'power',
                                 sporadicBackgroundDf=None):
         """
         Calculates event counts per threshold, adds totals per threshold, mass index, and average mass index.
@@ -2137,7 +2108,7 @@ class Stats:
                     self._parent.updateStatusBar("Converting power thresholds to mW partially failed")
                     print("thresholds in dB:", thresholds)
                     print("thresholds in mW:", thresholdsMw)
-                    thresholds = thresholdsMw
+                thresholds = thresholdsMw
 
             # Calculate mass index
             massIndices = self._calculateMassIndex(odf.drop('Totals', axis=1), thresholds)
@@ -2146,10 +2117,10 @@ class Stats:
                 raise ValueError("Mass index calculation failed.")
 
             # Add mass index as a column (round to 8 decimal places)
-            odf['Mass Index'] = massIndices['alpha'].round(8).values
+            odf['Mass index'] = massIndices['alpha'].round(8).values
 
             # Handle zero counts in time unit by setting mass index to NaN
-            odf.loc[odf['Totals'] == 0, 'Mass Index'] = np.nan
+            odf.loc[odf['Totals'] == 0, 'Mass index'] = np.nan
 
             # Add totals per threshold
             odf = pd.concat([odf, pd.DataFrame(totalsPerThreshold).T])
@@ -2161,7 +2132,7 @@ class Stats:
             odf['Totals'] = odf['Totals'].astype(int)
 
             # Calculate average mass index in the last cell
-            odf.loc['Totals', 'Mass Index'] = odf['Mass Index'].mean().round(8)
+            odf.loc['Totals', 'Mass index'] = odf['Mass index'].mean().round(8)
 
         except Exception as e:
             print(f"Error in dailyCountsByThresholds: {e}")
