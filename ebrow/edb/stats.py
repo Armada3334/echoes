@@ -51,7 +51,7 @@ from .bargraph import Bargraph
 from .statplot import StatPlot
 from .miplot import MIPlot
 from .pandasmodel import PandasModel
-from .utilities import notice, cryptDecrypt, mkExportFolder
+from .utilities import notice, cryptDecrypt, mkExportFolder, addDateDelta
 from .logprint import print, fprint
 
 '''
@@ -586,8 +586,6 @@ class Stats:
         self._parent.busy(False)
         return calcDone
 
-    import pandas as pd
-    from PyQt5.QtCore import QCoreApplication
 
     def _sporadicAveragesByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
                                       TUsize: int = 1, metric: str = 'power', aggregateSporadic: bool = False):
@@ -614,19 +612,39 @@ class Stats:
                 for intervalStr in sporadicDatesList:
                     qApp.processEvents()
                     dates = intervalStr.split(" -> ")
-                    sbdf = self._sporadicAveragesByThresholds(df, filters, dates[0], dates[1], TUsize, metric, False)
+                    sbdf = self._sporadicAveragesByThresholds(df, filters, dates[0], dates[1], TUsize, metric,
+                                                             False)
                     sbdfList.append(sbdf)
 
                 # Concatenate results and compute mean
                 combinedSbdf = pd.concat(sbdfList, keys=range(len(sbdfList)))
-                return combinedSbdf.groupby(level=1).mean()
+                return combinedSbdf.groupby(level=1).mean().round().astype(int)
             return None
 
         # Calculate sporadic averages for a given date range
-        odf = self._dataSource.dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric)
-        sbdf = odf.groupby(level='time_unit').mean()
-        return sbdf
+        odf = self.dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric, isSporadic=True)
 
+        if odf is None or odf.empty:
+            return pd.DataFrame()
+
+        # Extract time units from the MultiIndex
+        timeUnits = odf.index.get_level_values('time_unit').unique()
+
+        # Initialize an empty DataFrame to store the averaged results
+        averagedData = {}
+
+        # Iterate through each unique time unit
+        for timeUnit in timeUnits:
+            # Filter odf for the current time unit
+            timeUnitData = odf.xs(timeUnit, level='time_unit')
+
+            # Calculate the mean for the current time unit and round to the nearest integer
+            averagedData[timeUnit] = timeUnitData.mean().round().astype(int)
+
+        # Create a new DataFrame from the averaged data
+        sbdf = pd.DataFrame.from_dict(averagedData, orient='index')
+
+        return sbdf
     def updateAndSendRMOBfiles(self):
         self.updateRMOBfiles(sendOk=True)
 
@@ -910,7 +928,10 @@ class Stats:
             # self._ui.sbTUsize.setEnabled(True)
             if self._considerBackground:
                 # calculates a dataframe with sporadic background by thresholds
-                sbf = self._sporadicAveragesByThresholds(df, self._classFilter, TUsize=tuSize, metric='power',
+                # the sporadic is calculated starting from a base of an entire year of data
+                oneYearAgo = addDateDelta(self._parent.fromDate, -366)
+                fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
+                sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=tuSize, metric='power',
                                                          aggregateSporadic=True)
             self._dataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
                                                            self._parent.toDate,
@@ -922,7 +943,10 @@ class Stats:
             # self._ui.sbTUsize.setEnabled(True)
             if self._considerBackground:
                 # calculates a dataframe with sporadic background by thresholds
-                sbf = self._sporadicAveragesByThresholds(df, self._classFilter, TUsize=tuSize, metric='lasting',
+                # the sporadic is calculated starting from a base of an entire year of data
+                oneYearAgo = addDateDelta(self._parent.fromDate, -366)
+                fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
+                sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=tuSize, metric='lasting',
                                                          aggregateSporadic=True)
             self._dataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
                                                            self._parent.toDate,
@@ -1950,7 +1974,7 @@ class Stats:
         return pd.DataFrame(results, index=['alpha']).T
 
     def dailyCountsByThresholds(self, df, filters, dateFrom=None, dateTo=None, TUsize: int = 1, metric: str = 'power',
-                                sporadicBackgroundDf=None):
+                                isSporadic=False, sporadicBackgroundDf=None):
         """
         Calculates event counts per threshold, adds totals per threshold, mass index, and average mass index.
 
@@ -1961,6 +1985,7 @@ class Stats:
             dateTo (str, optional): End date for filtering. Defaults to None.
             TUsize (int, optional): Time unit size in hours (1-24). Defaults to 1.
             metric (str, optional): Metric to use ('power' or 'lasting'). Defaults to 'power'.
+            isSporadic (bool, optional): the method has been called to calculate the sporadic background
             sporadicBackgroundDf (pd.DataFrame, optional): DataFrame with sporadic background data. Defaults to None.
 
         Returns:
@@ -1987,13 +2012,13 @@ class Stats:
         if dateTo:
             dateTo = pd.to_datetime(dateTo)
 
-        # Adjust dateFrom if the range exceeds 15 days
+        # Adjust dateFrom if the range exceeds 30 days
         if dateFrom and dateTo:
             dateRange = (dateTo - dateFrom).days
-            if dateRange > 15:
-                dateFrom = dateTo - pd.Timedelta(days=15)  # Set dateFrom to 15 days before dateTo
+            if dateRange > 30:
+                dateFrom = dateTo - pd.Timedelta(days=30)  # Set dateFrom to 30 days before dateTo
                 self._parent.infoMessage("Warning",
-                                         "The selected coverage exceeds the 15 days limit for mass indexes calculation.\n"
+                                         "The selected coverage exceeds the 30 days limit for mass indexes calculation.\n"
                                          f"The days preceeding {dateFrom} won't be considered")
 
         # Filter by event_status and date range
@@ -2031,7 +2056,11 @@ class Stats:
         sortedThresholds = sorted(thresholds, reverse=True)
 
         # Iterate through ALL date/time unit combinations
-        self._parent.updateStatusBar("Calculating cumulative counts by time unit")
+        if isSporadic:
+            self._parent.updateStatusBar("Sporadic background: calculating cumulative counts by time unit")
+        else:
+            self._parent.updateStatusBar("Calculating cumulative counts by time unit")
+
         doneItems = 0
         for utcDate, timeUnit in odf.index:  # Iterate through the MultiIndex
             # Extract start and end hour from timeUnit
@@ -2070,12 +2099,12 @@ class Stats:
         for col in odf.columns:
             odf[col] = odf[col].fillna(0).astype(int)
 
-        if sporadicBackgroundDf is not None:
-            # Check sporadicBackgroundDf dimensions
-            if len(sporadicBackgroundDf.columns) != len(thresholds):
-                raise ValueError("sporadicBackgroundDf must have the same number of columns as thresholds.")
-
+        if isSporadic is False and sporadicBackgroundDf is not None:
             self._parent.updateStatusBar("Subtracting sporadic background by thresholds")
+            # Check sporadicBackgroundDf dimensions
+            if len(sporadicBackgroundDf.columns) != (len(thresholds)):
+                raise ValueError("sporadicBackgroundDf columns and thresholds don't match")
+
             doneItems = 0
             for timeUnit in odf.index:
                 for threshold in thresholds:
@@ -2084,55 +2113,57 @@ class Stats:
                         colName = f"{threshold:.1f}"  # Format power thresholds with one decimal
                     else:
                         colName = str(threshold)  # Lasting thresholds as integers
+                    hourOnly = timeUnit[1]
                     backgroundValue = sporadicBackgroundDf.loc[
-                        timeUnit, colName] if timeUnit in sporadicBackgroundDf.index else 0
-                    odf.loc[timeUnit, colName] -= backgroundValue
-
+                        hourOnly, colName] if hourOnly in sporadicBackgroundDf.index else 0
+                    odf.loc[timeUnit, colName] = max(0, odf.loc[timeUnit, colName] - backgroundValue)
                 doneItems += 1
                 self._parent.updateProgressBar(doneItems, len(odf.index))
 
         try:
-            self._parent.updateStatusBar("Calculating counts totals")
+            if not isSporadic:
+                # totals and mass indices are not calculated for sporadic background
+                self._parent.updateStatusBar("Calculating counts totals")
 
-            # Calculate total events per time unit (convert to integer)
-            odf['Totals'] = odf.sum(axis=1).astype(int)
+                # Calculate total events per time unit (convert to integer)
+                odf['Totals'] = odf.sum(axis=1).astype(int)
 
-            # Calculate totals per threshold
-            totalsPerThreshold = odf.drop('Totals', axis=1).sum(axis=0)
-            totalsPerThreshold.name = 'Totals'
+                # Calculate totals per threshold
+                totalsPerThreshold = odf.drop('Totals', axis=1).sum(axis=0)
+                totalsPerThreshold.name = 'Totals'
 
-            if metric == 'power':
-                # Convert thresholds to linear values to avoid calculate log(0)
-                thresholdsMw = self._settings.powerThresholds(wantMw=True)
-                if len(thresholdsMw) < len(thresholds):
-                    self._parent.updateStatusBar("Converting power thresholds to mW partially failed")
-                    print("thresholds in dB:", thresholds)
-                    print("thresholds in mW:", thresholdsMw)
-                thresholds = thresholdsMw
+                if metric == 'power':
+                    # Convert thresholds to linear values to avoid calculate log(0)
+                    thresholdsMw = self._settings.powerThresholds(wantMw=True)
+                    if len(thresholdsMw) < len(thresholds):
+                        self._parent.updateStatusBar("Converting power thresholds to mW partially failed")
+                        print("thresholds in dB:", thresholds)
+                        print("thresholds in mW:", thresholdsMw)
+                    thresholds = thresholdsMw
 
-            # Calculate mass index
-            massIndices = self._calculateMassIndex(odf.drop('Totals', axis=1), thresholds)
+                # Calculate mass index
+                massIndices = self._calculateMassIndex(odf.drop('Totals', axis=1), thresholds)
 
-            if massIndices is None:
-                raise ValueError("Mass index calculation failed.")
+                if massIndices is None:
+                    raise ValueError("Mass index calculation failed.")
 
-            # Add mass index as a column (round to 8 decimal places)
-            odf['Mass index'] = massIndices['alpha'].round(8).values
+                # Add mass index as a column (round to 8 decimal places)
+                odf['Mass index'] = massIndices['alpha'].round(8).values
 
-            # Handle zero counts in time unit by setting mass index to NaN
-            odf.loc[odf['Totals'] == 0, 'Mass index'] = np.nan
+                # Handle zero counts in time unit by setting mass index to NaN
+                odf.loc[odf['Totals'] == 0, 'Mass index'] = np.nan
 
-            # Add totals per threshold
-            odf = pd.concat([odf, pd.DataFrame(totalsPerThreshold).T])
+                # Add totals per threshold
+                odf = pd.concat([odf, pd.DataFrame(totalsPerThreshold).T])
 
-            # Calculate total events in the penultimate cell
-            odf.loc['Totals', 'Totals'] = odf['Totals'].sum()
+                # Calculate total events in the penultimate cell
+                odf.loc['Totals', 'Totals'] = odf['Totals'].sum()
 
-            # Convert 'Totals' column to integer after concat
-            odf['Totals'] = odf['Totals'].astype(int)
+                # Convert 'Totals' column to integer after concat
+                odf['Totals'] = odf['Totals'].astype(int)
 
-            # Calculate average mass index in the last cell
-            odf.loc['Totals', 'Mass index'] = odf['Mass index'].mean().round(8)
+                # Calculate average mass index in the last cell
+                odf.loc['Totals', 'Mass index'] = odf['Mass index'].mean().round(8)
 
         except Exception as e:
             print(f"Error in dailyCountsByThresholds: {e}")
