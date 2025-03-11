@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>8</hour>
+                    <hour>6</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>10</hour>
+                    <hour>6</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>8</hour>
+                    <hour>4</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -13845,21 +13845,81 @@ font: 10pt &quot;Gauge&quot;;
              <attribute name="title">
               <string>Tabular data</string>
              </attribute>
-             <layout class="QVBoxLayout" name="verticalLayout_12">
+             <layout class="QVBoxLayout" name="verticalLayout_66">
               <item>
-               <widget class="QTableView" name="tvTabs">
-                <property name="toolTip">
-                 <string>to display tables as stored in database</string>
+               <widget class="QTabWidget" name="twTables">
+                <property name="currentIndex">
+                 <number>0</number>
                 </property>
-                <property name="frameShape">
-                 <enum>QFrame::Box</enum>
-                </property>
-                <property name="frameShadow">
-                 <enum>QFrame::Plain</enum>
-                </property>
-                <property name="alternatingRowColors">
-                 <bool>true</bool>
-                </property>
+                <widget class="QWidget" name="tabFinal">
+                 <attribute name="title">
+                  <string>Final data</string>
+                 </attribute>
+                 <layout class="QVBoxLayout" name="verticalLayout_12">
+                  <item>
+                   <widget class="QTableView" name="tvTabs">
+                    <property name="toolTip">
+                     <string>to display tables as stored in database</string>
+                    </property>
+                    <property name="frameShape">
+                     <enum>QFrame::Box</enum>
+                    </property>
+                    <property name="frameShadow">
+                     <enum>QFrame::Plain</enum>
+                    </property>
+                    <property name="alternatingRowColors">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+                <widget class="QWidget" name="tabRaw">
+                 <attribute name="title">
+                  <string>Raw data</string>
+                 </attribute>
+                 <layout class="QVBoxLayout" name="verticalLayout_64">
+                  <item>
+                   <widget class="QTableView" name="tvTabsRaw">
+                    <property name="toolTip">
+                     <string>to display tables as stored in database</string>
+                    </property>
+                    <property name="frameShape">
+                     <enum>QFrame::Box</enum>
+                    </property>
+                    <property name="frameShadow">
+                     <enum>QFrame::Plain</enum>
+                    </property>
+                    <property name="alternatingRowColors">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+                <widget class="QWidget" name="tabBg">
+                 <attribute name="title">
+                  <string>Sporadic background</string>
+                 </attribute>
+                 <layout class="QVBoxLayout" name="verticalLayout_65">
+                  <item>
+                   <widget class="QTableView" name="tvTabsBg">
+                    <property name="toolTip">
+                     <string>to display tables as stored in database</string>
+                    </property>
+                    <property name="frameShape">
+                     <enum>QFrame::Box</enum>
+                    </property>
+                    <property name="frameShadow">
+                     <enum>QFrame::Plain</enum>
+                    </property>
+                    <property name="alternatingRowColors">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
                </widget>
               </item>
              </layout>

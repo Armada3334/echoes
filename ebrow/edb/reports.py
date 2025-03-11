@@ -580,7 +580,7 @@ class Report:
 
             df = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
 
-            dailyDf = self._dataSource.dailyCountsByClassification(df, self._classFilter,
+            dailyDf, rawDf, bgDf = self._dataSource.dailyCountsByClassification(df, self._classFilter,
                                                                    self._parent.fromDate, self._parent.toDate,
                                                                    totalRow=True, totalColumn=True)
 

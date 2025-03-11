@@ -77,6 +77,9 @@ class DataSource:
         self._deltaEvents = (0, 0)
         self.dataReady = False
         self.cacheNeedsUpdate = False
+        self.avgDailyDict = dict()
+        self.avgHourDf = None
+        self.avg10minDf = None
 
         # pd.set_option('display.precision', 4)
         # Configure Pandas to show 4-decimal floats
@@ -1091,20 +1094,23 @@ class DataSource:
 
     def dailyPowersByClassification(self, df, filters, dateFrom=None, dateTo=None, highestAvgRow=False,
                                     highestAvgColumn=False):
-        return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='power',
+        tupleDf = self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='power',
                                                       highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
+        return tupleDf[0]
 
     def dailyLastingsByClassification(self, df, filters, dateFrom=None, dateTo=None, highestAvgRow=False,
                                       highestAvgColumn=False):
-        return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='lasting', dtDec=0,
+        tupleDf = self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='lasting', dtDec=0,
                                                       highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
 
+        return tupleDf[0]
+
     def _dailyAggregationByClassification(self, df: pd.DataFrame, filters: str, dateFrom: str = None,
-                                          dateTo: str = None,
-                                          metric: str = 'count', dtDec: int = 1, totalRow: bool = False,
-                                          totalColumn: bool = False,
-                                          compensate: bool = False, considerBackground: bool = False,
-                                          highestAvgRow: bool = False, highestAvgColumn: bool = False) -> pd.DataFrame:
+                                         dateTo: str = None,
+                                         metric: str = 'count', dtDec: int = 1, totalRow: bool = False,
+                                         totalColumn: bool = False,
+                                         compensate: bool = False, considerBackground: bool = False,
+                                         highestAvgRow: bool = False, highestAvgColumn: bool = False) -> tuple:
         """
         Aggregates daily metrics (count, mean of 'diff', or mean of 'lasting_ms') by classification.
 
@@ -1120,9 +1126,9 @@ class DataSource:
         @param considerBackground: If True, subtract background values
         @param highestAvgRow: Add a row with the average of each column
         @param highestAvgColumn: Add a column with the average of each row
-        @return: DataFrame with daily aggregated metrics by classification
+        @return: tuple of dataframes final data and raw data and sporadic background data
+        (raw and sb data are None if no SB compensation or subtraction are required)
         """
-        avgDailyDict = self._parent.tabStats.avgDailyDict if hasattr(self._parent, 'tabStats') else {}
 
         df.set_index('id')
 
@@ -1140,11 +1146,13 @@ class DataSource:
             classList.remove('ACQ ACT')
 
         resultsList = []
+        rawResultsList = []
         for cl in classList:
             cl = cl.strip()
             qApp.processEvents()
             fdf = df.loc[(df['classification'] == cl)].copy()
             metricDict = {}
+            rawMetricDict = None
 
             for dt in dtList:
                 qApp.processEvents()
@@ -1167,8 +1175,9 @@ class DataSource:
                     value = np.nan
 
                 # Apply background adjustments
-                if metric == 'count' and avgDailyDict:
-                    background = avgDailyDict.get(cl, 0)
+                if metric == 'count' and self.avgDailyDict:
+                    background = self.avgDailyDict.get(cl, 0)
+                    rawValue = value
                     if compensate and value < background:
                         value = background
                     if considerBackground:
@@ -1181,42 +1190,93 @@ class DataSource:
                 else:
                     metricDict[dt] = round(value) if not pd.isna(value) else -1
 
+                if compensate or considerBackground:
+                    if rawMetricDict is None:  # Initialize rawMetricDict only if needed
+                        rawMetricDict = {}
+                    if dtDec > 0:
+                        rawMetricDict[dt] = round(rawValue, dtDec) if not pd.isna(rawValue) else np.nan
+                    else:
+                        rawMetricDict[dt] = round(rawValue) if not pd.isna(rawValue) else -1
+
             resultsList.append(pd.Series(metricDict))
+            if rawMetricDict:
+                rawResultsList.append(pd.Series(rawMetricDict))
 
         # Combine results into a DataFrame
         newDf = pd.concat(resultsList, axis=1)
 
-        # Controlla se tutti i tipi di dati originali sono interi
-        all_integers = all(dtype.kind == 'i' for dtype in newDf.dtypes)
+        # Check if all original data types are integers
+        allIntegers = all(dtype.kind == 'i' for dtype in newDf.dtypes)
 
         # Add totals or averages
         if totalRow:
-            total_row = newDf.sum(numeric_only=True)
-            newDf.loc['Total'] = total_row.astype(int) if all_integers else total_row  # Interi solo se tutto è intero
+            totalRowResult = newDf.sum(numeric_only=True)  # Renamed local variable
+            newDf.loc['Total'] = totalRowResult.astype(int) if allIntegers else totalRowResult
 
         if totalColumn:
-            total_column = newDf.sum(axis=1)
-            newDf['Total'] = total_column.astype(int) if all_integers else total_column
+            totalColumnResult = newDf.sum(axis=1)  # Renamed local variable
+            newDf['Total'] = totalColumnResult.astype(int) if allIntegers else totalColumnResult
             classList.append('Total')
 
-        # Calcolo della colonna Average
+        # Calculate Average column
         if highestAvgColumn:
             averages = newDf.apply(lambda row: row[row != 0].mean(), axis=1).round(1)
-            newDf['Average'] = averages.astype(int) if all_integers else averages
+            newDf['Average'] = averages.astype(int) if allIntegers else averages
             classList.append('Average')
 
-        # Calcolo della riga Average
+        # Calculate Average row
         if highestAvgRow:
             averages = newDf.apply(lambda col: col[col != 0].mean(), axis=0).round(1)
-            newDf.loc['Average'] = averages.astype(int) if all_integers else averages
+            newDf.loc['Average'] = averages.astype(int) if allIntegers else averages
 
-        # Evitare conflitti tra Average row e Average column
+        # Avoid conflicts between Average row and Average column
         if highestAvgColumn and highestAvgRow:
-            newDf.at['Average', 'Average'] = -1 if all_integers else None
+            newDf.at['Average', 'Average'] = -1 if allIntegers else None
 
-        # Riassegna i nomi delle colonne
+        # Reassign column names
         newDf.columns = classList
-        return newDf
+
+        # Generate the dataframe for raw data if required
+        rawDf = None
+        sbDf = None
+        if rawResultsList:
+            rawDf = pd.concat(rawResultsList, axis=1)
+
+            # Check if all original data types are integers
+            allIntegers = all(dtype.kind == 'i' for dtype in rawDf.dtypes)
+
+            # Add totals or averages
+            if totalRow:
+                totalRowResult = rawDf.sum(numeric_only=True)  # Renamed local variable
+                rawDf.loc['Total'] = totalRowResult.astype(int) if allIntegers else totalRowResult
+
+            if totalColumn:
+                totalColumnResult = rawDf.sum(axis=1)  # Renamed local variable
+                rawDf['Total'] = totalColumnResult.astype(int) if allIntegers else totalColumnResult
+
+            # Calculate Average column
+            if highestAvgColumn:
+                averages = rawDf.apply(lambda row: row[row != 0].mean(), axis=1).round(1)
+                rawDf['Average'] = averages.astype(int) if allIntegers else averages
+
+            # Calculate Average row
+            if highestAvgRow:
+                averages = rawDf.apply(lambda col: col[col != 0].mean(), axis=0).round(1)
+                rawDf.loc['Average'] = averages.astype(int) if allIntegers else averages
+
+            # Avoid conflicts between Average row and Average column
+            if highestAvgColumn and highestAvgRow:
+                rawDf.at['Average', 'Average'] = -1 if allIntegers else None
+
+            # Reassign column names
+            rawDf.columns = classList
+
+            sbDf = pd.DataFrame.from_dict([self.avgDailyDict])
+            sbDf = sbDf[['OVER', 'UNDER']]
+            totalColumnResult = sbDf.sum(axis=1)
+            sbDf['Total'] = totalColumnResult.astype(int)
+
+        return newDf, rawDf, sbDf
 
     def totalsByClassification(self, filters: str, considerBackground: bool = False,
                                compensate: bool = False) -> pd.DataFrame:
@@ -2267,7 +2327,7 @@ class DataSource:
     def makeCountsDf(
             self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, filters: str = '',
             compensate: bool = False, considerBackground: bool = False, totalRow: bool = False,
-            totalColumn: bool = False, placeholder: int = 0):
+            totalColumn: bool = False, placeholder: int = 0) -> tuple:
 
         """
         Computes event counts grouped by day and time resolution.
@@ -2282,7 +2342,7 @@ class DataSource:
         :param totalRow: Adds a row with totals for each column.
         :param totalColumn: Adds a column with totals for each row.
         :param placeholder: value to replace NaNs
-        :return: DataFrame with the requested counts.
+        :return: tuple of dataframes with: requested counts, raw counts and sporadic background applied.
         """
         # Filter the DataFrame for relevant events
         df = df[df['event_status'] == 'Fall'].copy()
@@ -2297,14 +2357,44 @@ class DataSource:
         # Generate time intervals and column names
         dtRange = pd.date_range(dtStart, dtEndInclusive, freq=dtRes)
         columns = self._generateColumns(dtRange, dtRes)
-        odf = pd.DataFrame(columns=columns, dtype='int32')
-
+        finalDf = pd.DataFrame(columns=columns, dtype='int32')
+        rawDf = pd.DataFrame(columns=columns, dtype='int32')
+        sbDf = None
         # Iterate over time intervals to calculate counts
         for i in range(len(dtRange) - 1):
             dtFrom = dtRange[i]
             dtTo = dtRange[i + 1]
             subDf = df[(df['datetime'] >= dtFrom) & (df['datetime'] < dtTo)]
             count = len(subDf)
+
+            background = 0
+            if dtRes == 'D':
+                sbDf = pd.DataFrame([self.avgDailyDict])
+                if 'OVER' in filters:
+                    background += sbDf.loc[0, 'OVER']
+                if 'UNDER' in filters:
+                    background += sbDf.loc[0,'UNDER']
+                timeUnit = dtFrom.date()
+
+            if dtRes == 'h':
+                sbDf = self.avgHourDf
+                hour = dtFrom.hour
+                timeUnit = f"{hour:02d}h"
+
+                if 'OVER' in filters:
+                    background += sbDf.loc['OVER', timeUnit]
+                if 'UNDER' in filters:
+                    background += sbDf.loc['UNDER', timeUnit]
+
+            if dtRes == '10T':
+                sbDf = self.avg10minDf
+                hour = dtFrom.hour
+                minute = dtFrom.minute
+                timeUnit = f"{hour:02d}h{minute:02d}m"
+                if 'OVER' in filters:
+                    background += sbDf.loc['OVER', timeUnit]
+                if 'UNDER' in filters:
+                    background += sbDf.loc['UNDER', timeUnit]
 
             hole = False
             if count == 0 and 'ACQ ACT' in filters:
@@ -2320,33 +2410,36 @@ class DataSource:
                     count = placeholder
                     hole = True
 
-                if not hole:
-                    # Adjust counts based on background or compensation rules
-                    count = self._adjustCount(count, dtRes, compensate, considerBackground)
+            rawCount = count
+            if not hole:
+                # Adjust counts based on background or compensation rules
+                if compensate and count < background:
+                    count = background
+                if considerBackground:
+                    count -= background
+                count = max(count, 0)
 
             row = dtFrom.date().strftime('%Y-%m-%d')
             column = self._formatColumnName(dtFrom, dtRes)
 
-            if row not in odf.index:
-                odf.loc[row] = placeholder
-            odf.at[row, column] = count
+            if row not in rawDf.index:
+                rawDf.loc[row] = placeholder
+            rawDf.at[row, column] = rawCount
+
+            if row not in finalDf.index:
+                finalDf.loc[row] = placeholder
+            finalDf.at[row, column] = count
 
         # Add totals for rows and columns
         if totalColumn:
-            odf['Total'] = odf.sum(axis=1)
+            rawDf['Total'] = rawDf.sum(axis=1)
+            finalDf['Total'] = finalDf.sum(axis=1)
         if totalRow:
-            odf.loc['Total'] = odf.sum()
+            rawDf.loc['Total'] = rawDf.sum()
+            finalDf.loc['Total'] = finalDf.sum()
 
-        return odf
+        return finalDf, rawDf, sbDf
 
-    def _adjustCount(self, count, dtRes, compensate, considerBackground):
-        """Adjusts the count based on background and compensation rules."""
-        background = 0  # Add logic to calculate the background if needed
-        if compensate and count < background:
-            count = background
-        if considerBackground:
-            count -= background
-        return max(count, 0)
 
     def _formatColumnName(self, dtFrom, dtRes):
         """

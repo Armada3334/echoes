@@ -31,6 +31,7 @@ import json
 import platform
 from pathlib import Path
 from datetime import datetime
+from typing import Union
 
 import numpy as np
 # from scipy.optimize import curve_fit
@@ -116,9 +117,8 @@ class Stats:
         self._classFilter = ''
         self._classFilterRMOB = "OVER,UNDER,ACQ ACT"
         self._dataFrame = None
-        self.avgDailyDict = dict()
-        self.avgHourDf = None
-        self.avg10minDf = None
+        self._rawDataFrame = None
+        self._sbDataFrame = None
         self._considerBackground = False
         self._compensation = False
         self._ui.chkSubSB.setEnabled(False)
@@ -349,7 +349,7 @@ class Stats:
             self.TAB_SPORADIC_BG_BY_HOUR: {
                 "title": "Sporadic background by hour",
                 "resolution": "hour",
-                "dataFunction": lambda df: self._selectSporadicDf(self.avgHourDf),
+                "dataFunction": lambda df: self._selectSporadicDf(self._dataSource.avgHourDf),
                 # note: the df parameter is intentionally ignored
                 "dataArgs": {},
                 "seriesFunction": self._dataSource.tableTimeSeries,
@@ -360,7 +360,7 @@ class Stats:
             self.TAB_SPORADIC_BG_BY_10M: {
                 "title": "Sporadic background by 10-minute intervals",
                 "resolution": "10m",
-                "dataFunction": lambda df: self._selectSporadicDf(self.avg10minDf),
+                "dataFunction": lambda df: self._selectSporadicDf(self._dataSource.avg10minDf),
                 "dataArgs": {},
                 "seriesFunction": self._dataSource.tableTimeSeries,
                 "seriesArgs": {"columns": range(0, 144)},
@@ -371,21 +371,22 @@ class Stats:
         return tableRowConfig
 
     def updateTabStats(self):
+        self._dataSource = self._parent.dataSource
         if self._ui.twMain.currentIndex() == self._parent.TWMAIN_STATISTICS:
             enableSB = 0
             avgDailyStr = self._settings.readSettingAsObject('sporadicBackgroundDaily')
             if len(avgDailyStr) > 0:
-                self.avgDailyDict = json.loads(avgDailyStr)
+                self._dataSource.avgDailyDict = json.loads(avgDailyStr)
                 enableSB |= 1
 
             avgHourStr = self._settings.readSettingAsObject('sporadicBackgroundByHour')
             if len(avgHourStr) > 0:
-                self.avgHourDf = pd.DataFrame.from_dict(json.loads(avgHourStr))
+                self._dataSource.avgHourDf = pd.DataFrame.from_dict(json.loads(avgHourStr))
                 enableSB |= 2
 
             avg10minStr = self._settings.readSettingAsObject('sporadicBackgroundBy10min')
             if len(avg10minStr) > 0:
-                self.avg10minDf = pd.DataFrame.from_dict(json.loads(avg10minStr))
+                self._dataSource.avg10minDf = pd.DataFrame.from_dict(json.loads(avg10minStr))
                 enableSB |= 4
 
             timeUnitSize = self._settings.readSettingAsInt('MItimeUnitSize')
@@ -548,39 +549,39 @@ class Stats:
             if avgHdfUnder is not None:
                 avgHourDfUnder = avgHdfUnder.mean().round(0).astype(int).to_frame().T
                 avgDailyCountUnder = int(avgHourDfUnder.iloc[0].sum())
-                self.avgHourDf = avgHourDfUnder
-                self.avgHourDf = self.avgHourDf.rename(index={0: 'UNDER'})
+                self._dataSource.avgHourDf = avgHourDfUnder
+                self._dataSource.avgHourDf = self._dataSource.avgHourDf.rename(index={0: 'UNDER'})
 
             if avgHdfOver is not None:
                 avgHourDfOver = avgHdfOver.mean().round(0).astype(int).to_frame().T
                 avgDailyCountOver = int(avgHourDfOver.iloc[0].sum())
-                self.avgHourDf = pd.concat([self.avgHourDf, avgHourDfOver])
-                self.avgHourDf = self.avgHourDf.rename(index={0: 'OVER'})
+                self._dataSource.avgHourDf = pd.concat([self._dataSource.avgHourDf, avgHourDfOver])
+                self._dataSource.avgHourDf = self._dataSource.avgHourDf.rename(index={0: 'OVER'})
 
-            avgDailyDict = {'UNDER': avgDailyCountUnder, 'OVER': avgDailyCountOver}
-            avgDailyStr = json.dumps(avgDailyDict)
+            self._dataSource.avgDailyDict = {'UNDER': avgDailyCountUnder, 'OVER': avgDailyCountOver}
+            avgDailyStr = json.dumps( self._dataSource.avgDailyDict)
             self._settings.writeSetting('sporadicBackgroundDaily', avgDailyStr)
             calcDone = True
 
-            if self.avgHourDf is not None:
-                if self.avgHourDf.shape[0] > 0:
-                    self.avgHourDf.loc['Total'] = self.avgHourDf.sum(numeric_only=True, axis=0)
-                    avgHourStr = json.dumps(self.avgHourDf.to_dict())
+            if self._dataSource.avgHourDf is not None:
+                if self._dataSource.avgHourDf.shape[0] > 0:
+                    self._dataSource.avgHourDf.loc['Total'] = self._dataSource.avgHourDf.sum(numeric_only=True, axis=0)
+                    avgHourStr = json.dumps(self._dataSource.avgHourDf.to_dict())
                     self._settings.writeSetting('sporadicBackgroundByHour', avgHourStr)
 
             if avg10dfUnder is not None:
-                self.avg10minDf = avg10dfUnder.mean().round(0).astype(int).to_frame().T
-                self.avg10minDf = self.avg10minDf.rename(index={0: 'UNDER'})
+                self._dataSource.avg10minDf = avg10dfUnder.mean().round(0).astype(int).to_frame().T
+                self._dataSource.avg10minDf = self._dataSource.avg10minDf.rename(index={0: 'UNDER'})
 
             if avg10dfOver is not None:
                 avg10minDfOver = avg10dfOver.mean().round(0).astype(int).to_frame().T
-                self.avg10minDf = pd.concat([self.avg10minDf, avg10minDfOver])
-                self.avg10minDf = self.avg10minDf.rename(index={0: 'OVER'})
+                self._dataSource.avg10minDf = pd.concat([self._dataSource.avg10minDf, avg10minDfOver])
+                self._dataSource.avg10minDf = self._dataSource.avg10minDf.rename(index={0: 'OVER'})
 
-            if self.avg10minDf is not None:
-                if self.avg10minDf.shape[0] > 0:
-                    self.avg10minDf.loc['Total'] = self.avg10minDf.sum(numeric_only=True, axis=0)
-                    avg10minStr = json.dumps(self.avg10minDf.to_dict())
+            if self._dataSource.avg10minDf is not None:
+                if self._dataSource.avg10minDf.shape[0] > 0:
+                    self._dataSource.avg10minDf.loc['Total'] = self._dataSource.avg10minDf.sum(numeric_only=True, axis=0)
+                    avg10minStr = json.dumps(self._dataSource.avg10minDf.to_dict())
                     self._settings.writeSetting('sporadicBackgroundBy10min', avg10minStr)
 
         self._parent.busy(False)
@@ -588,7 +589,7 @@ class Stats:
 
 
     def _sporadicAveragesByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
-                                      TUsize: int = 1, metric: str = 'power', aggregateSporadic: bool = False):
+                                      TUsize: int = 1, metric: str = 'power', aggregateSporadic: bool = False) -> Union[pd.DataFrame, None]:
         """
         Calculates sporadic averages by thresholds, either for a single date range or for multiple sporadic periods.
 
@@ -622,7 +623,7 @@ class Stats:
             return None
 
         # Calculate sporadic averages for a given date range
-        odf = self.dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric, isSporadic=True)
+        odf, dummy1, dummy2 = self.dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric, isSporadic=True)
 
         if odf is None or odf.empty:
             return pd.DataFrame()
@@ -838,14 +839,14 @@ class Stats:
         df = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
 
         if row == self.TAB_COUNTS_BY_DAY:
-            self._dataFrame = self._dataSource.dailyCountsByClassification(df, self._classFilter, self._parent.fromDate,
+            self._dataFrame, self._rawDataFrame, self._sbDataFrame = self._dataSource.dailyCountsByClassification(df, self._classFilter, self._parent.fromDate,
                                                                            self._parent.toDate, totalRow=True,
                                                                            totalColumn=True,
                                                                            compensate=self._compensation,
                                                                            considerBackground=self._considerBackground)
 
         if row == self.TAB_COUNTS_BY_HOUR:
-            self._dataFrame = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
+            self._dataFrame, self._rawDataFrame, self._sbDataFrame = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
                                                             filters=self._classFilter,
                                                             totalRow=True,
                                                             totalColumn=True,
@@ -853,7 +854,7 @@ class Stats:
                                                             considerBackground=self._considerBackground)
 
         if row == self.TAB_COUNTS_BY_10M:
-            self._dataFrame = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='10T',
+            self._dataFrame, self._rawDataFrame, self._sbDataFrame = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='10T',
                                                             filters=self._classFilter,
                                                             totalRow=True,
                                                             totalColumn=True,
@@ -861,6 +862,7 @@ class Stats:
                                                             considerBackground=self._considerBackground)
 
             self._dataFrame = self._dataSource.splitAndStackDataframe(self._dataFrame, maxColumns=24)
+            self._rawDataFrame = self._dataSource.splitAndStackDataframe(self._rawDataFrame, maxColumns=24)
 
         if row == self.TAB_POWERS_BY_DAY:
             self._dataFrame = self._dataSource.dailyPowersByClassification(df, self._classFilter, self._parent.fromDate,
@@ -910,10 +912,10 @@ class Stats:
             self._dataFrame, monthName, year = self._dataSource.makeRMOB(df2)
 
         if row == self.TAB_SPORADIC_BG_BY_HOUR:
-            self._dataFrame = self.avgHourDf
+            self._dataFrame = self._dataSource.avgHourDf
 
         if row == self.TAB_SPORADIC_BG_BY_10M:
-            self._dataFrame = self.avg10minDf
+            self._dataFrame = self._dataSource.avg10minDf
 
         if row == self.TAB_SPORADIC_BG_BY_HOUR or row == self.TAB_SPORADIC_BG_BY_10M:
             if 'UNDER' in self._classFilter and 'OVER' in self._classFilter:
@@ -933,7 +935,7 @@ class Stats:
                 fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
                 sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=tuSize, metric='power',
                                                          aggregateSporadic=True)
-            self._dataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
+            self._dataFrame, self._rawDataFrame, self._sbDataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
                                                            self._parent.toDate,
                                                            TUsize=tuSize, metric='power',
                                                            sporadicBackgroundDf=sbf)
@@ -948,15 +950,22 @@ class Stats:
                 fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
                 sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=tuSize, metric='lasting',
                                                          aggregateSporadic=True)
-            self._dataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
+            self._dataFrame, self._rawDataFrame, self._sbDataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
                                                            self._parent.toDate,
                                                            TUsize=tuSize, metric='lasting',
                                                            sporadicBackgroundDf=sbf)
 
         self._ui.tvTabs.setEnabled(True)
         model = PandasModel(self._dataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
-        # model = PandasModel(self._dataFrame)
         self._ui.tvTabs.setModel(model)
+        if self._rawDataFrame is not None:
+            model = PandasModel(self._rawDataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
+            self._ui.tvTabsRaw.setModel(model)
+        if self._sbDataFrame is not None:
+            model = PandasModel(self._sbDataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
+            self._ui.tvTabsBg.setModel(model)
+
+
         self._parent.busy(False)
 
     def showDataDiagram(self):
@@ -1160,6 +1169,13 @@ class Stats:
         self._parent.busy(False)
 
     def _updateTabGraph(self):
+        if self._considerBackground or self._compensation:
+            self._ui.twTables.setTabVisible(1, True)
+            self._ui.twTables.setTabVisible(2, True)
+        else:
+            self._ui.twTables.setTabVisible(1, False)
+            self._ui.twTables.setTabVisible(2, False)
+
         if self._ui.twStats.currentIndex() == self.STTW_TABLES:
             self.showDataTable()
         if self._ui.twStats.currentIndex() == self.STTW_DIAGRAMS:
@@ -1231,6 +1247,7 @@ class Stats:
             os.chdir(self._exportDir)
             if self._ui.twStats.currentIndex() == self.STTW_TABLES:
                 # the displayed table is exported as csv
+                # FIXME: export raw and sb too
                 title = self._ui.lwTabs.currentItem().text() + prog
                 self._dataFrame.style.set_caption(title)
                 row = self._ui.lwTabs.currentRow()
@@ -1583,7 +1600,12 @@ class Stats:
         fullScale = config["fullScale"]
 
         # Generate the DataFrame
-        dataFrame = dataFunction(baseDataFrame, **dataArgs)
+        retval = dataFunction(baseDataFrame, **dataArgs)
+        dataFrame = retval
+        if isinstance(retval, tuple):
+            # if retval is a tuple, takes the first element (final data)
+            dataFrame = retval[0]
+
         series = seriesFunction(dataFrame, **seriesArgs)
 
         # Check if the DataFrame is valid
@@ -1645,7 +1667,13 @@ class Stats:
         fullScale = config["fullScale"]
 
         # Generate the DataFrame
-        dataFrame = dataFunction(baseDataFrame, **dataArgs)
+        retval = dataFunction(baseDataFrame, **dataArgs)
+        dataFrame = retval
+        if isinstance(retval, tuple):
+            # if retval is a tuple, takes the first element (final data)
+            dataFrame = retval[0]
+
+
         series = seriesFunction(dataFrame, **seriesArgs)
 
         # Check if the DataFrame is valid
@@ -1789,14 +1817,14 @@ class Stats:
             self.TAB_SPORADIC_BG_BY_HOUR: {
                 "title": "Sporadic background by hour",
                 "resolution": "hour",
-                "dataFunction": lambda df: self._selectSporadicDf(self.avgHourDf),
+                "dataFunction": lambda df: self._selectSporadicDf(self._dataSource.avgHourDf),
                 # note: the df parameter is intentionally ignored
                 "dataArgs": {},
             },
             self.TAB_SPORADIC_BG_BY_10M: {
                 "title": "Sporadic background by 10-minute intervals",
                 "resolution": "10m",
-                "dataFunction": lambda df: self._selectSporadicDf(self.avg10minDf),
+                "dataFunction": lambda df: self._selectSporadicDf(self._dataSource.avg10minDf),
                 # note: the df parameter is intentionally ignored
                 "dataArgs": {},
             },
@@ -1820,7 +1848,11 @@ class Stats:
         resolution = config["resolution"]
 
         # Generate the DataFrame
-        dataFrame = dataFunction(baseDataFrame, **dataArgs)
+        retval = dataFunction(baseDataFrame, **dataArgs)
+        dataFrame = retval
+        if isinstance(retval, tuple):
+            # if retval is a tuple, takes the first element (final data)
+            dataFrame = retval[0]
 
         # Check if the DataFrame is valid
         if dataFrame is None:
@@ -1974,7 +2006,7 @@ class Stats:
         return pd.DataFrame(results, index=['alpha']).T
 
     def dailyCountsByThresholds(self, df, filters, dateFrom=None, dateTo=None, TUsize: int = 1, metric: str = 'power',
-                                isSporadic=False, sporadicBackgroundDf=None):
+                                isSporadic=False, sporadicBackgroundDf=None) -> Union[tuple, None]:
         """
         Calculates event counts per threshold, adds totals per threshold, mass index, and average mass index.
 
@@ -1989,9 +2021,12 @@ class Stats:
             sporadicBackgroundDf (pd.DataFrame, optional): DataFrame with sporadic background data. Defaults to None.
 
         Returns:
-            pd.DataFrame: DataFrame with counts, totals per threshold, mass index, and average mass index.
+            tuple of 3 pd.DataFrame: DataFrame with counts, totals per threshold, mass index, and average mass index.
+                            final data, raw data and sporadic background (same of sporadicBackgroundDf)
                           Returns None on error.
         """
+        retval = None
+
         if not 1 <= TUsize <= 24:
             raise ValueError("Invalid time unit size, must be 1 <= TUsize <= 24")
 
@@ -2042,15 +2077,16 @@ class Stats:
                 dateTimeUnits.append((date, timeUnit))
 
         # Initialize odf with zeros for ALL date and time unit combinations and thresholds
-        odf = pd.DataFrame(index=pd.MultiIndex.from_tuples(dateTimeUnits, names=['utc_date', 'time_unit']))
+        finalDf = pd.DataFrame(index=pd.MultiIndex.from_tuples(dateTimeUnits, names=['utc_date', 'time_unit']))
+        rawDf = None
         if metric == 'power':
             for threshold in thresholds:
                 colName = f"{threshold:.1f}"
-                odf[colName] = 0  # Initialize all columns to 0
+                finalDf[colName] = 0  # Initialize all columns to 0
         else:
             for threshold in thresholds:
                 colName = str(threshold)
-                odf[colName] = 0  # Initialize all columns to 0
+                finalDf[colName] = 0  # Initialize all columns to 0
 
         # Sort thresholds in descending order (for range checking)
         sortedThresholds = sorted(thresholds, reverse=True)
@@ -2062,7 +2098,7 @@ class Stats:
             self._parent.updateStatusBar("Calculating cumulative counts by time unit")
 
         doneItems = 0
-        for utcDate, timeUnit in odf.index:  # Iterate through the MultiIndex
+        for utcDate, timeUnit in finalDf.index:  # Iterate through the MultiIndex
             # Extract start and end hour from timeUnit
             startHour = int(timeUnit[:2])
             endHour = startHour + TUsize
@@ -2086,27 +2122,28 @@ class Stats:
                     # Check if the value is within the correct range for this threshold
                     if i == 0:  # First threshold (rightmost column: no upper bound)
                         if value > threshold:
-                            odf.loc[(utcDate, timeUnit), colName] += 1
+                            finalDf.loc[(utcDate, timeUnit), colName] += 1
                     else:  # Subsequent thresholds (check upper bound)
                         upperBound = sortedThresholds[i - 1]
                         if threshold < value <= upperBound:
-                            odf.loc[(utcDate, timeUnit), colName] += 1
+                            finalDf.loc[(utcDate, timeUnit), colName] += 1
 
             doneItems += 1
-            self._parent.updateProgressBar(doneItems, len(odf.index))
+            self._parent.updateProgressBar(doneItems, len(finalDf.index))
 
         # Convert counts to integers, handling NaN values (after the loop)
-        for col in odf.columns:
-            odf[col] = odf[col].fillna(0).astype(int)
+        for col in finalDf.columns:
+            finalDf[col] = finalDf[col].fillna(0).astype(int)
 
         if isSporadic is False and sporadicBackgroundDf is not None:
+            rawDf = finalDf.copy()
             self._parent.updateStatusBar("Subtracting sporadic background by thresholds")
             # Check sporadicBackgroundDf dimensions
             if len(sporadicBackgroundDf.columns) != (len(thresholds)):
                 raise ValueError("sporadicBackgroundDf columns and thresholds don't match")
 
             doneItems = 0
-            for timeUnit in odf.index:
+            for timeUnit in finalDf.index:
                 for threshold in thresholds:
                     qApp.processEvents()
                     if metric == 'power':
@@ -2116,57 +2153,64 @@ class Stats:
                     hourOnly = timeUnit[1]
                     backgroundValue = sporadicBackgroundDf.loc[
                         hourOnly, colName] if hourOnly in sporadicBackgroundDf.index else 0
-                    odf.loc[timeUnit, colName] = max(0, odf.loc[timeUnit, colName] - backgroundValue)
+                    finalDf.loc[timeUnit, colName] = max(0, finalDf.loc[timeUnit, colName] - backgroundValue)
                 doneItems += 1
-                self._parent.updateProgressBar(doneItems, len(odf.index))
+                self._parent.updateProgressBar(doneItems, len(finalDf.index))
 
         try:
             if not isSporadic:
-                # totals and mass indices are not calculated for sporadic background
-                self._parent.updateStatusBar("Calculating counts totals")
+                for df in [finalDf, rawDf]:
+                    if df:
+                        # totals and mass indices are not calculated for sporadic background
+                        self._parent.updateStatusBar("Calculating counts totals")
 
-                # Calculate total events per time unit (convert to integer)
-                odf['Totals'] = odf.sum(axis=1).astype(int)
+                        # Calculate total events per time unit (convert to integer)
+                        df['Totals'] = df.sum(axis=1).astype(int)
 
-                # Calculate totals per threshold
-                totalsPerThreshold = odf.drop('Totals', axis=1).sum(axis=0)
-                totalsPerThreshold.name = 'Totals'
+                        # Calculate totals per threshold
+                        totalsPerThreshold = df.drop('Totals', axis=1).sum(axis=0)
+                        totalsPerThreshold.name = 'Totals'
 
-                if metric == 'power':
-                    # Convert thresholds to linear values to avoid calculate log(0)
-                    thresholdsMw = self._settings.powerThresholds(wantMw=True)
-                    if len(thresholdsMw) < len(thresholds):
-                        self._parent.updateStatusBar("Converting power thresholds to mW partially failed")
-                        print("thresholds in dB:", thresholds)
-                        print("thresholds in mW:", thresholdsMw)
-                    thresholds = thresholdsMw
+                        if metric == 'power':
+                            # Convert thresholds to linear values to avoid calculate log(0)
+                            thresholdsMw = self._settings.powerThresholds(wantMw=True)
+                            if len(thresholdsMw) < len(thresholds):
+                                self._parent.updateStatusBar("Converting power thresholds to mW partially failed")
+                                print("thresholds in dB:", thresholds)
+                                print("thresholds in mW:", thresholdsMw)
+                            thresholds = thresholdsMw
 
-                # Calculate mass index
-                massIndices = self._calculateMassIndex(odf.drop('Totals', axis=1), thresholds)
+                        # Calculate mass index
+                        massIndices = self._calculateMassIndex(df.drop('Totals', axis=1), thresholds)
 
-                if massIndices is None:
-                    raise ValueError("Mass index calculation failed.")
+                        if massIndices is None:
+                            raise ValueError("Mass index calculation failed.")
 
-                # Add mass index as a column (round to 8 decimal places)
-                odf['Mass index'] = massIndices['alpha'].round(8).values
+                        # Add mass index as a column (round to 8 decimal places)
+                        df['Mass index'] = massIndices['alpha'].round(8).values
 
-                # Handle zero counts in time unit by setting mass index to NaN
-                odf.loc[odf['Totals'] == 0, 'Mass index'] = np.nan
+                        # Handle zero counts in time unit by setting mass index to NaN
+                        df.loc[df['Totals'] == 0, 'Mass index'] = np.nan
 
-                # Add totals per threshold
-                odf = pd.concat([odf, pd.DataFrame(totalsPerThreshold).T])
+                        # Add totals per threshold
+                        df = pd.concat([df, pd.DataFrame(totalsPerThreshold).T])
 
-                # Calculate total events in the penultimate cell
-                odf.loc['Totals', 'Totals'] = odf['Totals'].sum()
+                        # Calculate total events in the penultimate cell
+                        df.loc['Totals', 'Totals'] = df['Totals'].sum()
 
-                # Convert 'Totals' column to integer after concat
-                odf['Totals'] = odf['Totals'].astype(int)
+                        # Convert 'Totals' column to integer after concat
+                        df['Totals'] = df['Totals'].astype(int)
 
-                # Calculate average mass index in the last cell
-                odf.loc['Totals', 'Mass index'] = odf['Mass index'].mean().round(8)
+                        # Calculate average mass index in the last cell
+                        df.loc['Totals', 'Mass index'] = df['Mass index'].mean().round(8)
+
+
+
+            else:
+                retval = finalDf, rawDf, sporadicBackgroundDf
 
         except Exception as e:
             print(f"Error in dailyCountsByThresholds: {e}")
             return None
 
-        return odf
+        return retval

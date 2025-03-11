@@ -110,19 +110,19 @@ class FreezeDetect(QDialog):
         fallTime = timeToSeconds(edges['fallTime'])
 
         datName, datData, dailyNr, utcDate = self._parent.dataSource.extractDumpData(evId)
-        if ".datb" in datName:
-            dfMap, dfPower = splitBinaryDumpFile(datData)
-        else:
-            dfMap, dfPower = splitASCIIdumpFile(datData)
+        if datName is not None:
+            if ".datb" in datName:
+                dfMap, dfPower = splitBinaryDumpFile(datData)
+            else:
+                dfMap, dfPower = splitASCIIdumpFile(datData)
+            gap = self._findLargestGap(dfPower['time'])
 
-        gap = self._findLargestGap(dfPower['time'])
-
-        if gap:
-            if fallTime >= gap['start'] >= raiseTime or fallTime >= gap['end'] >= raiseTime:
-                # store the gap only if it matches someway with the raise/fall fronts of the
-                # event, that would mean the event is a fake. Otherwise ignores it
-                print(f"ID: {evId} embeds a {gap['secs']} seconds long acquisition hole")
-                return gap
+            if gap:
+                if fallTime >= gap['start'] >= raiseTime or fallTime >= gap['end'] >= raiseTime:
+                    # store the gap only if it matches someway with the raise/fall fronts of the
+                    # event, that would mean the event is a fake. Otherwise ignores it
+                    print(f"ID: {evId} embeds a {gap['secs']} seconds long acquisition hole")
+                    return gap
         return None
 
     def getParameters(self):
