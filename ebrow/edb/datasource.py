@@ -1147,6 +1147,12 @@ class DataSource:
 
         resultsList = []
         rawResultsList = []
+
+        itemsToProcess = len(classList) * len(dtList)
+        doneItems = 0
+        self._parent.updateProgressBar(doneItems, itemsToProcess)
+        self._parent.updateStatusBar(f"Aggregating daily events by {metric}")
+
         for cl in classList:
             cl = cl.strip()
             qApp.processEvents()
@@ -1198,11 +1204,14 @@ class DataSource:
                     else:
                         rawMetricDict[dt] = round(rawValue) if not pd.isna(rawValue) else -1
 
+                doneItems += 1
+                self._parent.updateProgressBar(doneItems, itemsToProcess)
+
             resultsList.append(pd.Series(metricDict))
             if rawMetricDict:
                 rawResultsList.append(pd.Series(rawMetricDict))
 
-        # Combine results into a DataFrame
+        self._parent.updateStatusBar("Combining final results in a dataframe")
         newDf = pd.concat(resultsList, axis=1)
 
         # Check if all original data types are integers
@@ -1240,6 +1249,7 @@ class DataSource:
         rawDf = None
         sbDf = None
         if rawResultsList:
+            self._parent.updateStatusBar("Combining raw results in a dataframe")
             rawDf = pd.concat(rawResultsList, axis=1)
 
             # Check if all original data types are integers
@@ -2360,6 +2370,12 @@ class DataSource:
         finalDf = pd.DataFrame(columns=columns, dtype='int32')
         rawDf = pd.DataFrame(columns=columns, dtype='int32')
         sbDf = None
+
+        itemsToProcess = len(dtRange)
+        doneItems = 0
+        self._parent.updateProgressBar(doneItems, itemsToProcess)
+        self._parent.updateStatusBar("Iterating over time intervals to calculate counts")
+
         # Iterate over time intervals to calculate counts
         for i in range(len(dtRange) - 1):
             dtFrom = dtRange[i]
@@ -2429,6 +2445,9 @@ class DataSource:
             if row not in finalDf.index:
                 finalDf.loc[row] = placeholder
             finalDf.at[row, column] = count
+
+            doneItems += 1
+            self._parent.updateProgressBar(doneItems, itemsToProcess)
 
         # Add totals for rows and columns
         if totalColumn:

@@ -185,6 +185,8 @@ class Stats:
 
         self._showDiagramSettings(False)
         self._showColormapSetting(False)
+        self._ui.twTables.setTabVisible(1, False)
+        self._ui.twTables.setTabVisible(2, False)
 
     def _get2DgraphsConfig(self):
         # 2D graphs (XY and bar graphs) configuration structure
@@ -559,7 +561,7 @@ class Stats:
                 self._dataSource.avgHourDf = self._dataSource.avgHourDf.rename(index={0: 'OVER'})
 
             self._dataSource.avgDailyDict = {'UNDER': avgDailyCountUnder, 'OVER': avgDailyCountOver}
-            avgDailyStr = json.dumps( self._dataSource.avgDailyDict)
+            avgDailyStr = json.dumps(self._dataSource.avgDailyDict)
             self._settings.writeSetting('sporadicBackgroundDaily', avgDailyStr)
             calcDone = True
 
@@ -580,16 +582,17 @@ class Stats:
 
             if self._dataSource.avg10minDf is not None:
                 if self._dataSource.avg10minDf.shape[0] > 0:
-                    self._dataSource.avg10minDf.loc['Total'] = self._dataSource.avg10minDf.sum(numeric_only=True, axis=0)
+                    self._dataSource.avg10minDf.loc['Total'] = self._dataSource.avg10minDf.sum(numeric_only=True,
+                                                                                               axis=0)
                     avg10minStr = json.dumps(self._dataSource.avg10minDf.to_dict())
                     self._settings.writeSetting('sporadicBackgroundBy10min', avg10minStr)
 
         self._parent.busy(False)
         return calcDone
 
-
     def _sporadicAveragesByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
-                                      TUsize: int = 1, metric: str = 'power', aggregateSporadic: bool = False) -> Union[pd.DataFrame, None]:
+                                      TUsize: int = 1, metric: str = 'power', aggregateSporadic: bool = False) -> Union[
+        pd.DataFrame, None]:
         """
         Calculates sporadic averages by thresholds, either for a single date range or for multiple sporadic periods.
 
@@ -614,7 +617,7 @@ class Stats:
                     qApp.processEvents()
                     dates = intervalStr.split(" -> ")
                     sbdf = self._sporadicAveragesByThresholds(df, filters, dates[0], dates[1], TUsize, metric,
-                                                             False)
+                                                              False)
                     sbdfList.append(sbdf)
 
                 # Concatenate results and compute mean
@@ -623,7 +626,8 @@ class Stats:
             return None
 
         # Calculate sporadic averages for a given date range
-        odf, dummy1, dummy2 = self.dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric, isSporadic=True)
+        odf, dummy1, dummy2 = self.dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric,
+                                                           isSporadic=True)
 
         if odf is None or odf.empty:
             return pd.DataFrame()
@@ -646,6 +650,7 @@ class Stats:
         sbdf = pd.DataFrame.from_dict(averagedData, orient='index')
 
         return sbdf
+
     def updateAndSendRMOBfiles(self):
         self.updateRMOBfiles(sendOk=True)
 
@@ -825,6 +830,12 @@ class Stats:
             'Mass index': {'fgColor': QColor(emphasizedAltTextColor), 'bgColor': QColor(emphasizedBackColor)},
         }
 
+        self._rawDataFrame = None
+        self._ui.twTables.setTabVisible(1, False)
+        self._sbDataFrame = None
+        self._ui.twTables.setTabVisible(2, False)
+        tuple3df = None
+
         row = self._ui.lwTabs.currentRow()
         self._ui.tvTabs.setEnabled(False)
         # self._ui.sbTUsize.setEnabled(False)
@@ -839,35 +850,51 @@ class Stats:
         df = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
 
         if row == self.TAB_COUNTS_BY_DAY:
-            self._dataFrame, self._rawDataFrame, self._sbDataFrame = self._dataSource.dailyCountsByClassification(df, self._classFilter, self._parent.fromDate,
-                                                                           self._parent.toDate, totalRow=True,
-                                                                           totalColumn=True,
-                                                                           compensate=self._compensation,
-                                                                           considerBackground=self._considerBackground)
+            tuple3df = self._dataSource.dailyCountsByClassification(df,
+                                                                    self._classFilter,
+                                                                    self._parent.fromDate,
+                                                                    self._parent.toDate,
+                                                                    totalRow=True,
+                                                                    totalColumn=True,
+                                                                    compensate=self._compensation,
+                                                                    considerBackground=self._considerBackground)
+            if tuple3df is not None:
+                self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
 
         if row == self.TAB_COUNTS_BY_HOUR:
-            self._dataFrame, self._rawDataFrame, self._sbDataFrame = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
-                                                            filters=self._classFilter,
-                                                            totalRow=True,
-                                                            totalColumn=True,
-                                                            compensate=self._compensation,
-                                                            considerBackground=self._considerBackground)
+            tuple3df = self._dataSource.makeCountsDf(df,
+                                                     self._parent.fromDate,
+                                                     self._parent.toDate,
+                                                     dtRes='h',
+                                                     filters=self._classFilter,
+                                                     totalRow=True,
+                                                     totalColumn=True,
+                                                     compensate=self._compensation,
+                                                     considerBackground=self._considerBackground)
+            if tuple3df is not None:
+                self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
 
         if row == self.TAB_COUNTS_BY_10M:
-            self._dataFrame, self._rawDataFrame, self._sbDataFrame = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='10T',
-                                                            filters=self._classFilter,
-                                                            totalRow=True,
-                                                            totalColumn=True,
-                                                            compensate=self._compensation,
-                                                            considerBackground=self._considerBackground)
+            tuple3df = self._dataSource.makeCountsDf(df,
+                                                   self._parent.fromDate,
+                                                   self._parent.toDate,
+                                                   dtRes='10T',
+                                                   filters=self._classFilter,
+                                                   totalRow=True,
+                                                   totalColumn=True,
+                                                   compensate=self._compensation,
+                                                   considerBackground=self._considerBackground)
 
-            self._dataFrame = self._dataSource.splitAndStackDataframe(self._dataFrame, maxColumns=24)
-            self._rawDataFrame = self._dataSource.splitAndStackDataframe(self._rawDataFrame, maxColumns=24)
+            if tuple3df is not None:
+                self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
+                self._dataFrame = self._dataSource.splitAndStackDataframe(self._dataFrame, maxColumns=24)
+                self._rawDataFrame = self._dataSource.splitAndStackDataframe(self._rawDataFrame, maxColumns=24)
 
         if row == self.TAB_POWERS_BY_DAY:
             self._dataFrame = self._dataSource.dailyPowersByClassification(df, self._classFilter, self._parent.fromDate,
                                                                            self._parent.toDate,
                                                                            highestAvgRow=True, highestAvgColumn=True)
+
 
         if row == self.TAB_POWERS_BY_HOUR:
             self._dataFrame = self._dataSource.makePowersDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
@@ -904,11 +931,12 @@ class Stats:
             self._dataFrame = self._dataSource.getASpartialFrame(self._parent.fromDate, self._parent.toDate)
 
         if row == self.TAB_RMOB_MONTH:
-            df2 = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
-                                                filters=self._classFilterRMOB, totalRow=False,
-                                                totalColumn=False,
-                                                compensate=self._compensation,
-                                                considerBackground=self._considerBackground)
+            df2, dummy1, dummy2 = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate,
+                                                                     dtRes='h',
+                                                                     filters=self._classFilterRMOB, totalRow=False,
+                                                                     totalColumn=False,
+                                                                     compensate=self._compensation,
+                                                                     considerBackground=self._considerBackground)
             self._dataFrame, monthName, year = self._dataSource.makeRMOB(df2)
 
         if row == self.TAB_SPORADIC_BG_BY_HOUR:
@@ -935,10 +963,14 @@ class Stats:
                 fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
                 sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=tuSize, metric='power',
                                                          aggregateSporadic=True)
-            self._dataFrame, self._rawDataFrame, self._sbDataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
-                                                           self._parent.toDate,
-                                                           TUsize=tuSize, metric='power',
-                                                           sporadicBackgroundDf=sbf)
+            tuple3df = self.dailyCountsByThresholds(df, self._classFilter,
+                                                  self._parent.fromDate,
+                                                  self._parent.toDate,
+                                                  TUsize=tuSize,
+                                                  metric='power',
+                                                  sporadicBackgroundDf=sbf)
+            if tuple3df is not None:
+                self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
             sbf = None
@@ -950,21 +982,33 @@ class Stats:
                 fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
                 sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=tuSize, metric='lasting',
                                                          aggregateSporadic=True)
-            self._dataFrame, self._rawDataFrame, self._sbDataFrame = self.dailyCountsByThresholds(df, self._classFilter, self._parent.fromDate,
-                                                           self._parent.toDate,
-                                                           TUsize=tuSize, metric='lasting',
-                                                           sporadicBackgroundDf=sbf)
+            tuple3df = self.dailyCountsByThresholds(df, self._classFilter,
+                                                  self._parent.fromDate,
+                                                  self._parent.toDate,
+                                                  TUsize=tuSize,
+                                                  metric='lasting',
+                                                  sporadicBackgroundDf=sbf)
+            if tuple3df is not None:
+                self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
 
-        self._ui.tvTabs.setEnabled(True)
-        model = PandasModel(self._dataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
-        self._ui.tvTabs.setModel(model)
+        if self._dataFrame is not None:
+            self._ui.tvTabs.setEnabled(True)
+            model = PandasModel(self._dataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
+            self._ui.tvTabs.setModel(model)
+
         if self._rawDataFrame is not None:
+            self._ui.twTables.setTabVisible(1, True)
             model = PandasModel(self._rawDataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
             self._ui.tvTabsRaw.setModel(model)
+        else:
+            self._ui.twTables.setTabVisible(1, False)
+
         if self._sbDataFrame is not None:
+            self._ui.twTables.setTabVisible(2, True)
             model = PandasModel(self._sbDataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
             self._ui.tvTabsBg.setModel(model)
-
+        else:
+            self._ui.twTables.setTabVisible(2, False)
 
         self._parent.busy(False)
 
@@ -1169,13 +1213,6 @@ class Stats:
         self._parent.busy(False)
 
     def _updateTabGraph(self):
-        if self._considerBackground or self._compensation:
-            self._ui.twTables.setTabVisible(1, True)
-            self._ui.twTables.setTabVisible(2, True)
-        else:
-            self._ui.twTables.setTabVisible(1, False)
-            self._ui.twTables.setTabVisible(2, False)
-
         if self._ui.twStats.currentIndex() == self.STTW_TABLES:
             self.showDataTable()
         if self._ui.twStats.currentIndex() == self.STTW_DIAGRAMS:
@@ -1242,13 +1279,14 @@ class Stats:
         # progressive number to make the exported files unique
         now = datetime.now()
         midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        prog = "-{}".format((now - midnight).seconds)
+        prog = "{}".format((now - midnight).seconds)
         if os.path.exists(self._exportDir):
             os.chdir(self._exportDir)
             if self._ui.twStats.currentIndex() == self.STTW_TABLES:
                 # the displayed table is exported as csv
-                # FIXME: export raw and sb too
-                title = self._ui.lwTabs.currentItem().text() + prog
+                subTab = self._ui.twTables.currentIndex()
+
+                title = f"{self._ui.lwTabs.currentItem().text()}_{self._ui.twTables.tabText(subTab)}-{prog}"
                 self._dataFrame.style.set_caption(title)
                 row = self._ui.lwTabs.currentRow()
                 if row == self.TAB_SESSIONS_REGISTER:
@@ -1275,7 +1313,15 @@ class Stats:
                 else:
                     csvName = 'stat-' + title + '-Table.csv'
 
-                self._dataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
+                if subTab == 0:
+                    self._dataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
+
+                if subTab == 1:
+                    self._rawDataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
+
+                if subTab == 2:
+                    self._sbDataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
+
                 self._parent.updateStatusBar("Exported  {}".format(csvName))
                 self._ui.lbStatFilename.setText(csvName)
                 if len(comment[0]) > 0:
@@ -1673,7 +1719,6 @@ class Stats:
             # if retval is a tuple, takes the first element (final data)
             dataFrame = retval[0]
 
-
         series = seriesFunction(dataFrame, **seriesArgs)
 
         # Check if the DataFrame is valid
@@ -2050,7 +2095,7 @@ class Stats:
         # Adjust dateFrom if the range exceeds 30 days
         if dateFrom and dateTo:
             dateRange = (dateTo - dateFrom).days
-            if dateRange > 30:
+            if isSporadic is False and dateRange > 30:
                 dateFrom = dateTo - pd.Timedelta(days=30)  # Set dateFrom to 30 days before dateTo
                 self._parent.infoMessage("Warning",
                                          "The selected coverage exceeds the 30 days limit for mass indexes calculation.\n"
@@ -2160,7 +2205,7 @@ class Stats:
         try:
             if not isSporadic:
                 for df in [finalDf, rawDf]:
-                    if df:
+                    if df is not None:
                         # totals and mass indices are not calculated for sporadic background
                         self._parent.updateStatusBar("Calculating counts totals")
 
@@ -2204,10 +2249,11 @@ class Stats:
                         # Calculate average mass index in the last cell
                         df.loc['Totals', 'Mass index'] = df['Mass index'].mean().round(8)
 
-
+                retval = finalDf, rawDf, sporadicBackgroundDf
 
             else:
-                retval = finalDf, rawDf, sporadicBackgroundDf
+                # finalDf contains sporadic background
+                retval = finalDf, None, None
 
         except Exception as e:
             print(f"Error in dailyCountsByThresholds: {e}")
