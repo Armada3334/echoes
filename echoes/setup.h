@@ -196,6 +196,10 @@ enum LOG_LEVELS
 //the device ceased to stream samples
 #define MAX_MISSED_SCANS        (150)
 
+//shared memory area to export variables in real time
+#define SHM_KEY                 ("ECHOES_VARS")
+
+#define SHM_SIZE                (1024)
 
 //internal I/Q buffers base type
 //librtlsdr: use uint8_t

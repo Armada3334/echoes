@@ -200,7 +200,13 @@ Control::Control(Settings* appSettings, XQDir wDir)
     pp = new PostProc( as, rd );
     MY_ASSERT( nullptr !=  pp)
 
-
+    shm = new QSharedMemory();
+    MY_ASSERT( nullptr !=  shm)
+    shm->setKey(SHM_KEY);
+    if (!shm->create(SHM_SIZE))
+    {
+        MYWARNING << "Error creating shared memory area";
+    }
 
     //connects the available slots
     connect( r,                 SIGNAL( fault(int) ),           this, SLOT( slotStopAcquisition(int)), Qt::QueuedConnection );
@@ -251,6 +257,12 @@ Control::~Control()
     {
         delete db;
         db = nullptr;
+    }
+
+    if(shm != nullptr)
+    {
+        delete shm;
+        shm = nullptr;
     }
 }
 
@@ -2349,6 +2361,29 @@ bool Control::wfdBfs()
     {
         MYINFO << "avgN=" << avgN << " maxDbfs=" << maxDbfs << " maxDiff=" << maxDiff << " maxFreq=" << maxFreq ;
     }
+
+    /*
+     * experimental code for demo station
+     */
+    if(shm != nullptr)
+    {
+        if(shm->lock())
+        {
+            char *data = (char *)shm->data();
+            QString message = QString("%1, %2, %3, %4, %5, %6")
+                .arg(scans)
+                .arg(as->getInterval())
+                .arg(avgN)
+                .arg(maxDbfs)
+                .arg(maxDiff)
+                .arg(maxFreq);
+
+            strncpy(data, message.toUtf8().constData(), shm->size());
+            shm->unlock();
+        }
+    }
+
+
     //the S values are averaged too, these values
     //are used in case of automatic thresholds
     Sfifo.enqueue(maxDbfs);

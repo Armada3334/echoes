@@ -181,6 +181,7 @@ class Control : public QObject
     PostProc* pp;               ///data postprocessing thread
     DBif* db;                   ///database interface pointer
     QTimer*  samplingTimer;     ///acquisition timer
+    QSharedMemory* shm;         ///shared memory for realtime data sharing
 
     QQueue<EvTuple> waitingShots;    ///peaks revealed and waiting for a screenshot (periodic+automatic mode)
     QQueue<EvTuple> waitingDumps;    ///peaks revealed and waiting for a dump (automatic mode)
