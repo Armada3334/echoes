@@ -1,6 +1,6 @@
 Format: 1.0
 Source: echoes
-Version: 0.60-1
+Version: 0.60-2
 Binary: echoes
 Maintainer: Giuseppe Massimo Bertani <gmbertani@users.sourceforge.net>
 Architecture: any

@@ -1894,8 +1894,8 @@ class DataSource:
 
                         idp = idx - 1
                         idr = idx - 2
-                        mask = (self._adf['id'] == myId)
-                        self._adf.loc[mask, 'attributes'] = ''
+                        # mask = (self._adf['id'] == myId)
+                        self._adf.loc[myId, 'attributes'] = ''
                         attrDict = dict()
 
                         for afName in afDict.keys():
@@ -1920,13 +1920,12 @@ class DataSource:
 
                         if len(attrDict.keys()) > 0:
                             print(attrDict)
-                            self._adf.loc[mask, 'attributes'] = json.dumps(attrDict)
-                        else:
-                            self._adf.loc[mask, 'attributes'] = "{}"  # attributes processed, even if none found
+                            self._adf.loc[myId, 'attributes'] = json.dumps(attrDict)
 
                         try:
                             self._parent.eventDataChanges[myId] = True
                             self._dataChangedInMemory = True
+
                         except IndexError:
                             print("BUG! id=", myId)
 
@@ -1944,6 +1943,10 @@ class DataSource:
                         'echo_area', 'interval_area', 'peaks_count', 'LOS_speed', 'scan_ms',
                         'diff_start', 'diff_end', 'classification', 'attributes', 'shot_name', 'dump_name']
                 self._adf = self._adf[cols]
+
+                # do not leave empty attribute cells to avoid reprocessing at next json loading
+                mask = (self._adf['attributes'] == '') | (self._adf['attributes'].isnull())
+                self._adf.loc[mask, 'attributes'] = '{}'
             return True
 
         return False  # no changes made in attributes

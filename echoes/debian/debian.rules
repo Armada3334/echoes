@@ -4,7 +4,7 @@
 
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
-export APP_VERSION=0.60-1
+export APP_VERSION=0.60-2
 export BUILD_DATE=`date --iso-8601`
 
 # This is the debhelper compatibility version to use.
