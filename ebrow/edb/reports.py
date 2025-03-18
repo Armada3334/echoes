@@ -620,7 +620,7 @@ class Report:
             self._parent.updateStatusBar("Gathering hourly counts...")
             df = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
 
-            hourlyDf = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
+            hourlyDf, rawDf, sbDf = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
                                                      filters=self._classFilter, totalRow=True, totalColumn=True)
 
             # in order to merge the daily counts table with the page header, their column names
@@ -664,7 +664,7 @@ class Report:
             self._parent.updateStatusBar("Gathering 10min counts...")
             df = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
 
-            tenDf = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='10T',
+            tenDf, rawDf, sbDf = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate, dtRes='10T',
                                                   filters=self._classFilter)
             tenDf = self._dataSource.splitAndStackDataframe(tenDf, maxColumns=24)
 

@@ -2400,20 +2400,22 @@ class DataSource:
                 hour = dtFrom.hour
                 timeUnit = f"{hour:02d}h"
 
-                if 'OVER' in filters:
-                    background += sbDf.loc['OVER', timeUnit]
-                if 'UNDER' in filters:
-                    background += sbDf.loc['UNDER', timeUnit]
+                if sbDf is not None:
+                    if 'OVER' in filters:
+                        background += sbDf.loc['OVER', timeUnit]
+                    if 'UNDER' in filters:
+                        background += sbDf.loc['UNDER', timeUnit]
 
             if dtRes == '10T':
                 sbDf = self.avg10minDf
                 hour = dtFrom.hour
                 minute = dtFrom.minute
                 timeUnit = f"{hour:02d}h{minute:02d}m"
-                if 'OVER' in filters:
-                    background += sbDf.loc['OVER', timeUnit]
-                if 'UNDER' in filters:
-                    background += sbDf.loc['UNDER', timeUnit]
+                if sbDf is not None:
+                    if 'OVER' in filters:
+                        background += sbDf.loc['OVER', timeUnit]
+                    if 'UNDER' in filters:
+                        background += sbDf.loc['UNDER', timeUnit]
 
             hole = False
             if count == 0 and 'ACQ ACT' in filters:

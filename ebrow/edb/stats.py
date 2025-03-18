@@ -481,18 +481,18 @@ class Stats:
                     if self._parent.fromDate <= dates[0] and self._parent.toDate >= dates[1]:
                         dfEvents = self._dataSource.getADpartialFrame(dates[0], dates[1])
                         if dfEvents is not None:
-                            dfCountsHourlyUnder = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1], dtRes='h',
+                            dfCountsHourlyUnder, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1], dtRes='h',
                                                                                 filters='UNDER', totalRow=False,
                                                                                 totalColumn=False)
-                            dfCounts10minUnder = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1],
+                            dfCounts10minUnder, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1],
                                                                                dtRes='10T',
                                                                                filters='UNDER', totalRow=False,
                                                                                totalColumn=False)
 
-                            dfCountsHourlyOver = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1], dtRes='h',
+                            dfCountsHourlyOver, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1], dtRes='h',
                                                                                filters='OVER', totalRow=False,
                                                                                totalColumn=False)
-                            dfCounts10minOver = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1], dtRes='10T',
+                            dfCounts10minOver, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1], dtRes='10T',
                                                                               filters='OVER', totalRow=False,
                                                                               totalColumn=False)
 
@@ -669,11 +669,11 @@ class Stats:
 
         df = self._dataSource.getADpartialFrame(fromDate, toDate)
 
-        df2 = self._dataSource.makeCountsDf(df, fromDate, toDate, dtRes='h',
+        finalDf, rawDf, sbDf = self._dataSource.makeCountsDf(df, fromDate, toDate, dtRes='h',
                                             filters=self._classFilterRMOB, totalRow=False, totalColumn=False,
                                             placeholder=-1)
 
-        dfRMOB, monthNr, year = self._dataSource.makeRMOB(df2, lastOnly=True)
+        dfRMOB, monthNr, year = self._dataSource.makeRMOB(finalDf, lastOnly=True)
         filePrefix, txtFileName, dfMonth = self._generateRMOBtableFile(dfRMOB, year, monthNr)
 
         # the files prefix is stored for reporting purposes
