@@ -55,23 +55,6 @@ from .pandasmodel import PandasModel
 from .utilities import notice, cryptDecrypt, mkExportFolder, addDateDelta
 from .logprint import print, fprint
 
-'''
-def powerLawCdf(power, k, alpha):
-    """
-    Power-law cumulative distribution function (CDF).
-
-    Args:
-        power (float/np.ndarray): Power value(s).
-        k (float): Scaling factor.
-        alpha (float): Exponent (mass index).
-
-    Returns:
-        float/np.ndarray: CDF value(s).
-    """
-    print(f"k={k}, power={power}, alpha={alpha}")
-    return k * power ** (-alpha)
-'''
-
 
 class Stats:
     STTW_TABLES = 0
@@ -189,7 +172,7 @@ class Stats:
         self._ui.twTables.setTabVisible(2, False)
 
     def _get2DgraphsConfig(self):
-        # 2D graphs (XY and bar graphs) configuration structure
+        # 2D graphs (XY, scatter and bar graphs) configuration structure
         tableRowConfig = {
             self.TAB_COUNTS_BY_DAY: {
                 "title": "Daily counts",
@@ -333,21 +316,35 @@ class Stats:
                 "fullScale": -1
             },
 
-            # FIXME: visualizzazione grafica del fit
+            # FIXME: visualizzazione grafica del fit: è bilogaritmico
+            # per cui il tempo non va specificato
             self.TAB_MASS_INDEX_BY_POWERS: {
                 "title": "Mass indexes by power thresholds",
+                "resolution": "D",
+                "dataFunction": self._dataSource.makePowersDf,
+                "dataArgs": {"dtStart": self._parent.fromDate,
+                             "dtEnd": self._parent.toDate,
+                             "dtRes": 'h',
+                             "filters": self._classFilter},
+                "seriesFunction": self._dataSource.tableTimeSeries,
+                "seriesArgs": {"columns": range(0, 24)},
+                "yLabel": "Time units [hh]",
+                "fullScale": -1
+            },
+
+            self.TAB_MASS_INDEX_BY_LASTINGS: {
+                "title": "Mass indexes by lastings thresholds",
                 "resolution": "D",
                 "dataFunction": self._dataSource.makeLastingsDf,
                 "dataArgs": {"dtStart": self._parent.fromDate,
                              "dtEnd": self._parent.toDate,
-                             "dtRes": '10T',
+                             "dtRes": 'h',
                              "filters": self._classFilter},
                 "seriesFunction": self._dataSource.tableTimeSeries,
-                "seriesArgs": {"columns": range(0, 144)},
-                "yLabel": "Filtered average lastings by 10min. [ms]",
+                "seriesArgs": {"columns": range(0, 24)},
+                "yLabel": "Time units [hh]",
                 "fullScale": -1
             },
-
             self.TAB_SPORADIC_BG_BY_HOUR: {
                 "title": "Sporadic background by hour",
                 "resolution": "hour",
@@ -1041,7 +1038,6 @@ class Stats:
                 1,  # daily sporadic background by hour
                 1,  # daily sporadic background by 10min
                 0,  # undefined
-
             ],
 
             # [self.GRAPH_HEATMAP]
@@ -1160,7 +1156,10 @@ class Stats:
         # try because things can go bad when the month / year changes:
         try:
             if graphRow == self.GRAPH_PLOT:
-                self._XYplot(tableRow, layout)
+                if tableRow == self.TAB_MASS_INDEX_BY_LASTINGS or tableRow == self.TAB_MASS_INDEX_BY_POWERS:
+                    self._MIplot(tableRow, layout)
+                else:
+                    self._XYplot(tableRow, layout)
 
             elif graphRow == self.GRAPH_HEATMAP:
                 self._heatmap(tableRow, layout)
@@ -1674,7 +1673,6 @@ class Stats:
                            self._showValues,
                            self._showGrid, self._smoothPlots, self._considerBackground)
 
-        canvas = xygraph.widget()
 
         # Embeds the xygraph in the layout
         canvas = xygraph.widget()
@@ -1684,6 +1682,72 @@ class Stats:
 
         # Store the xygraph object for future reference
         self._plot = xygraph
+
+    def _MIplot(self, tableRow: int, layout: QHBoxLayout):
+
+        """
+        Scattered plot for mass indices
+        """
+        # Mapping tableRow values to configuration parameters
+        tableRowConfig = self._get2DgraphsConfig()
+
+        # Show colormap settings and get the current colormap
+        self._showColormapSetting(True)
+        colormap = self._parent.cmapDict[self._currentColormap]
+
+        # Retrieve the base dataset
+        baseDataFrame = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
+
+        # Get configuration for the current tableRow
+        config = tableRowConfig.get(tableRow)
+        if not config:
+            return
+
+        # Retrieve specific data based on the tableRow configuration
+        dataFunction = config["dataFunction"]
+        dataArgs = config.get("dataArgs", {})
+        seriesFunction = config["seriesFunction"]
+        seriesArgs = config.get("seriesArgs", {})
+        title = config["title"]
+        resolution = config["resolution"]
+        yLabel = config["yLabel"]
+        fullScale = config["fullScale"]
+
+        # Generate the DataFrame
+        retval = dataFunction(baseDataFrame, **dataArgs)
+        dataFrame = retval
+        if isinstance(retval, tuple):
+            # if retval is a tuple, takes the first element (final data)
+            dataFrame = retval[0]
+
+        series = seriesFunction(dataFrame, **seriesArgs)
+
+        # Check if the DataFrame is valid
+        if series is None:
+            return
+
+        # Calculate chart dimensions in pixels and inches
+        pixelWidth = (self._szBase.width() * self._hZoom)
+        pixelHeight = (self._szBase.height() * self._vZoom)
+        if pixelWidth > 65535:
+            pixelWidth = 65535
+        if pixelHeight > 65535:
+            pixelHeight = 65535
+        inchWidth = pixelWidth / self._px  # from  pixels to inches
+        inchHeight = pixelHeight / self._px  # from  pixels to inches
+        print("pixelWidth={}, pixelHeight={}, inchWidth={}, inchHeight={}".format(pixelWidth, pixelHeight,
+                                                                                  inchWidth, inchHeight))
+        migraph = MIPlot(series, self._settings, inchWidth, inchHeight, title, yLabel,
+                           self._showValues, self._showGrid)
+
+        # Embeds the xygraph in the layout
+        canvas = migraph.widget()
+        canvas.setMinimumSize(QSize(int(pixelWidth), int(pixelHeight)))
+        self._diagram.setWidget(canvas)
+        layout.addWidget(self._diagram)
+
+        # Store the migraph object for future reference
+        self._plot = migraph
 
     def _bargraph(self, tableRow: int, layout: QHBoxLayout):
         """

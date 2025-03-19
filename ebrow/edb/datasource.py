@@ -1408,8 +1408,10 @@ class DataSource:
         df = self.loadTableConfig('cfg_prefs', rev)
         df.set_index('id', inplace=True)
         if len(df) > 1:
-            return df.loc[rev, 'echoes_ver']
-        return df.iloc[0]['echoes_ver']
+            verFloat = df.loc[rev, 'echoes_ver']
+        verFloat = df.iloc[0]['echoes_ver']
+        return  f"{verFloat:.2f}"  # Forces 2 decimals release
+
 
     def getIDsOfTheDay(self, date: str):
         """

@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>6</hour>
+                    <hour>3</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>6</hour>
+                    <hour>0</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,12 +2000,12 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>4</hour>
+                    <hour>22</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
                     <month>9</month>
-                    <day>18</day>
+                    <day>17</day>
                    </datetime>
                   </property>
                   <property name="calendarPopup">
@@ -15611,6 +15611,50 @@ alternate-background-color: rgb(170, 0, 0);
                </widget>
               </item>
               <item>
+               <spacer name="horizontalSpacer_4">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Minimum</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_7">
+                <property name="text">
+                 <string>Macros used in preface:
+
+[station] = station name
+[country] = station country 
+[city] = station city
+[dateFrom] = first day covered by this report
+[dateTo] = last day covered by the report
+[unclassified = total number of (unfiltered) events collected in the report
+
+
+
+
+
+
+
+
+
+
+</string>
+                </property>
+                <property name="textFormat">
+                 <enum>Qt::PlainText</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
                <spacer name="horizontalSpacer">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
@@ -15639,7 +15683,7 @@ alternate-background-color: rgb(170, 0, 0);
        <attribute name="title">
         <string>Preferences</string>
        </attribute>
-       <layout class="QHBoxLayout" name="horizontalLayout_68">
+       <layout class="QHBoxLayout" name="horizontalLayout_72">
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_62">
           <item>
@@ -31673,7 +31717,7 @@ border-radius: 6px;
 </string>
             </property>
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Sporadic background data ready,&lt;br/&gt; see them in the Statistics tab&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Sporadic background data present.&lt;br/&gt;Press &lt;/span&gt;&lt;span style=&quot; font-size:10pt; font-style:italic;&quot;&gt;Calculate &lt;/span&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;to overwrite them.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -31681,45 +31725,84 @@ border-radius: 6px;
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pbCalc">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>32</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>1000</width>
-              <height>32</height>
-             </size>
-            </property>
-            <property name="sizeIncrement">
-             <size>
-              <width>0</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Delete all the event classifications in memory. &lt;br/&gt;Nothing will be lost on disk, until the user presses the button &lt;span style=&quot; font-style:italic;&quot;&gt;Update Data Source. &lt;br/&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">min-height: 32px;</string>
-            </property>
-            <property name="text">
-             <string>&amp;Calculate sporadic background</string>
-            </property>
-            <property name="icon">
-             <iconset resource="ebrow.qrc">
-              <normaloff>:/refresh</normaloff>:/refresh</iconset>
-            </property>
-           </widget>
+           <layout class="QHBoxLayout" name="horizontalLayout_68">
+            <item>
+             <widget class="QGroupBox" name="groupBox_11">
+              <property name="title">
+               <string>Method</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_67">
+               <item>
+                <widget class="QRadioButton" name="rbSBmin">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;the sporadic background is calculated by considering the minimum count &lt;br/&gt;for each time unit in the periods considered&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Minimum</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="rbSBavg">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;the sporadic background is calculated by considering the average count &lt;br/&gt;for each time unit in the periods considered&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>Average</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pbCalc">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>60</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>1000</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="sizeIncrement">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Delete all the event classifications in memory. &lt;br/&gt;Nothing will be lost on disk, until the user presses the button &lt;span style=&quot; font-style:italic;&quot;&gt;Update Data Source. &lt;br/&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">min-height: 32px;</string>
+              </property>
+              <property name="text">
+               <string>&amp;Calculate</string>
+              </property>
+              <property name="icon">
+               <iconset resource="ebrow.qrc">
+                <normaloff>:/refresh</normaloff>:/refresh</iconset>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
            <widget class="QGroupBox" name="groupBox_9">

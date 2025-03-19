@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as md
 from matplotlib.ticker import MultipleLocator, MaxNLocator
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-#from matplotlib.widgets import Cursor  # If you need the cursor
-import os # needed for the font size check
+# from matplotlib.widgets import Cursor  # If you need the cursor
+import os  # needed for the font size check
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from .settings import Settings
@@ -15,12 +15,14 @@ from .logprint import print
 
 mp.use('Qt5Agg')
 
-class MIPlot(BaseGraph):  # Inherits from BaseGraph
+
+class MIPlot(BaseGraph):
     """
     Mass Index bi-logarithmic plot.
     """
 
-    def __init__(self, series: pd.Series, settings: Settings, inchWidth: float, inchHeight: float, title: str, yLabel: str,
+    def __init__(self, series: pd.Series, settings: Settings, inchWidth: float, inchHeight: float, title: str,
+                 yLabel: str,
                  showValues: bool = False, showGrid: bool = False):
         BaseGraph.__init__(self, settings)  # Call BaseGraph's constructor
 

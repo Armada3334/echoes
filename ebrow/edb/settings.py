@@ -267,7 +267,7 @@ class Settings(QSettings):
         hi = int(d['miLastHi'])
         count = int(d['miLastCount'])
         # lasting thresholds are generated in logarithmic sequence
-        return [round(x, 1) for x in np.logspace(np.log10(lo), np.log10(hi), count)]
+        return [round(x, 0) for x in np.logspace(np.log10(lo), np.log10(hi), count)]
 
     def powerThresholds(self, wantMw=False):
         """

@@ -1046,17 +1046,10 @@ class Report:
         self._rdf = [None] * self.TAB_TOTAL  # report dataframes (-->XSLX)
         self._div = [None] * self.DIV_TOTAL  # report divs (-->HTML)
         self._parent.isReporting = True
-        preface = self._ui.pteReportPreface.toPlainText()
-        self._settings.writeSetting("preface", preface)
 
-        # replacing macros [] in preface
-        station = self._settings.readSettingAsString("stationName"),
-        country = self._settings.readSettingAsString("country"),
-        city = self._settings.readSettingAsString("city"),
-        dateFrom = self._settings.readSettingAsString("dateFrom"),
-        dateTo =self._settings.readSettingAsString("dateTo"),
-        unclassified = self._dataSource.totalsUnclassified(self._settings.readSettingAsString("dateFrom"),
-                                            self._settings.readSettingAsString("dateTo"))
+        prefaceDef = self._ui.pteReportPreface.toPlainText()
+        self._settings.writeSetting("preface", prefaceDef)
+        preface = self._formatPreface(prefaceDef)
 
         if self._settings.readSettingAsBool('aeScreenshot') or self._settings.readSettingAsBool('aePowerPlot') or self._settings.readSettingAsBool('ae2Dplot') or self._settings.readSettingAsBool('ae3Dplot') or self._settings.readSettingAsBool('aeDetails'):
             self._parent.tabScreenshots.autoExport(self._classFilter)
@@ -1191,7 +1184,9 @@ class Report:
         summaryPath = relImgPath / summary
         summaryPath = summaryPath.as_posix()
 
-        preface = self._ui.pteReportPreface.toPlainText()
+        prefaceDef = self._ui.pteReportPreface.toPlainText()
+        self._settings.writeSetting("preface", prefaceDef)
+        preface = self._formatPreface(prefaceDef)
         preface = preface.replace('\n', '<br>')
 
         self._div[self.DIV_INDEX] = '''\t\t\t<div class="box">
@@ -2057,3 +2052,25 @@ class Report:
            self._isChecked('FAKE ESD'), self._isChecked('FAKE CAR1'),
            self._isChecked('FAKE CAR2'), self._isChecked('FAKE SAT'), self._isChecked('FAKE LONG'))
         return html
+
+    def _formatPreface(self, prefaceDef: str):
+        # replacing macros [] in prefaceDef
+
+        station = self._settings.readSettingAsString("stationName")
+        country = self._settings.readSettingAsString("country")
+        city = self._settings.readSettingAsString("city")
+        dateFrom = self._settings.readSettingAsString("dateFrom")
+        dateTo =self._settings.readSettingAsString("dateTo")
+        unclassified = self._dataSource.totalsUnclassified(
+            self._settings.readSettingAsString("dateFrom"),
+            self._settings.readSettingAsString("dateTo"))
+
+        preface = prefaceDef.replace("[station]", station)
+
+        preface = preface.replace("[country]", country)
+        preface = preface.replace("[city]", city)
+        preface = preface.replace("[dateFrom]", dateFrom)
+        preface = preface.replace("[dateTo]", dateTo)
+        preface = preface.replace("[unclassified]", str(unclassified))
+
+        return preface
