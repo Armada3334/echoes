@@ -1283,19 +1283,19 @@ alternate-background-color: rgb(170, 0, 0);</string>
                    <date>
                     <year>2016</year>
                     <month>9</month>
-                    <day>18</day>
+                    <day>17</day>
                    </date>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>3</hour>
+                    <hour>1</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>0</hour>
+                    <hour>20</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>22</hour>
+                    <hour>18</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>

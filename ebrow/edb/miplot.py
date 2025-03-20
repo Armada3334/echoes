@@ -14,8 +14,6 @@ from .basegraph import BaseGraph
 from .logprint import print
 
 mp.use('Qt5Agg')
-
-
 class MIPlot(BaseGraph):
     """
     Mass Index bi-logarithmic plot.

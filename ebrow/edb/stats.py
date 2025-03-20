@@ -109,6 +109,7 @@ class Stats:
         # self._ui.sbTUsize.setEnabled(False)
         self._px = plt.rcParams['figure.dpi']  # from inches to pixels
         self._szBase = None
+
         self._maxCoverages = list()
 
         self._exportDir = Path(self._parent.exportDir, "statistics")
@@ -125,9 +126,13 @@ class Stats:
         self._ui.chkSmoothPlots.setChecked(self._smoothPlots)
         self._linkedSliders = self._settings.readSettingAsBool('linkedSlidersStat')
         self._ui.chkLinked_3.setChecked(self._linkedSliders)
+        self._sbIsMin = self._settings.readSettingAsBool('sporadicTypeMin')
+        self._ui.rbSBmin.clicked.connect(self._toggleSBmode)
+        self._ui.rbSBavg.clicked.connect(self._toggleSBmode)
 
         self._hZoom = self._settings.readSettingAsFloat('horizontalZoomStat')
         self._vZoom = self._settings.readSettingAsFloat('verticalZoomStat')
+
 
         self._changeHzoom(int(self._hZoom * 10))
         self._changeVzoom(int(self._vZoom * 10))
@@ -160,6 +165,7 @@ class Stats:
         self._ui.chkGrid_2.clicked.connect(self._toggleGrid)
         self._ui.chkShowValues.clicked.connect(self._toggleValues)
         self._ui.chkSmoothPlots.clicked.connect(self._toggleSmooth)
+        self._ui.rbSBmin.setChecked(self._sbIsMin)
 
         self._ui.hsHzoom_3.valueChanged.connect(self._changeHzoom)
         self._ui.hsVzoom_3.valueChanged.connect(self._changeVzoom)
@@ -321,11 +327,10 @@ class Stats:
             self.TAB_MASS_INDEX_BY_POWERS: {
                 "title": "Mass indexes by power thresholds",
                 "resolution": "D",
-                "dataFunction": self._dataSource.makePowersDf,
-                "dataArgs": {"dtStart": self._parent.fromDate,
-                             "dtEnd": self._parent.toDate,
-                             "dtRes": 'h',
-                             "filters": self._classFilter},
+                "dataFunction": self._calcMassIndicesDf,
+                "dataArgs": {"TUsize": self._ui.sbTUsize.value(),
+                             "metric": 'power',
+                             "finalDfOnly": True},
                 "seriesFunction": self._dataSource.tableTimeSeries,
                 "seriesArgs": {"columns": range(0, 24)},
                 "yLabel": "Time units [hh]",
@@ -335,11 +340,11 @@ class Stats:
             self.TAB_MASS_INDEX_BY_LASTINGS: {
                 "title": "Mass indexes by lastings thresholds",
                 "resolution": "D",
-                "dataFunction": self._dataSource.makeLastingsDf,
-                "dataArgs": {"dtStart": self._parent.fromDate,
-                             "dtEnd": self._parent.toDate,
-                             "dtRes": 'h',
-                             "filters": self._classFilter},
+                "dataFunction": self._calcMassIndicesDf,
+                "dataArgs": {"TUsize": self._ui.sbTUsize.value(),
+                             "metric": 'lasting',
+                             "finalDfOnly": True},
+
                 "seriesFunction": self._dataSource.tableTimeSeries,
                 "seriesArgs": {"columns": range(0, 24)},
                 "yLabel": "Time units [hh]",
@@ -448,7 +453,7 @@ class Stats:
         one dataframe with hourly resolution and
         the second one every ten minutes. Each dataframe contains 3 rows,
         the first for underdense counts, the second for overdense and
-        the third is the sum of the two
+        the third is the sum of the two.
         """
         self._parent.busy(True)
         calcDone = False
@@ -509,35 +514,51 @@ class Stats:
 
                             if dfCountsHourlyUnder.shape[0] > 0:
                                 # ignores empty dfCountsHourly
-                                meanDf = dfCountsHourlyUnder.mean().to_frame().T
-                                if avgHdfUnder is None:
-                                    avgHdfUnder = meanDf
+                                if self._sbIsMin:
+                                    df = dfCountsHourlyUnder.min().to_frame().T
                                 else:
-                                    avgHdfUnder = pd.concat([avgHdfUnder, meanDf])
+                                    df = dfCountsHourlyUnder.mean().to_frame().T
+
+                                if avgHdfUnder is None:
+                                    avgHdfUnder = df
+                                else:
+                                    avgHdfUnder = pd.concat([avgHdfUnder, df])
 
                             if dfCounts10minUnder.shape[0] > 0:
                                 # ignores empty dfCounts10min
-                                meanDf = dfCounts10minUnder.mean().to_frame().T
-                                if avg10dfUnder is None:
-                                    avg10dfUnder = meanDf
+                                if self._sbIsMin:
+                                    df = dfCounts10minUnder.min().to_frame().T
                                 else:
-                                    avg10dfUnder = pd.concat([avg10dfUnder, meanDf])
+                                    df = dfCounts10minUnder.mean().to_frame().T
+
+                                if avg10dfUnder is None:
+                                    avg10dfUnder = df
+                                else:
+                                    avg10dfUnder = pd.concat([avg10dfUnder, df])
 
                             if dfCountsHourlyOver.shape[0] > 0:
                                 # ignores empty dfCountsHourly
-                                meanDf = dfCountsHourlyOver.mean().to_frame().T
-                                if avgHdfOver is None:
-                                    avgHdfOver = meanDf
+                                if self._sbIsMin:
+                                    df = dfCountsHourlyOver.min().to_frame().T
                                 else:
-                                    avgHdfOver = pd.concat([avgHdfOver, meanDf])
+                                    df = dfCountsHourlyOver.mean().to_frame().T
+
+                                if avgHdfOver is None:
+                                    avgHdfOver = df
+                                else:
+                                    avgHdfOver = pd.concat([avgHdfOver, df])
 
                             if dfCounts10minOver.shape[0] > 0:
                                 # ignores empty dfCounts10min
-                                meanDf = dfCounts10minOver.mean().to_frame().T
-                                if avg10dfOver is None:
-                                    avg10dfOver = meanDf
+                                if self._sbIsMin:
+                                    df = dfCounts10minOver.min().to_frame().T
                                 else:
-                                    avg10dfOver = pd.concat([avg10dfOver, meanDf])
+                                    df = dfCounts10minOver.mean().to_frame().T
+
+                                if avg10dfOver is None:
+                                    avg10dfOver = df
+                                else:
+                                    avg10dfOver = pd.concat([avg10dfOver, df])
 
                         prog += 1
                         self._parent.updateProgressBar(prog, len(sporadicDatesList))
@@ -799,8 +820,6 @@ class Stats:
 
     def showDataTable(self):
         self._parent.busy(True)
-        rowColorDict = dict()
-        columnColorDict = dict()
         self._ui.gbClassFilter_2.show()
         self._ui.gbDiagrams_2.hide()
         self._dataSource = self._parent.dataSource
@@ -831,12 +850,10 @@ class Stats:
         self._ui.twTables.setTabVisible(1, False)
         self._sbDataFrame = None
         self._ui.twTables.setTabVisible(2, False)
-        tuple3df = None
 
         row = self._ui.lwTabs.currentRow()
         self._ui.tvTabs.setEnabled(False)
-        # self._ui.sbTUsize.setEnabled(False)
-        # self._ui.pbRMOB.setEnabled(False)
+
         if self._classFilter == '':
             # nothing to show
             self._parent.infoMessage('Statistic diagrams:',
@@ -951,40 +968,12 @@ class Stats:
                 self._dataFrame = df.filter(items=['OVER'], axis=0)
 
         if row == self.TAB_MASS_INDEX_BY_POWERS:
-            sbf = None
-            # self._ui.sbTUsize.setEnabled(True)
-            if self._considerBackground:
-                # calculates a dataframe with sporadic background by thresholds
-                # the sporadic is calculated starting from a base of an entire year of data
-                oneYearAgo = addDateDelta(self._parent.fromDate, -366)
-                fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
-                sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=tuSize, metric='power',
-                                                         aggregateSporadic=True)
-            tuple3df = self.dailyCountsByThresholds(df, self._classFilter,
-                                                  self._parent.fromDate,
-                                                  self._parent.toDate,
-                                                  TUsize=tuSize,
-                                                  metric='power',
-                                                  sporadicBackgroundDf=sbf)
+            tuple3df = self._calcMassIndicesDf(df, TUsize=tuSize, metric='power')
             if tuple3df is not None:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
-            sbf = None
-            # self._ui.sbTUsize.setEnabled(True)
-            if self._considerBackground:
-                # calculates a dataframe with sporadic background by thresholds
-                # the sporadic is calculated starting from a base of an entire year of data
-                oneYearAgo = addDateDelta(self._parent.fromDate, -366)
-                fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
-                sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=tuSize, metric='lasting',
-                                                         aggregateSporadic=True)
-            tuple3df = self.dailyCountsByThresholds(df, self._classFilter,
-                                                  self._parent.fromDate,
-                                                  self._parent.toDate,
-                                                  TUsize=tuSize,
-                                                  metric='lasting',
-                                                  sporadicBackgroundDf=sbf)
+            tuple3df = self._calcMassIndicesDf(df, TUsize=tuSize, metric='lasting')
             if tuple3df is not None:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
 
@@ -1010,7 +999,6 @@ class Stats:
         self._parent.busy(False)
 
     def showDataDiagram(self):
-        dataFrame = None
         self._parent.busy(True)
         self._ui.gbDiagrams_2.show()
         self._dataSource = self._parent.dataSource
@@ -1461,6 +1449,10 @@ class Stats:
         self._smoothPlots = (state != 0)
         self._settings.writeSetting('smoothPlots', self._smoothPlots)
 
+    def _toggleSBmode(self, state):
+        self._sbIsMin = self._ui.rbSBmin.isChecked()
+        self._settings.writeSetting('sporadicTypeMin', self._sbIsMin)
+
     def _toggleLinkedCursors(self, state):
         self._linkedSliders = (state != 0)
         self._settings.writeSetting('linkedCursorsStat', self._linkedSliders)
@@ -1714,11 +1706,7 @@ class Stats:
         fullScale = config["fullScale"]
 
         # Generate the DataFrame
-        retval = dataFunction(baseDataFrame, **dataArgs)
-        dataFrame = retval
-        if isinstance(retval, tuple):
-            # if retval is a tuple, takes the first element (final data)
-            dataFrame = retval[0]
+        dataFrame = dataFunction(baseDataFrame, **dataArgs)
 
         series = seriesFunction(dataFrame, **seriesArgs)
 
@@ -2020,54 +2008,26 @@ class Stats:
             layout.addWidget(self._diagram)
         self._plot = pie
 
-    '''
-    def _calculateMassIndex(self, df, thresholds):
-        """
-        Calculates the mass index for each day using power-law CDF fitting.
+    def _calcMassIndicesDf(self, df:pd.DataFrame, TUsize:int, metric:str, finalDfOnly:bool=False):
+        sbf = None
+        # self._ui.sbTUsize.setEnabled(True)
+        if self._considerBackground:
+            # calculates a dataframe with sporadic background by thresholds
+            # the sporadic is calculated starting from a base of an entire year of data
+            oneYearAgo = addDateDelta(self._parent.fromDate, -366)
+            fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
+            sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=TUsize, metric=metric,
+                                                     aggregateSporadic=True)
+        tuple3df = self.dailyCountsByThresholds(df, self._classFilter,
+                                                self._parent.fromDate,
+                                                self._parent.toDate,
+                                                TUsize=TUsize,
+                                                metric=metric,
+                                                sporadicBackgroundDf=sbf)
 
-        Args:
-            df (pd.DataFrame): Pandas DataFrame containing the data.
-            thresholds (list): List of power thresholds.
-
-        Returns:
-            pd.DataFrame: Pandas DataFrame with the calculated mass index for each day.
-                          Returns None if fitting fails for all days.
-        """
-
-        results = {}
-        doneItems = 0
-        self._parent.updateStatusBar("Calculating mass indices")
-
-        for timeUnit, row in df.iterrows():  # Iterate over time units (rows)
-            eventCounts = row.values  # Counts for the current time unit
-            thresholdsUsed = np.array(thresholds)  # Use all thresholds
-
-            # Sort thresholds and counts in descending order
-            sortedIndices = np.argsort(thresholdsUsed)[::-1]
-            thresholdsUsed = thresholdsUsed[sortedIndices]
-            eventCounts = eventCounts[sortedIndices]
-
-            try:
-                # Perform power-law fit
-                popt, pcov = curve_fit(powerLawCdf, thresholdsUsed, eventCounts, p0=[1, 1],
-                                       bounds=([0, 0], [np.inf, 10]), maxfev=3000, nan_policy='raise')
-                k, alpha = popt
-                results[timeUnit] = alpha  # Mass index for the time unit
-                results[timeUnit] = results[timeUnit] * (-4 / 3) + 1  # ps. Mario Sandri
-            except RuntimeError as e:
-                print(f"Fit did not converge for {timeUnit}: {e}")
-                results[timeUnit] = np.nan
-            except Exception as e:
-                print(f"Error during fit for {timeUnit}: {e}")
-                results[timeUnit] = np.nan
-
-            doneItems += 1
-            self._parent.updateProgressBar(doneItems, len(df))
-        if not results:
-            return None
-
-        return pd.DataFrame(results, index=['alpha']).T
-    '''
+        if finalDfOnly:
+            return tuple3df[0]
+        return tuple3df
 
     def _calculateMassIndex(self, df: pd.DataFrame, thresholds: list):
         """

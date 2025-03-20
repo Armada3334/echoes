@@ -358,6 +358,7 @@ class Prefs(QWidget):
 
     def _calculateSporadicBackground(self):
         self._parent.updateStatusBar("Sporadic background calculation...")
+        self._ui.lbSBok.setVisible(False)
         done = self._tabStats.calculateSporadicBackground()
         if done:
             self.updateTabPrefs()

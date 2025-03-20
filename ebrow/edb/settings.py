@@ -56,7 +56,7 @@ class Settings(QSettings):
         self._stats = ['classFilterStat', 'showValues', 'showGridStat', 'smoothPlots', 'subtractSporadicBackground',
                        'compensation', 'horizontalZoomStat', 'verticalZoomStat', 'linkedSlidersStat',
                        'currentColormapStat', 'RMOBfilePrefix',
-                       'sporadicDates', 'sporadicBackgroundDaily', 'sporadicBackgroundByHour',
+                       'sporadicDates', 'sporadicBackgroundDaily', 'sporadicBackgroundByHour', 'sporadicTypeMin',
                        'sporadicBackgroundBy10min', 'MItimeUnitSize']
 
         self._plotStyles = ['fontFamily', 'fontSize', 'fontStyle', 'majorLineStyle', 'majorLineWidth', 'minorLineStyle',
@@ -189,6 +189,7 @@ class Settings(QSettings):
         d['sporadicBackgroundDaily'] = ''
         d['sporadicBackgroundByHour'] = ''
         d['sporadicBackgroundBy10min'] = ''
+        d['sporadicTypeMin'] = 0
         d['MItimeUnitSize'] = 1
 
         # filters
