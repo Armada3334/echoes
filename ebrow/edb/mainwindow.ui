@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>1</hour>
+                    <hour>23</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>20</hour>
+                    <hour>16</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>18</hour>
+                    <hour>14</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -11291,7 +11291,7 @@ font: 10pt &quot;Gauge&quot;;
              <x>0</x>
              <y>0</y>
              <width>285</width>
-             <height>883</height>
+             <height>915</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_10">
@@ -11532,6 +11532,36 @@ font: 10pt &quot;Gauge&quot;;
                   <string>Compensate with sporadic background</string>
                  </property>
                 </widget>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_73" stretch="7,0">
+                 <item>
+                  <widget class="QLabel" name="label_8">
+                   <property name="text">
+                    <string>Radar scan compensation</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QDoubleSpinBox" name="sbRadarComp">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>24</height>
+                    </size>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;DB counts are multiplied by this constant before being represented in the statistical tables.&lt;/p&gt;&lt;p&gt;Its main purpose is to statistically compensate for the GRAVES radar scanning effect,&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Since GRAVES only illuminates a third of the sky and a 3-second scan is needed to cover it all, it follows that for every captured event, two more are lost. So the value to set to compensate for the loss is 3.00.&lt;br/&gt;Please note that since GRAVES is a military facility, there is no guarantee that this parameter will not change in the future.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;By default, the value is 1.00 (no compensation)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="minimum">
+                    <double>1.000000000000000</double>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
                </item>
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_67" stretch="7,3">

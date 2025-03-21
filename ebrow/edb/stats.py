@@ -104,9 +104,10 @@ class Stats:
         self._sbDataFrame = None
         self._considerBackground = False
         self._compensation = False
+        self._timeUnitSize = 1
+        self._radarComp = 1.0
         self._ui.chkSubSB.setEnabled(False)
         self._ui.chkCompensation.setEnabled(False)
-        # self._ui.sbTUsize.setEnabled(False)
         self._px = plt.rcParams['figure.dpi']  # from inches to pixels
         self._szBase = None
 
@@ -171,6 +172,7 @@ class Stats:
         self._ui.hsVzoom_3.valueChanged.connect(self._changeVzoom)
         self._ui.chkLinked_3.clicked.connect(self._toggleLinkedCursors)
         self._ui.sbTUsize.valueChanged.connect(lambda val: self._settings.writeSetting('MItimeUnitSize', val))
+        self._ui.sbRadarComp.valueChanged.connect(lambda val: self._settings.writeSetting('RadarCompensation', val))
 
         self._showDiagramSettings(False)
         self._showColormapSetting(False)
@@ -189,6 +191,7 @@ class Stats:
                              "dateTo": self._parent.toDate,
                              "totalColumn": True,
                              "compensate": self._compensation,
+                             "radarComp": self._radarComp,
                              "considerBackground": self._considerBackground},
                 "seriesFunction": lambda df: df['Total'].squeeze(),
                 "seriesArgs": {},
@@ -231,6 +234,7 @@ class Stats:
                              "dtRes": 'h',
                              "filters": self._classFilterRMOB,
                              "compensate": self._compensation,
+                             "radarComp": self._radarComp,
                              "considerBackground": self._considerBackground},
                 "seriesFunction": self._dataSource.tableTimeSeries,
                 "seriesArgs": {"columns": range(0, 24)},
@@ -246,6 +250,7 @@ class Stats:
                              "dtRes": 'h',
                              "filters": self._classFilter,
                              "compensate": self._compensation,
+                             "radarComp": self._radarComp,
                              "considerBackground": self._considerBackground},
                 "seriesFunction": self._dataSource.tableTimeSeries,
                 "seriesArgs": {"columns": range(0, 24)},
@@ -287,6 +292,7 @@ class Stats:
                              "dtRes": '10T',
                              "filters": self._classFilter,
                              "compensate": self._compensation,
+                             "radarComp": self._radarComp,
                              "considerBackground": self._considerBackground},
                 "seriesFunction": self._dataSource.tableTimeSeries,
                 "seriesArgs": {"columns": range(0, 24)},
@@ -328,7 +334,7 @@ class Stats:
                 "title": "Mass indexes by power thresholds",
                 "resolution": "D",
                 "dataFunction": self._calcMassIndicesDf,
-                "dataArgs": {"TUsize": self._ui.sbTUsize.value(),
+                "dataArgs": {"TUsize": self._timeUnitSize,
                              "metric": 'power',
                              "finalDfOnly": True},
                 "seriesFunction": self._dataSource.tableTimeSeries,
@@ -341,7 +347,7 @@ class Stats:
                 "title": "Mass indexes by lastings thresholds",
                 "resolution": "D",
                 "dataFunction": self._calcMassIndicesDf,
-                "dataArgs": {"TUsize": self._ui.sbTUsize.value(),
+                "dataArgs": {"TUsize": self._timeUnitSize,
                              "metric": 'lasting',
                              "finalDfOnly": True},
 
@@ -377,6 +383,12 @@ class Stats:
     def updateTabStats(self):
         self._dataSource = self._parent.dataSource
         if self._ui.twMain.currentIndex() == self._parent.TWMAIN_STATISTICS:
+            self._timeUnitSize = self._settings.readSettingAsInt('MItimeUnitSize')
+            self._ui.sbTUsize.setValue(self._timeUnitSize)
+
+            self._radarComp = self._settings.readSettingAsFloat('RadarCompensation')
+
+            self._ui.sbRadarComp.setValue(self._radarComp)
             enableSB = 0
             avgDailyStr = self._settings.readSettingAsObject('sporadicBackgroundDaily')
             if len(avgDailyStr) > 0:
@@ -393,8 +405,6 @@ class Stats:
                 self._dataSource.avg10minDf = pd.DataFrame.from_dict(json.loads(avg10minStr))
                 enableSB |= 4
 
-            timeUnitSize = self._settings.readSettingAsInt('MItimeUnitSize')
-            self._ui.sbTUsize.setValue(timeUnitSize)
 
             # hides the sporadic background data if none are defined in ebrow.ini
             itemSBhour = self._ui.lwTabs.item(self.TAB_SPORADIC_BG_BY_HOUR)
@@ -609,8 +619,8 @@ class Stats:
         return calcDone
 
     def _sporadicAveragesByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
-                                      TUsize: int = 1, metric: str = 'power', aggregateSporadic: bool = False) -> Union[
-        pd.DataFrame, None]:
+                                      TUsize: int = 1, metric: str = 'power', aggregateSporadic: bool = False,
+                                      radarComp:float=1.0) -> Union[pd.DataFrame, None]:
         """
         Calculates sporadic averages by thresholds, either for a single date range or for multiple sporadic periods.
 
@@ -635,7 +645,7 @@ class Stats:
                     qApp.processEvents()
                     dates = intervalStr.split(" -> ")
                     sbdf = self._sporadicAveragesByThresholds(df, filters, dates[0], dates[1], TUsize, metric,
-                                                              False)
+                                                              False, radarComp=radarComp)
                     sbdfList.append(sbdf)
 
                 # Concatenate results and compute mean
@@ -645,7 +655,7 @@ class Stats:
 
         # Calculate sporadic averages for a given date range
         odf, dummy1, dummy2 = self.dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric,
-                                                           isSporadic=True)
+                                                           isSporadic=True, radarComp=radarComp)
 
         if odf is None or odf.empty:
             return pd.DataFrame()
@@ -827,7 +837,6 @@ class Stats:
         emphasizedTextColor = colors['tableFg']
         emphasizedAltTextColor = colors['tableAltFg']
         emphasizedBackColor = colors['tableBg']
-        tuSize = self._ui.sbTUsize.value()
 
         rowColorDict = {
             '*': {'alignment': 'center'},
@@ -871,6 +880,7 @@ class Stats:
                                                                     totalRow=True,
                                                                     totalColumn=True,
                                                                     compensate=self._compensation,
+                                                                    radarComp=self._radarComp,
                                                                     considerBackground=self._considerBackground)
             if tuple3df is not None:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
@@ -884,6 +894,7 @@ class Stats:
                                                      totalRow=True,
                                                      totalColumn=True,
                                                      compensate=self._compensation,
+                                                     radarComp=self._radarComp,
                                                      considerBackground=self._considerBackground)
             if tuple3df is not None:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
@@ -897,6 +908,7 @@ class Stats:
                                                    totalRow=True,
                                                    totalColumn=True,
                                                    compensate=self._compensation,
+                                                   radarComp=self._radarComp,
                                                    considerBackground=self._considerBackground)
 
             if tuple3df is not None:
@@ -950,6 +962,7 @@ class Stats:
                                                                      filters=self._classFilterRMOB, totalRow=False,
                                                                      totalColumn=False,
                                                                      compensate=self._compensation,
+                                                                     radarComp=self._radarComp,
                                                                      considerBackground=self._considerBackground)
             self._dataFrame, monthName, year = self._dataSource.makeRMOB(df2)
 
@@ -968,12 +981,12 @@ class Stats:
                 self._dataFrame = df.filter(items=['OVER'], axis=0)
 
         if row == self.TAB_MASS_INDEX_BY_POWERS:
-            tuple3df = self._calcMassIndicesDf(df, TUsize=tuSize, metric='power')
+            tuple3df = self._calcMassIndicesDf(df, TUsize=self._timeUnitSize, metric='power')
             if tuple3df is not None:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
-            tuple3df = self._calcMassIndicesDf(df, TUsize=tuSize, metric='lasting')
+            tuple3df = self._calcMassIndicesDf(df, TUsize=self._timeUnitSize, metric='lasting')
             if tuple3df is not None:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
 
@@ -1824,6 +1837,7 @@ class Stats:
                              "dateFrom": self._parent.fromDate,
                              "dateTo": self._parent.toDate,
                              "compensate": self._compensation,
+                             "radarComp": self._radarComp,
                              "considerBackground": self._considerBackground},
             },
             self.TAB_POWERS_BY_DAY: {
@@ -1861,6 +1875,7 @@ class Stats:
                              "dtRes": 'h',
                              "filters": self._classFilter,
                              "compensate": self._compensation,
+                             "radarComp": self._radarComp,
                              "considerBackground": self._considerBackground},
             },
             self.TAB_POWERS_BY_HOUR: {
@@ -1891,6 +1906,7 @@ class Stats:
                              "dtRes": '10T',
                              "filters": self._classFilter,
                              "compensate": self._compensation,
+                             "radarComp": self._radarComp,
                              "considerBackground": self._considerBackground},
             },
             self.TAB_POWERS_BY_10M: {
@@ -1987,7 +2003,10 @@ class Stats:
             df = self._dataSource.totalsByClassification(self._classFilter, self._parent.fromDate,
                                                          self._parent.toDate,
                                                          compensate=self._compensation,
-                                                         considerBackground=self._considerBackground)
+                                                         radarComp=self._radarComp,
+                                                         considerBackground=self._considerBackground,
+                                                         )
+
 
             pixWidth = (self._szBase.width() * self._hZoom)
             pixHeight = (self._szBase.height() * self._vZoom)
@@ -2010,20 +2029,20 @@ class Stats:
 
     def _calcMassIndicesDf(self, df:pd.DataFrame, TUsize:int, metric:str, finalDfOnly:bool=False):
         sbf = None
-        # self._ui.sbTUsize.setEnabled(True)
         if self._considerBackground:
             # calculates a dataframe with sporadic background by thresholds
             # the sporadic is calculated starting from a base of an entire year of data
             oneYearAgo = addDateDelta(self._parent.fromDate, -366)
             fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
             sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=TUsize, metric=metric,
-                                                     aggregateSporadic=True)
+                                                     aggregateSporadic=True, radarComp=self._radarComp)
         tuple3df = self.dailyCountsByThresholds(df, self._classFilter,
                                                 self._parent.fromDate,
                                                 self._parent.toDate,
                                                 TUsize=TUsize,
                                                 metric=metric,
-                                                sporadicBackgroundDf=sbf)
+                                                sporadicBackgroundDf=sbf,
+                                                radarComp=self._radarComp)
 
         if finalDfOnly:
             return tuple3df[0]
@@ -2074,8 +2093,8 @@ class Stats:
 
         return pd.DataFrame(results, index=['alpha']).T
 
-    def dailyCountsByThresholds(self, df, filters, dateFrom=None, dateTo=None, TUsize: int = 1, metric: str = 'power',
-                                isSporadic=False, sporadicBackgroundDf=None) -> Union[tuple, None]:
+    def dailyCountsByThresholds(self, df:pd.DataFrame, filters:str, dateFrom:str=None, dateTo:str=None, TUsize: int = 1, metric: str = 'power',
+                                isSporadic:bool=False, sporadicBackgroundDf:pd.DataFrame=None, radarComp:float=1.0) -> Union[tuple, None]:
         """
         Calculates event counts per threshold, adds totals per threshold, mass index, and average mass index.
 
@@ -2088,6 +2107,7 @@ class Stats:
             metric (str, optional): Metric to use ('power' or 'lasting'). Defaults to 'power'.
             isSporadic (bool, optional): the method has been called to calculate the sporadic background
             sporadicBackgroundDf (pd.DataFrame, optional): DataFrame with sporadic background data. Defaults to None.
+            radarComp (float, optional): radar scan effect compensation factor
 
         Returns:
             tuple of 3 pd.DataFrame: DataFrame with counts, totals per threshold, mass index, and average mass index.

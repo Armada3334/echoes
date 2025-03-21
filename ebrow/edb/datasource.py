@@ -1086,20 +1086,20 @@ class DataSource:
         m.select()
         return m
 
-    def dailyCountsByClassification(self, df, filters, dateFrom=None, dateTo=None, totalRow=False, totalColumn=False,
-                                    compensate=False, considerBackground=False):
+    def dailyCountsByClassification(self, df:pd.DataFrame, filters:str, dateFrom:str=None, dateTo:str=None, totalRow:bool=False, totalColumn:bool=False,
+                                    compensate:bool=False, radarComp:float=1.0, considerBackground:bool=False):
         return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='count',
                                                       totalRow=totalRow, totalColumn=totalColumn,
-                                                      compensate=compensate, considerBackground=considerBackground)
+                                                      compensate=compensate, radarComp=radarComp, considerBackground=considerBackground)
 
-    def dailyPowersByClassification(self, df, filters, dateFrom=None, dateTo=None, highestAvgRow=False,
-                                    highestAvgColumn=False):
+    def dailyPowersByClassification(self, df:pd.DataFrame, filters:str, dateFrom:str=None, dateTo:str=None, highestAvgRow:bool=False,
+                                    highestAvgColumn:bool=False):
         tupleDf = self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='power',
                                                       highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
         return tupleDf[0]
 
-    def dailyLastingsByClassification(self, df, filters, dateFrom=None, dateTo=None, highestAvgRow=False,
-                                      highestAvgColumn=False):
+    def dailyLastingsByClassification(self, df:pd.DataFrame, filters:str, dateFrom:str=None, dateTo:str=None, highestAvgRow:bool=False,
+                                      highestAvgColumn:bool=False):
         tupleDf = self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='lasting', dtDec=0,
                                                       highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
 
@@ -1109,7 +1109,7 @@ class DataSource:
                                          dateTo: str = None,
                                          metric: str = 'count', dtDec: int = 1, totalRow: bool = False,
                                          totalColumn: bool = False,
-                                         compensate: bool = False, considerBackground: bool = False,
+                                         compensate: bool = False, radarComp:float=1.0, considerBackground: bool = False,
                                          highestAvgRow: bool = False, highestAvgColumn: bool = False) -> tuple:
         """
         Aggregates daily metrics (count, mean of 'diff', or mean of 'lasting_ms') by classification.
@@ -1123,6 +1123,7 @@ class DataSource:
         @param totalRow: Add a total row summing all columns
         @param totalColumn: Add a total column summing all rows
         @param compensate: If True, adjust counts based on background values
+        @param radarComp: radar scan effect compensation factor.
         @param considerBackground: If True, subtract background values
         @param highestAvgRow: Add a row with the average of each column
         @param highestAvgColumn: Add a column with the average of each row
@@ -1147,7 +1148,7 @@ class DataSource:
 
         resultsList = []
         rawResultsList = []
-
+        rawValue = 0
         itemsToProcess = len(classList) * len(dtList)
         doneItems = 0
         self._parent.updateProgressBar(doneItems, itemsToProcess)
@@ -1212,7 +1213,7 @@ class DataSource:
                 rawResultsList.append(pd.Series(rawMetricDict))
 
         self._parent.updateStatusBar("Combining final results in a dataframe")
-        newDf = pd.concat(resultsList, axis=1)
+        newDf = pd.concat(resultsList, axis=1) * radarComp
 
         # Check if all original data types are integers
         allIntegers = all(dtype.kind == 'i' for dtype in newDf.dtypes)
@@ -1288,12 +1289,13 @@ class DataSource:
 
         return newDf, rawDf, sbDf
 
-    def totalsByClassification(self, filters: str, considerBackground: bool = False,
-                               compensate: bool = False) -> pd.DataFrame:
+    def totalsByClassification(self, filters: str, compensate: bool = False, radarComp: float=1.0,
+                               considerBackground: bool = False) -> pd.DataFrame:
         """
-
-        @param filters
-        @return:
+        :param filters: Filters to apply on the 'classification' column.
+        :param considerBackground: Whether to subtract the background from counts.
+        :param compensate: Whether to compensate counts using the background.
+        :param radarComp: radar scan effect compensation factor.
         """
         if considerBackground or compensate:
             print("WARNING - considerBackground NOT YET IMPLEMENTED")
@@ -2339,9 +2341,13 @@ class DataSource:
             dfRMOB.index.name = monthName
             return dfRMOB, monthNum, year
 
+
+
+
+
     def makeCountsDf(
             self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, filters: str = '',
-            compensate: bool = False, considerBackground: bool = False, totalRow: bool = False,
+            compensate: bool = False, radarComp:float=1.0, considerBackground: bool = False, totalRow: bool = False,
             totalColumn: bool = False, placeholder: int = 0) -> tuple:
 
         """
@@ -2353,6 +2359,7 @@ class DataSource:
         :param dtRes: Time resolution ('D', 'h', '10T').
         :param filters: Filters to apply on the 'classification' column.
         :param compensate: Whether to compensate counts using the background.
+        :param radarComp: radar scan effect compensation factor.
         :param considerBackground: Whether to subtract the background from counts.
         :param totalRow: Adds a row with totals for each column.
         :param totalColumn: Adds a column with totals for each row.
@@ -2455,6 +2462,8 @@ class DataSource:
 
             doneItems += 1
             self._parent.updateProgressBar(doneItems, itemsToProcess)
+
+        finalDf *= radarComp
 
         # Add totals for rows and columns
         if totalColumn:
