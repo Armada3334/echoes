@@ -1086,31 +1086,36 @@ class DataSource:
         m.select()
         return m
 
-    def dailyCountsByClassification(self, df:pd.DataFrame, filters:str, dateFrom:str=None, dateTo:str=None, totalRow:bool=False, totalColumn:bool=False,
-                                    compensate:bool=False, radarComp:float=1.0, considerBackground:bool=False):
+    def dailyCountsByClassification(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
+                                    totalRow: bool = False, totalColumn: bool = False,
+                                    compensate: bool = False, radarComp: float = 1.0, considerBackground: bool = False):
         return self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='count',
                                                       totalRow=totalRow, totalColumn=totalColumn,
-                                                      compensate=compensate, radarComp=radarComp, considerBackground=considerBackground)
+                                                      compensate=compensate, radarComp=radarComp,
+                                                      considerBackground=considerBackground)
 
-    def dailyPowersByClassification(self, df:pd.DataFrame, filters:str, dateFrom:str=None, dateTo:str=None, highestAvgRow:bool=False,
-                                    highestAvgColumn:bool=False):
+    def dailyPowersByClassification(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
+                                    highestAvgRow: bool = False,
+                                    highestAvgColumn: bool = False):
         tupleDf = self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='power',
-                                                      highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
+                                                         highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
         return tupleDf[0]
 
-    def dailyLastingsByClassification(self, df:pd.DataFrame, filters:str, dateFrom:str=None, dateTo:str=None, highestAvgRow:bool=False,
-                                      highestAvgColumn:bool=False):
+    def dailyLastingsByClassification(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
+                                      highestAvgRow: bool = False,
+                                      highestAvgColumn: bool = False):
         tupleDf = self._dailyAggregationByClassification(df, filters, dateFrom, dateTo, metric='lasting', dtDec=0,
-                                                      highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
+                                                         highestAvgRow=highestAvgRow, highestAvgColumn=highestAvgColumn)
 
         return tupleDf[0]
 
     def _dailyAggregationByClassification(self, df: pd.DataFrame, filters: str, dateFrom: str = None,
-                                         dateTo: str = None,
-                                         metric: str = 'count', dtDec: int = 1, totalRow: bool = False,
-                                         totalColumn: bool = False,
-                                         compensate: bool = False, radarComp:float=1.0, considerBackground: bool = False,
-                                         highestAvgRow: bool = False, highestAvgColumn: bool = False) -> tuple:
+                                          dateTo: str = None,
+                                          metric: str = 'count', dtDec: int = 1, totalRow: bool = False,
+                                          totalColumn: bool = False,
+                                          compensate: bool = False, radarComp: float = 1.0,
+                                          considerBackground: bool = False,
+                                          highestAvgRow: bool = False, highestAvgColumn: bool = False) -> tuple:
         """
         Aggregates daily metrics (count, mean of 'diff', or mean of 'lasting_ms') by classification.
 
@@ -1183,12 +1188,14 @@ class DataSource:
 
                 # Apply background adjustments
                 if metric == 'count' and self.avgDailyDict:
-                    background = self.avgDailyDict.get(cl, 0)
-                    rawValue = value
-                    if compensate and value < background:
+                    background = int(round(self.avgDailyDict.get(cl, 0) * radarComp, 0))
+                    rawValue = int(round(value * radarComp, 0))
+                    if compensate and rawValue < background:
                         value = background
-                    if considerBackground:
-                        value -= background
+                    elif considerBackground:
+                        value = rawValue - background
+                    else:
+                        value = rawValue
                     if value < 0:
                         value = 0
 
@@ -1213,7 +1220,7 @@ class DataSource:
                 rawResultsList.append(pd.Series(rawMetricDict))
 
         self._parent.updateStatusBar("Combining final results in a dataframe")
-        newDf = pd.concat(resultsList, axis=1) * radarComp
+        newDf = pd.concat(resultsList, axis=1)
 
         # Check if all original data types are integers
         allIntegers = all(dtype.kind == 'i' for dtype in newDf.dtypes)
@@ -1283,34 +1290,11 @@ class DataSource:
             rawDf.columns = classList
 
             sbDf = pd.DataFrame.from_dict([self.avgDailyDict])
+            sbDf = (sbDf * radarComp).round().astype(int)
             sbDf = sbDf[['OVER', 'UNDER']]
             totalColumnResult = sbDf.sum(axis=1)
             sbDf['Total'] = totalColumnResult.astype(int)
-
         return newDf, rawDf, sbDf
-
-    def totalsByClassification(self, filters: str, compensate: bool = False, radarComp: float=1.0,
-                               considerBackground: bool = False) -> pd.DataFrame:
-        """
-        :param filters: Filters to apply on the 'classification' column.
-        :param considerBackground: Whether to subtract the background from counts.
-        :param compensate: Whether to compensate counts using the background.
-        :param radarComp: radar scan effect compensation factor.
-        """
-        if considerBackground or compensate:
-            print("WARNING - considerBackground NOT YET IMPLEMENTED")
-        totalsDf = None
-        if self._adf is not None:
-            ids = dict()
-            counts = dict()
-            # filters fdf by class filters, removing spaces in between
-            filterList = [item.strip() for item in filters.split(',')]
-            for cat in filterList:
-                qApp.processEvents()
-                ids[cat] = self._adf.loc[self._adf['classification'].isin([cat]), 'id'].unique()
-                counts[cat] = ids[cat].size
-            totalsDf = pd.DataFrame(counts)
-        return totalsDf
 
     def totalsUnclassified(self, dateFrom: str = None, dateTo: str = None) -> int:
         """
@@ -1412,8 +1396,7 @@ class DataSource:
         if len(df) > 1:
             verFloat = df.loc[rev, 'echoes_ver']
         verFloat = df.iloc[0]['echoes_ver']
-        return  f"{verFloat:.2f}"  # Forces 2 decimals release
-
+        return f"{verFloat:.2f}"  # Forces 2 decimals release
 
     def getIDsOfTheDay(self, date: str):
         """
@@ -2341,13 +2324,9 @@ class DataSource:
             dfRMOB.index.name = monthName
             return dfRMOB, monthNum, year
 
-
-
-
-
     def makeCountsDf(
             self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, filters: str = '',
-            compensate: bool = False, radarComp:float=1.0, considerBackground: bool = False, totalRow: bool = False,
+            compensate: bool = False, radarComp: float = 1.0, considerBackground: bool = False, totalRow: bool = False,
             totalColumn: bool = False, placeholder: int = 0) -> tuple:
 
         """
@@ -2379,6 +2358,7 @@ class DataSource:
         # Generate time intervals and column names
         dtRange = pd.date_range(dtStart, dtEndInclusive, freq=dtRes)
         columns = self._generateColumns(dtRange, dtRes)
+
         finalDf = pd.DataFrame(columns=columns, dtype='int32')
         rawDf = pd.DataFrame(columns=columns, dtype='int32')
         sbDf = None
@@ -2401,7 +2381,7 @@ class DataSource:
                 if 'OVER' in filters:
                     background += sbDf.loc[0, 'OVER']
                 if 'UNDER' in filters:
-                    background += sbDf.loc[0,'UNDER']
+                    background += sbDf.loc[0, 'UNDER']
                 timeUnit = dtFrom.date()
 
             if dtRes == 'h':
@@ -2426,6 +2406,8 @@ class DataSource:
                     if 'UNDER' in filters:
                         background += sbDf.loc['UNDER', timeUnit]
 
+            background = int(round(background * radarComp, 0))
+
             hole = False
             if count == 0 and 'ACQ ACT' in filters:
                 if dtRes == 'D' and (not self.acqWasRunning(dtFrom, 86400)):
@@ -2440,14 +2422,15 @@ class DataSource:
                     count = placeholder
                     hole = True
 
-            rawCount = count
+            rawCount = int(round(max(count, 0) * radarComp, 0))
             if not hole:
                 # Adjust counts based on background or compensation rules
                 if compensate and count < background:
                     count = background
-                if considerBackground:
-                    count -= background
-                count = max(count, 0)
+                elif considerBackground:
+                    count = max(rawCount - background, 0)
+                else:
+                    count = rawCount
 
             row = dtFrom.date().strftime('%Y-%m-%d')
             column = self._formatColumnName(dtFrom, dtRes)
@@ -2463,7 +2446,7 @@ class DataSource:
             doneItems += 1
             self._parent.updateProgressBar(doneItems, itemsToProcess)
 
-        finalDf *= radarComp
+        # finalDf = finalDf.mul(radarComp, fill_value=0).astype(int)
 
         # Add totals for rows and columns
         if totalColumn:
@@ -2473,8 +2456,14 @@ class DataSource:
             rawDf.loc['Total'] = rawDf.sum()
             finalDf.loc['Total'] = finalDf.sum()
 
-        return finalDf, rawDf, sbDf
+        if not(compensate or considerBackground):
+            # if background is not used, shows one table only
+            sbDf = None
+            rawDf = None
+        else:
+            sbDf = (sbDf * radarComp).round().astype(int)
 
+        return finalDf, rawDf, sbDf
 
     def _formatColumnName(self, dtFrom, dtRes):
         """

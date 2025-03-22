@@ -134,7 +134,6 @@ class Stats:
         self._hZoom = self._settings.readSettingAsFloat('horizontalZoomStat')
         self._vZoom = self._settings.readSettingAsFloat('verticalZoomStat')
 
-
         self._changeHzoom(int(self._hZoom * 10))
         self._changeVzoom(int(self._vZoom * 10))
 
@@ -171,8 +170,8 @@ class Stats:
         self._ui.hsHzoom_3.valueChanged.connect(self._changeHzoom)
         self._ui.hsVzoom_3.valueChanged.connect(self._changeVzoom)
         self._ui.chkLinked_3.clicked.connect(self._toggleLinkedCursors)
-        self._ui.sbTUsize.valueChanged.connect(lambda val: self._settings.writeSetting('MItimeUnitSize', val))
-        self._ui.sbRadarComp.valueChanged.connect(lambda val: self._settings.writeSetting('RadarCompensation', val))
+        self._ui.sbTUsize.valueChanged.connect(self._changeTUsize)
+        self._ui.sbRadarComp.valueChanged.connect(self._changeRadarComp)
 
         self._showDiagramSettings(False)
         self._showColormapSetting(False)
@@ -405,7 +404,6 @@ class Stats:
                 self._dataSource.avg10minDf = pd.DataFrame.from_dict(json.loads(avg10minStr))
                 enableSB |= 4
 
-
             # hides the sporadic background data if none are defined in ebrow.ini
             itemSBhour = self._ui.lwTabs.item(self.TAB_SPORADIC_BG_BY_HOUR)
             itemSBhour.setHidden(True)
@@ -493,20 +491,28 @@ class Stats:
                     if self._parent.fromDate <= dates[0] and self._parent.toDate >= dates[1]:
                         dfEvents = self._dataSource.getADpartialFrame(dates[0], dates[1])
                         if dfEvents is not None:
-                            dfCountsHourlyUnder, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1], dtRes='h',
-                                                                                filters='UNDER', totalRow=False,
-                                                                                totalColumn=False)
-                            dfCounts10minUnder, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1],
-                                                                               dtRes='10T',
-                                                                               filters='UNDER', totalRow=False,
-                                                                               totalColumn=False)
+                            dfCountsHourlyUnder, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0],
+                                                                                             dates[1], dtRes='h',
+                                                                                             filters='UNDER',
+                                                                                             totalRow=False,
+                                                                                             totalColumn=False)
+                            dfCounts10minUnder, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0],
+                                                                                            dates[1],
+                                                                                            dtRes='10T',
+                                                                                            filters='UNDER',
+                                                                                            totalRow=False,
+                                                                                            totalColumn=False)
 
-                            dfCountsHourlyOver, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1], dtRes='h',
-                                                                               filters='OVER', totalRow=False,
-                                                                               totalColumn=False)
-                            dfCounts10minOver, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1], dtRes='10T',
-                                                                              filters='OVER', totalRow=False,
-                                                                              totalColumn=False)
+                            dfCountsHourlyOver, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0],
+                                                                                            dates[1], dtRes='h',
+                                                                                            filters='OVER',
+                                                                                            totalRow=False,
+                                                                                            totalColumn=False)
+                            dfCounts10minOver, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1],
+                                                                                           dtRes='10T',
+                                                                                           filters='OVER',
+                                                                                           totalRow=False,
+                                                                                           totalColumn=False)
 
                             excludeIndexes = []
                             for rowIndex in dfCountsHourlyUnder.index:
@@ -620,7 +626,7 @@ class Stats:
 
     def _sporadicAveragesByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
                                       TUsize: int = 1, metric: str = 'power', aggregateSporadic: bool = False,
-                                      radarComp:float=1.0) -> Union[pd.DataFrame, None]:
+                                      radarComp: float = 1.0) -> Union[pd.DataFrame, None]:
         """
         Calculates sporadic averages by thresholds, either for a single date range or for multiple sporadic periods.
 
@@ -698,8 +704,9 @@ class Stats:
         df = self._dataSource.getADpartialFrame(fromDate, toDate)
 
         finalDf, rawDf, sbDf = self._dataSource.makeCountsDf(df, fromDate, toDate, dtRes='h',
-                                            filters=self._classFilterRMOB, totalRow=False, totalColumn=False,
-                                            placeholder=-1)
+                                                             filters=self._classFilterRMOB, totalRow=False,
+                                                             totalColumn=False,
+                                                             placeholder=-1)
 
         dfRMOB, monthNr, year = self._dataSource.makeRMOB(finalDf, lastOnly=True)
         filePrefix, txtFileName, dfMonth = self._generateRMOBtableFile(dfRMOB, year, monthNr)
@@ -901,15 +908,15 @@ class Stats:
 
         if row == self.TAB_COUNTS_BY_10M:
             tuple3df = self._dataSource.makeCountsDf(df,
-                                                   self._parent.fromDate,
-                                                   self._parent.toDate,
-                                                   dtRes='10T',
-                                                   filters=self._classFilter,
-                                                   totalRow=True,
-                                                   totalColumn=True,
-                                                   compensate=self._compensation,
-                                                   radarComp=self._radarComp,
-                                                   considerBackground=self._considerBackground)
+                                                     self._parent.fromDate,
+                                                     self._parent.toDate,
+                                                     dtRes='10T',
+                                                     filters=self._classFilter,
+                                                     totalRow=True,
+                                                     totalColumn=True,
+                                                     compensate=self._compensation,
+                                                     radarComp=self._radarComp,
+                                                     considerBackground=self._considerBackground)
 
             if tuple3df is not None:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
@@ -920,7 +927,6 @@ class Stats:
             self._dataFrame = self._dataSource.dailyPowersByClassification(df, self._classFilter, self._parent.fromDate,
                                                                            self._parent.toDate,
                                                                            highestAvgRow=True, highestAvgColumn=True)
-
 
         if row == self.TAB_POWERS_BY_HOUR:
             self._dataFrame = self._dataSource.makePowersDf(df, self._parent.fromDate, self._parent.toDate, dtRes='h',
@@ -958,12 +964,12 @@ class Stats:
 
         if row == self.TAB_RMOB_MONTH:
             df2, dummy1, dummy2 = self._dataSource.makeCountsDf(df, self._parent.fromDate, self._parent.toDate,
-                                                                     dtRes='h',
-                                                                     filters=self._classFilterRMOB, totalRow=False,
-                                                                     totalColumn=False,
-                                                                     compensate=self._compensation,
-                                                                     radarComp=self._radarComp,
-                                                                     considerBackground=self._considerBackground)
+                                                                dtRes='h',
+                                                                filters=self._classFilterRMOB, totalRow=False,
+                                                                totalColumn=False,
+                                                                compensate=self._compensation,
+                                                                radarComp=self._radarComp,
+                                                                considerBackground=self._considerBackground)
             self._dataFrame, monthName, year = self._dataSource.makeRMOB(df2)
 
         if row == self.TAB_SPORADIC_BG_BY_HOUR:
@@ -1548,11 +1554,13 @@ class Stats:
             self._diagram.ensureVisible(int(pixWidth / 2), int(pixHeight / 2))
         self._ui.hsHzoom_3.blockSignals(False)
 
-    def _changeTUsize(self):
-        """
+    def _changeTUsize(self, val):
+        self._settings.writeSetting('MItimeUnitSize', val)
+        self._timeUnitSize = val
 
-        """
-        pass
+    def _changeRadarComp(self, val):
+        self._settings.writeSetting('RadarCompensation', val)
+        self._radarComp = val
 
     def _calcFigSizeInch(self):
         """
@@ -1678,7 +1686,6 @@ class Stats:
                            self._showValues,
                            self._showGrid, self._smoothPlots, self._considerBackground)
 
-
         # Embeds the xygraph in the layout
         canvas = xygraph.widget()
         canvas.setMinimumSize(QSize(int(pixelWidth), int(pixelHeight)))
@@ -1739,7 +1746,7 @@ class Stats:
         print("pixelWidth={}, pixelHeight={}, inchWidth={}, inchHeight={}".format(pixelWidth, pixelHeight,
                                                                                   inchWidth, inchHeight))
         migraph = MIPlot(series, self._settings, inchWidth, inchHeight, title, yLabel,
-                           self._showValues, self._showGrid)
+                         self._showValues, self._showGrid)
 
         # Embeds the xygraph in the layout
         canvas = migraph.widget()
@@ -1996,38 +2003,7 @@ class Stats:
         # Store the Heatmap object for future reference
         self._plot = heatmap
 
-    def _pieGraph(self, tableRow: int, layout: QHBoxLayout):
-        pie = None
-        if tableRow == self.TAB_COUNTS_BY_DAY:
-            # pie chart by classification, shows only the filtered classes
-            df = self._dataSource.totalsByClassification(self._classFilter, self._parent.fromDate,
-                                                         self._parent.toDate,
-                                                         compensate=self._compensation,
-                                                         radarComp=self._radarComp,
-                                                         considerBackground=self._considerBackground,
-                                                         )
-
-
-            pixWidth = (self._szBase.width() * self._hZoom)
-            pixHeight = (self._szBase.height() * self._vZoom)
-            if pixWidth > 65535:
-                pixWidth = 65535
-            if pixHeight > 65535:
-                pixHeight = 65535
-
-            inchWidth = pixWidth / self._px  # from  pixels to inches
-            inchHeight = pixHeight / self._px  # from  pixels to inches
-            print("pixWidth={}, pixHeight={}, inchWidth={}, inchHeight={}".format(pixWidth, pixHeight,
-                                                                                  inchWidth, inchHeight))
-
-            pie = NestedPie(df, self._settings, inchWidth, inchHeight, self._considerBackground)
-            canvas = pie.widget()
-            canvas.setMinimumSize(QSize(int(pixWidth), int(pixHeight)))
-            self._diagram.setWidget(canvas)
-            layout.addWidget(self._diagram)
-        self._plot = pie
-
-    def _calcMassIndicesDf(self, df:pd.DataFrame, TUsize:int, metric:str, finalDfOnly:bool=False):
+    def _calcMassIndicesDf(self, df: pd.DataFrame, TUsize: int, metric: str, finalDfOnly: bool = False):
         sbf = None
         if self._considerBackground:
             # calculates a dataframe with sporadic background by thresholds
@@ -2093,8 +2069,10 @@ class Stats:
 
         return pd.DataFrame(results, index=['alpha']).T
 
-    def dailyCountsByThresholds(self, df:pd.DataFrame, filters:str, dateFrom:str=None, dateTo:str=None, TUsize: int = 1, metric: str = 'power',
-                                isSporadic:bool=False, sporadicBackgroundDf:pd.DataFrame=None, radarComp:float=1.0) -> Union[tuple, None]:
+    def dailyCountsByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
+                                TUsize: int = 1, metric: str = 'power',
+                                isSporadic: bool = False, sporadicBackgroundDf: pd.DataFrame = None,
+                                radarComp: float = 1.0) -> Union[tuple, None]:
         """
         Calculates event counts per threshold, adds totals per threshold, mass index, and average mass index.
 
@@ -2222,7 +2200,8 @@ class Stats:
 
         # Convert counts to integers, handling NaN values (after the loop)
         for col in finalDf.columns:
-            finalDf[col] = finalDf[col].fillna(0).astype(int)
+            # finalDf[col] = finalDf[col].fillna(0).astype(int)
+            finalDf[col] = finalDf[col].mul(radarComp, fill_value=0).astype(int)
 
         if isSporadic is False and sporadicBackgroundDf is not None:
             rawDf = finalDf.copy()
