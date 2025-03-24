@@ -660,8 +660,8 @@ class Stats:
             return None
 
         # Calculate sporadic averages for a given date range
-        odf, dummy1, dummy2 = self.dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric,
-                                                           isSporadic=True, radarComp=radarComp)
+        odf, dummy1, dummy2 = self._dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric,
+                                                            isSporadic=True, radarComp=radarComp)
 
         if odf is None or odf.empty:
             return pd.DataFrame()
@@ -2012,13 +2012,13 @@ class Stats:
             fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
             sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=TUsize, metric=metric,
                                                      aggregateSporadic=True, radarComp=self._radarComp)
-        tuple3df = self.dailyCountsByThresholds(df, self._classFilter,
-                                                self._parent.fromDate,
-                                                self._parent.toDate,
-                                                TUsize=TUsize,
-                                                metric=metric,
-                                                sporadicBackgroundDf=sbf,
-                                                radarComp=self._radarComp)
+        tuple3df = self._dailyCountsByThresholds(df, self._classFilter,
+                                                 self._parent.fromDate,
+                                                 self._parent.toDate,
+                                                 TUsize=TUsize,
+                                                 metric=metric,
+                                                 sporadicBackgroundDf=sbf,
+                                                 radarComp=self._radarComp)
 
         if finalDfOnly:
             return tuple3df[0]
@@ -2069,10 +2069,69 @@ class Stats:
 
         return pd.DataFrame(results, index=['alpha']).T
 
-    def dailyCountsByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
-                                TUsize: int = 1, metric: str = 'power',
-                                isSporadic: bool = False, sporadicBackgroundDf: pd.DataFrame = None,
-                                radarComp: float = 1.0) -> Union[tuple, None]:
+
+    def _completeMIdataframe(self, df: pd.DataFrame,  metric: str, thresholds: list) -> pd.DataFrame:
+        if df is not None:
+            # totals and mass indices are not calculated for sporadic background
+            self._parent.updateStatusBar("Calculating counts totals")
+
+            # Calculate total events per time unit (convert to integer)
+            df['Totals'] = df.sum(axis=1).astype(int)
+
+            # Calculate totals per threshold
+            totalsPerThreshold = df.drop('Totals', axis=1).sum(axis=0)
+            totalsPerThreshold.name = 'Totals'
+
+            if metric == 'power':
+                # Convert thresholds to linear values to avoid calculate log(0)
+                thresholdsMw = self._settings.powerThresholds(wantMw=True)
+                if len(thresholdsMw) < len(thresholds):
+                    self._parent.updateStatusBar("Converting power thresholds to mW partially failed")
+                    print("thresholds in dB:", thresholds)
+                    print("thresholds in mW:", thresholdsMw)
+                thresholds = thresholdsMw
+
+            # Calculate mass index
+            massIndices = self._calculateMassIndex(df.drop('Totals', axis=1), thresholds)
+
+            if massIndices is None:
+                raise ValueError("Mass index calculation failed.")
+
+            # Add mass index as a column (round to 8 decimal places)
+            df['Mass index'] = massIndices['alpha'].round(8).values
+
+            # Handle zero counts in time unit by setting mass index to NaN
+            df.loc[df['Totals'] == 0, 'Mass index'] = np.nan
+
+            # Add totals per threshold
+            df = pd.concat([df, pd.DataFrame(totalsPerThreshold).T])
+
+            # Calculate total events in the penultimate cell
+            df.loc['Totals', 'Totals'] = df['Totals'].sum()
+
+            # Convert 'Totals' column to integer after concat
+            df['Totals'] = df['Totals'].astype(int)
+
+            # Calculate average mass index in the last cell
+            # avgMI = df['Mass index'].mean().round(8)
+            # df.loc['Totals', 'Mass index'] = avgMI
+
+            # Calculate mass index for the 'Totals' row
+
+            totalsRow = df.loc[['Totals']].drop('Totals', axis=1)
+            totalsMassIndex = self._calculateMassIndex(totalsRow, thresholds)
+
+            if totalsMassIndex is not None:
+                df.loc['Totals', 'Mass index'] = totalsMassIndex['alpha'].round(8).values[0]
+            else:
+                df.loc['Totals', 'Mass index'] = np.nan
+
+        return df
+
+    def _dailyCountsByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
+                                 TUsize: int = 1, metric: str = 'power',
+                                 isSporadic: bool = False, sporadicBackgroundDf: pd.DataFrame = None,
+                                 radarComp: float = 1.0) -> Union[tuple, None]:
         """
         Calculates event counts per threshold, adds totals per threshold, mass index, and average mass index.
 
@@ -2227,59 +2286,16 @@ class Stats:
 
         try:
             if not isSporadic:
-                for df in [finalDf, rawDf]:
-                    if df is not None:
-                        # totals and mass indices are not calculated for sporadic background
-                        self._parent.updateStatusBar("Calculating counts totals")
-
-                        # Calculate total events per time unit (convert to integer)
-                        df['Totals'] = df.sum(axis=1).astype(int)
-
-                        # Calculate totals per threshold
-                        totalsPerThreshold = df.drop('Totals', axis=1).sum(axis=0)
-                        totalsPerThreshold.name = 'Totals'
-
-                        if metric == 'power':
-                            # Convert thresholds to linear values to avoid calculate log(0)
-                            thresholdsMw = self._settings.powerThresholds(wantMw=True)
-                            if len(thresholdsMw) < len(thresholds):
-                                self._parent.updateStatusBar("Converting power thresholds to mW partially failed")
-                                print("thresholds in dB:", thresholds)
-                                print("thresholds in mW:", thresholdsMw)
-                            thresholds = thresholdsMw
-
-                        # Calculate mass index
-                        massIndices = self._calculateMassIndex(df.drop('Totals', axis=1), thresholds)
-
-                        if massIndices is None:
-                            raise ValueError("Mass index calculation failed.")
-
-                        # Add mass index as a column (round to 8 decimal places)
-                        df['Mass index'] = massIndices['alpha'].round(8).values
-
-                        # Handle zero counts in time unit by setting mass index to NaN
-                        df.loc[df['Totals'] == 0, 'Mass index'] = np.nan
-
-                        # Add totals per threshold
-                        df = pd.concat([df, pd.DataFrame(totalsPerThreshold).T])
-
-                        # Calculate total events in the penultimate cell
-                        df.loc['Totals', 'Totals'] = df['Totals'].sum()
-
-                        # Convert 'Totals' column to integer after concat
-                        df['Totals'] = df['Totals'].astype(int)
-
-                        # Calculate average mass index in the last cell
-                        df.loc['Totals', 'Mass index'] = df['Mass index'].mean().round(8)
-
+                finalDf = self._completeMIdataframe(finalDf, metric, thresholds)
+                rawDf = self._completeMIdataframe(rawDf, metric, thresholds)
                 retval = finalDf, rawDf, sporadicBackgroundDf
 
             else:
-                # finalDf contains sporadic background
+                # finalDf contains sporadic background, no need to calculate MI
                 retval = finalDf, None, None
 
         except Exception as e:
-            print(f"Error in dailyCountsByThresholds: {e}")
+            print(f"Error in _dailyCountsByThresholds: {e}")
             return None
 
         return retval
