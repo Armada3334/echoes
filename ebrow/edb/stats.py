@@ -50,7 +50,7 @@ from .hm_rmob import HeatmapRMOB
 from .bg_rmob import BargraphRMOB
 from .bargraph import Bargraph
 from .statplot import StatPlot
-from .miplot import MIPlot
+from .miplot import MIplot
 from .pandasmodel import PandasModel
 from .utilities import notice, cryptDecrypt, mkExportFolder, addDateDelta
 from .logprint import print, fprint
@@ -336,23 +336,23 @@ class Stats:
                 "dataArgs": {"TUsize": self._timeUnitSize,
                              "metric": 'power',
                              "finalDfOnly": True},
-                "seriesFunction": self._dataSource.tableTimeSeries,
-                "seriesArgs": {"columns": range(0, 24)},
-                "yLabel": "Time units [hh]",
+                "seriesFunction": None,
+                "seriesArgs": {"metric": "power"},
+                "yLabel": "Counts",
                 "fullScale": -1
             },
 
             self.TAB_MASS_INDEX_BY_LASTINGS: {
-                "title": "Mass indexes by lastings thresholds",
+                "title": "Mass indexes by lasting thresholds",
                 "resolution": "D",
                 "dataFunction": self._calcMassIndicesDf,
                 "dataArgs": {"TUsize": self._timeUnitSize,
                              "metric": 'lasting',
                              "finalDfOnly": True},
 
-                "seriesFunction": self._dataSource.tableTimeSeries,
-                "seriesArgs": {"columns": range(0, 24)},
-                "yLabel": "Time units [hh]",
+                "seriesFunction": None,
+                "seriesArgs": {"metric": "lasting"},
+                "yLabel": "Counts",
                 "fullScale": -1
             },
             self.TAB_SPORADIC_BG_BY_HOUR: {
@@ -1718,17 +1718,16 @@ class Stats:
         # Retrieve specific data based on the tableRow configuration
         dataFunction = config["dataFunction"]
         dataArgs = config.get("dataArgs", {})
-        seriesFunction = config["seriesFunction"]
-        seriesArgs = config.get("seriesArgs", {})
         title = config["title"]
-        resolution = config["resolution"]
         yLabel = config["yLabel"]
-        fullScale = config["fullScale"]
 
-        # Generate the DataFrame
+        # seriesFunction is not used here, but its arguments
+        # allow to pass ad-hoc config parameters
+        metric = config["seriesArgs"]["metric"]
+
+        # Generate the DataFrame and extracts the total series
         dataFrame = dataFunction(baseDataFrame, **dataArgs)
-
-        series = seriesFunction(dataFrame, **seriesArgs)
+        series = dataFrame.loc['Totals']
 
         # Check if the DataFrame is valid
         if series is None:
@@ -1745,7 +1744,7 @@ class Stats:
         inchHeight = pixelHeight / self._px  # from  pixels to inches
         print("pixelWidth={}, pixelHeight={}, inchWidth={}, inchHeight={}".format(pixelWidth, pixelHeight,
                                                                                   inchWidth, inchHeight))
-        migraph = MIPlot(series, self._settings, inchWidth, inchHeight, title, yLabel,
+        migraph = MIplot(series, self._settings, inchWidth, inchHeight, metric, title, yLabel,
                          self._showValues, self._showGrid)
 
         # Embeds the xygraph in the layout
