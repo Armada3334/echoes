@@ -1038,8 +1038,8 @@ class Stats:
                 366,  # daily lastings by day
                 15,  # daily lastings by hour
                 7,  # daily lastings by 10min
-                15,  # mass index by powers
-                15,  # mass index by lastings
+                30,  # mass index by powers
+                30,  # mass index by lastings
                 0,  # session table, no graphics
                 1,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
@@ -1058,8 +1058,8 @@ class Stats:
                 366,  # daily lastings by day
                 15,  # daily lastings by hour
                 7,  # daily lastings by 10min
-                15,  # mass index by powers
-                15,  # mass index by lastings
+                0,  # mass index by powers, only plots
+                0,  # mass index by lastings, only plots
                 0,  # session table, no graphics
                 31,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
@@ -1079,29 +1079,14 @@ class Stats:
                 366,  # daily lastings by day
                 15,  # daily lastings by hour
                 7,  # daily lastings by 10min
-                15,  # mass index by powers
-                15,  # mass index by lastings
+                0,  # mass index by powers, only plots
+                0,  # mass index by lastings, only plots
                 0,  # session table, no graphics
                 1,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
                 1,  # daily sporadic background by 10min
                 0,  # undefined
             ],
-
-            # [GRAPH_PIE]
-            [
-                366,  # daily counts by classification, covers up to 1 year
-                0,  # undefined
-                0,  # undefined
-                0,  # undefined
-                0,  # undefined
-                0,  # undefined
-                0,  # undefined
-                0,  # undefined
-                0,  # undefined
-                0,  # undefined
-                0,  # undefined
-            ]
         ]
 
         cov = self._maxCoverages[graphRow][tableRow]
