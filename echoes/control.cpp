@@ -208,6 +208,8 @@ Control::Control(Settings* appSettings, XQDir wDir)
         MYWARNING << "Error creating shared memory area";
     }
 
+    MYINFO << "Native SHM key for " << SHM_KEY << " is " << shm->nativeKey();
+
     //connects the available slots
     connect( r,                 SIGNAL( fault(int) ),           this, SLOT( slotStopAcquisition(int)), Qt::QueuedConnection );
 
@@ -2370,13 +2372,14 @@ bool Control::wfdBfs()
         if(shm->lock())
         {
             char *data = (char *)shm->data();
-            QString message = QString("%1, %2, %3, %4, %5, %6")
+            QString message = QString("%1, %2, %3, %4, %5, %6, %7")
                 .arg(scans)
                 .arg(as->getInterval())
                 .arg(avgN)
                 .arg(maxDbfs)
                 .arg(maxDiff)
-                .arg(maxFreq);
+                .arg(maxFreq)
+                .arg(eventDetected);
 
             strncpy(data, message.toUtf8().constData(), shm->size());
             shm->unlock();
