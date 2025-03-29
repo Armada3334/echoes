@@ -1203,6 +1203,8 @@ void Control::slotStopAcquisition(int what)
 {
     QMutexLocker ml(&protectionMutex);
 
+    MYINFO << __func__ << "(" << what << ")";
+
     if(samplingTimer != nullptr &&  samplingTimer->isActive())
     {
         bool acqFault = false;
