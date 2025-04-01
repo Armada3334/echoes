@@ -1819,122 +1819,124 @@ class DataSource:
         value will be retained even if a complete recalculation was requested.
         """
 
-        lowestID = self._getFirstDumpId()
-        highestID = self._getLastDumpId()
-        afDict = self._parent.tabPrefs.afDict()
+        if self._settings.readSettingAsBool('afEnable'):
+            lowestID = self._getFirstDumpId()
+            highestID = self._getLastDumpId()
+            afDict = self._parent.tabPrefs.afDict()
 
-        if fromID < lowestID:
-            fromID = lowestID
-        if toID < lowestID:
-            toID = highestID
+            if fromID < lowestID:
+                fromID = lowestID
+            if toID < lowestID:
+                toID = highestID
 
-        overOnly = self._settings.readSettingAsBool('afOverOnly')
+            overOnly = self._settings.readSettingAsBool('afOverOnly')
 
-        df = self.getADpartialFrame(idFrom=fromID, idTo=toID, wantFakes=False)
+            df = self.getADpartialFrame(idFrom=fromID, idTo=toID, wantFakes=False)
 
-        self._parent.updateProgressBar(0)
+            self._parent.updateProgressBar(0)
 
-        currentId = 0
-        currentRow = 0
+            currentId = 0
+            currentRow = 0
 
-        if df is not None:
-            if overwrite:
-                # always calculate the attributes, overwriting the existing ones
-                if overOnly:
-                    # only for overdense events
-                    fallRecords = df.loc[
-                        (df['event_status'] == 'Fall') & (df['classification'] == 'OVER')]
+            if df is not None:
+                if overwrite:
+                    # always calculate the attributes, overwriting the existing ones
+                    if overOnly:
+                        # only for overdense events
+                        fallRecords = df.loc[
+                            (df['event_status'] == 'Fall') & (df['classification'] == 'OVER')]
+                    else:
+                        # on any event, including fakes
+                        fallRecords = df.loc[(df['event_status'] == 'Fall')]
                 else:
-                    # on any event, including fakes
-                    fallRecords = df.loc[(df['event_status'] == 'Fall')]
-            else:
-                # calculate the attributes only if not yet done before
-                if overOnly:
-                    # only for overdense events
-                    fallRecords = df.loc[
-                        (df['event_status'] == 'Fall') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
-                else:
-                    # on any event, including fakes
-                    fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['attributes'] == '')]
-            r = 0
+                    # calculate the attributes only if not yet done before
+                    if overOnly:
+                        # only for overdense events
+                        fallRecords = df.loc[
+                            (df['event_status'] == 'Fall') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
+                    else:
+                        # on any event, including fakes
+                        fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['attributes'] == '')]
+                r = 0
 
-            totalRows = len(fallRecords.index)
-            if overwrite or totalRows > 0:
-                self.cacheNeedsUpdate = True
-                totalRows = len(fallRecords.index)  # Calculate total rows *before* the loop
-                currentRow = 0
-                self._parent.updateStatusBar(f"Calculating attributes on {totalRows} events")
-                progressPercent = 0
-                for idx in fallRecords.index:
-                    if self._parent.stopRequested:
-                        return True  # loop interrupted by user
+                totalRows = len(fallRecords.index)
+                if overwrite or totalRows > 0:
+                    self.cacheNeedsUpdate = True
+                    totalRows = len(fallRecords.index)  # Calculate total rows *before* the loop
+                    currentRow = 0
+                    self._parent.updateStatusBar(f"Calculating attributes on {totalRows} events")
+                    progressPercent = 0
+                    for idx in fallRecords.index:
+                        if self._parent.stopRequested:
+                            return True  # loop interrupted by user
 
-                    startTime = 0
-                    currentRow += 1  # Keep track of current row, but tqdm handles display
+                        startTime = 0
+                        currentRow += 1  # Keep track of current row, but tqdm handles display
 
-                    attributes = fallRecords.loc[idx, 'attributes']
-                    myId = fallRecords.loc[idx, 'id']
-                    myData = fallRecords.loc[idx]
+                        attributes = fallRecords.loc[idx, 'attributes']
+                        myId = fallRecords.loc[idx, 'id']
+                        myData = fallRecords.loc[idx]
 
-                    if attributes == '' or overwrite:
-                        print(f"Calculating attributes for eventID# {myId}")  # f-string for cleaner printing
+                        if attributes == '' or overwrite:
+                            print(f"Calculating attributes for eventID# {myId}")  # f-string for cleaner printing
 
-                        idp = idx - 1
-                        idr = idx - 2
-                        # mask = (self._adf['id'] == myId)
-                        self._adf.loc[myId, 'attributes'] = ''
-                        attrDict = dict()
+                            idp = idx - 1
+                            idr = idx - 2
+                            # mask = (self._adf['id'] == myId)
+                            self._adf.loc[myId, 'attributes'] = ''
+                            attrDict = dict()
 
-                        for afName in afDict.keys():
-                            print(f"Executing {afName} on event# {myId}")  # f-string for cleaner printing
-                            qApp.processEvents()
-                            af = afDict[afName]
+                            for afName in afDict.keys():
+                                print(f"Executing {afName} on event# {myId}")  # f-string for cleaner printing
+                                qApp.processEvents()
+                                af = afDict[afName]
 
-                            if af.isFilterEnabled():
-                                startTime = time.time()
-                                resultDict = af.evalFilter(myId)
-                                if resultDict is not None:
-                                    attrDict[afName] = resultDict
+                                if af.isFilterEnabled():
+                                    startTime = time.time()
+                                    resultDict = af.evalFilter(myId)
+                                    if resultDict is not None:
+                                        attrDict[afName] = resultDict
 
-                                    if afName == 'HasHead' and 'freq_shift' in resultDict.keys():
-                                        self._adf.loc[(self._adf.index == idx), 'freq_shift'] = int(
-                                            resultDict['freq_shift'])
+                                        if afName == 'HasHead' and 'freq_shift' in resultDict.keys():
+                                            self._adf.loc[(self._adf.index == idx), 'freq_shift'] = int(
+                                                resultDict['freq_shift'])
 
-                                    if afName == 'FreezeDetect' and len(resultDict.keys()) > 0:
-                                        self._adf.loc[(self._adf['id'] == myId), 'classification'] = "FAKE LONG"
+                                        if afName == 'FreezeDetect' and len(resultDict.keys()) > 0:
+                                            self._adf.loc[(self._adf['id'] == myId), 'classification'] = "FAKE LONG"
 
-                                endTime = time.time()
+                                    endTime = time.time()
 
-                        if len(attrDict.keys()) > 0:
-                            print(attrDict)
-                            self._adf.loc[myId, 'attributes'] = json.dumps(attrDict)
+                            if len(attrDict.keys()) > 0:
+                                print(attrDict)
+                                self._adf.loc[myId, 'attributes'] = json.dumps(attrDict)
 
-                        try:
-                            self._parent.eventDataChanges[myId] = True
-                            self._dataChangedInMemory = True
+                            try:
+                                self._parent.eventDataChanges[myId] = True
+                                self._dataChangedInMemory = True
 
-                        except IndexError:
-                            print("BUG! id=", myId)
+                            except IndexError:
+                                print("BUG! id=", myId)
 
-                    percent = int((currentRow / totalRows) * 100)
-                    if percent > progressPercent:
-                        self._parent.updateStatusBar(f"Calculating attributes, progress={percent}%")
-                        self._parent.updateProgressBar(percent, 100)
-                        progressPercent = percent
+                        percent = int((currentRow / totalRows) * 100)
+                        if percent > progressPercent:
+                            self._parent.updateStatusBar(f"Calculating attributes, progress={percent}%")
+                            self._parent.updateProgressBar(percent, 100)
+                            progressPercent = percent
 
-                # reordering columns
-                cols = ['id', 'daily_nr', 'event_status', 'utc_date', 'utc_time',
-                        'timestamp_ms', 'sidereal_utc',
-                        'revision', 'up_thr', 'dn_thr', 'S', 'avgS', 'N', 'diff', 'avg_diff',
-                        'top_peak_hz', 'std_dev', 'lasting_ms', 'lasting_scans', 'freq_shift',
-                        'echo_area', 'interval_area', 'peaks_count', 'LOS_speed', 'scan_ms',
-                        'diff_start', 'diff_end', 'classification', 'attributes', 'shot_name', 'dump_name']
-                self._adf = self._adf[cols]
+                    # reordering columns
+                    cols = ['id', 'daily_nr', 'event_status', 'utc_date', 'utc_time',
+                            'timestamp_ms', 'sidereal_utc',
+                            'revision', 'up_thr', 'dn_thr', 'S', 'avgS', 'N', 'diff', 'avg_diff',
+                            'top_peak_hz', 'std_dev', 'lasting_ms', 'lasting_scans', 'freq_shift',
+                            'echo_area', 'interval_area', 'peaks_count', 'LOS_speed', 'scan_ms',
+                            'diff_start', 'diff_end', 'classification', 'attributes', 'shot_name', 'dump_name']
+                    self._adf = self._adf[cols]
 
-                # do not leave empty attribute cells to avoid reprocessing at next json loading
-                mask = (self._adf['attributes'] == '') | (self._adf['attributes'].isnull())
-                self._adf.loc[mask, 'attributes'] = '{}'
-            return True
+                    # do not leave empty attribute cells to avoid reprocessing at next json loading
+                    mask = (self._adf['attributes'] == '') | (self._adf['attributes'].isnull())
+                    self._adf.loc[mask, 'attributes'] = '{}'
+
+                return True
 
         return False  # no changes made in attributes
 

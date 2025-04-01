@@ -9,15 +9,21 @@ verbose = False
 workingDir = Path(Path.home(), Path("ebrow"))
 logfile = workingDir / Path("ebrow.log")
 
+def logInit(isVerbose):
+    global verbose, logfile
+    nowIso = datetime.now().isoformat().replace(":", "-")
+    if isVerbose:
+        fileName = f"ebrow-{nowIso}.log"
+        verbose = True
+    else:
+        fileName = "ebrow.log"
+    logfile = workingDir / Path(fileName)
+
 
 def removeLogFile():
+    global logfile
     if os.path.exists(logfile):
         os.remove(logfile)
-
-
-def logPrintVerbose(wantVerbose: bool = False):
-    global verbose
-    verbose = wantVerbose
 
 
 def print(*args, **kwargs):
@@ -28,6 +34,7 @@ def print(*args, **kwargs):
     :param kwargs:
     :return:
     """
+    global verbose, logfile
     if verbose:
         utc = datetime.utcnow()
         __builtin__.print(utc, end=' - ')

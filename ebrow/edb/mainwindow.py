@@ -44,7 +44,7 @@ from .stats import Stats
 from .prefs import Prefs
 from .utilities import createCustomColormapsDict, cleanFolder
 from .reports import Report
-from .logprint import print, logPrintVerbose, removeLogFile
+from .logprint import print, removeLogFile, logInit
 
 APPVERSION = "0.1.84"
 
@@ -90,7 +90,7 @@ class MainWindow(QMainWindow):
         self.isAutoExport = False
         self.stopRequested = False
 
-        logPrintVerbose(verboseLog)
+        logInit(verboseLog)
 
         self.cmapDict = createCustomColormapsDict()
         self.mustCalcAttr = False

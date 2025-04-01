@@ -76,7 +76,7 @@ class Settings(QSettings):
                          'CAR1filterThreshold', 'CAR2filter', 'CAR2filterThreshold',
                          'underdenseMs', 'overdenseSec', 'carrierSec', 'acqActive']
 
-        self._attrFilters = ["afOverOnly", "afHasHeadEnabled", "afFreezeDetectEnabled", 'afFreezeDetectMissedScans']
+        self._attrFilters = ["afEnable", "afOverOnly", "afHasHeadEnabled", "afFreezeDetectEnabled", 'afFreezeDetectMissedScans']
 
         self._report = ['siteInfosExc', 'dailyExc', 'RMOBexc', 'hourlyExc', 'tenMinExc',
                         'chronoExc', 'expEvExc', 'stTabExc', 'stGrpExc', 'setupExc',
@@ -232,6 +232,7 @@ class Settings(QSettings):
         d['aeNoComments'] = True
 
         # attribute filters
+        d['afEnable'] = False
         d['afOverOnly'] = False
         d['afDummyEnabled'] = False
         d['afFreezeDetectEnabled'] = False

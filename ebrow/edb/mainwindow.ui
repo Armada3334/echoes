@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>23</hour>
+                    <hour>21</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>16</hour>
+                    <hour>12</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>14</hour>
+                    <hour>10</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -4071,7 +4071,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>285</width>
+             <width>265</width>
              <height>1131</height>
             </rect>
            </property>
@@ -11290,7 +11290,7 @@ font: 10pt &quot;Gauge&quot;;
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>285</width>
+             <width>283</width>
              <height>915</height>
             </rect>
            </property>
@@ -31335,6 +31335,16 @@ alternate-background-color: rgb(170, 0, 0);
              <string>Attribute filters</string>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_37">
+             <item>
+              <widget class="QCheckBox" name="chkAttributes">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If selected, attributes are checked every time a database is opened and are calculated on the events to which they apply.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Calculate attributes on DB loading</string>
+               </property>
+              </widget>
+             </item>
              <item>
               <widget class="QCheckBox" name="chkOverOnly">
                <property name="toolTip">
