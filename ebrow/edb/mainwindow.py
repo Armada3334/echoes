@@ -521,7 +521,7 @@ class MainWindow(QMainWindow):
             return False
 
         # gets the DB date coverage
-        (qDateDBfrom, qDateDBto) = self.dataSource.QDateCoverage()
+        (qDateDBfrom, qDateDBto) = self.dataSource.dbQDateCoverage()
         if self.dbOk and (qDateDBfrom is None or qDateDBto is None):
             self.dbOk = False
 
@@ -529,7 +529,7 @@ class MainWindow(QMainWindow):
             # DB date coverage ok
             self._ui.lbDBfilename.setText("{} ".format(self.dataSource.name()))
             if self.fromQDate >= qDateDBfrom and self.toQDate <= qDateDBto:
-                # the required coverage in compatible with DB coverage
+                # the required coverage is compatible with DB coverage
                 if self.dataSource.cacheNeedsUpdate:
                     # extends the required coverage to include the latest
                     # events loaded from DB and not yet present in cache
@@ -598,14 +598,14 @@ class MainWindow(QMainWindow):
         return True
 
     def coverLastMonth(self):
-        (qDateFrom, qDateTo) = self.dataSource.QDateCoverage()
+        (qDateFrom, qDateTo) = self.dataSource.dbQDateCoverage()
         self._ui.dtTo.setDate(qDateTo)
         (y, m, d) = qDateTo.getDate()
         qDateFrom.setDate(y, m, 1)
         self._ui.dtFrom.setDate(qDateFrom)
 
     def coverLastYear(self):
-        (qDateFrom, qDateTo) = self.dataSource.QDateCoverage()
+        (qDateFrom, qDateTo) = self.dataSource.dbQDateCoverage()
         self._ui.dtTo.setDate(qDateTo)
         (y, m, d) = qDateTo.getDate()
         qDateFrom.setDate(y, 1, 1)

@@ -354,7 +354,7 @@ class ScreenShots:
                 self._screenShot = scroller
                 self._parent.busy(False)
         else:
-            self._parent.infoMessage("Ebrow", "No selected events to show")
+            self._parent.infoMessage("Warning", "No selected events to show")
             layout = self._ui.wSsContainer.layout()
             if layout is not None:
                 layout.removeWidget(self._screenShot)
@@ -403,7 +403,7 @@ class ScreenShots:
             self._powerPlot = scroller
             # self._parent.busy(False)
         else:
-            self._parent.infoMessage("Ebrow", "No selected events to show")
+            self._parent.infoMessage("Warning", "No selected events to show")
             layout = self._ui.wPowerContainer.layout()
             if layout is not None:
                 layout.removeWidget(self._powerPlot)

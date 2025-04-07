@@ -488,7 +488,8 @@ class Stats:
                     dates = intervalStr.split(" -> ")
                     # extracts the events in the given date,
                     # ignoring the intervals that are not fully included into the database coverage
-                    if self._parent.fromDate <= dates[0] and self._parent.toDate >= dates[1]:
+                    fromDate, toDate = self._dataSource.dbCoverage()
+                    if fromDate <= dates[0] and toDate >= dates[1]:
                         dfEvents = self._dataSource.getADpartialFrame(dates[0], dates[1])
                         if dfEvents is not None:
                             dfCountsHourlyUnder, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0],
@@ -496,6 +497,11 @@ class Stats:
                                                                                              filters='UNDER',
                                                                                              totalRow=False,
                                                                                              totalColumn=False)
+
+                            if dfCountsHourlyUnder is None:
+                                self._parent.busy(False)
+                                return False
+
                             dfCounts10minUnder, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0],
                                                                                             dates[1],
                                                                                             dtRes='10T',
@@ -508,11 +514,14 @@ class Stats:
                                                                                             filters='OVER',
                                                                                             totalRow=False,
                                                                                             totalColumn=False)
+
                             dfCounts10minOver, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0], dates[1],
                                                                                            dtRes='10T',
                                                                                            filters='OVER',
                                                                                            totalRow=False,
                                                                                            totalColumn=False)
+
+
 
                             excludeIndexes = []
                             for rowIndex in dfCountsHourlyUnder.index:
@@ -695,7 +704,7 @@ class Stats:
         self._dataSource = self._parent.dataSource
         self._ui.twStats.setCurrentIndex(self.STTW_TABLES)
 
-        (qDateFrom, qDateTo) = self._parent.dataSource.QDateCoverage()
+        (qDateFrom, qDateTo) = self._parent.dataSource.dbQDateCoverage()
         (y, m, d) = qDateTo.getDate()
         qDateFrom.setDate(y, m, 1)
         fromDate = qDateFrom.toString("yyyy-MM-dd")

@@ -1033,18 +1033,24 @@ class DataSource:
             return True
         return False
 
-    def QDateCoverage(self) -> (QDate, QDate):
-        """
+    def dbCoverage(self):
+        dateFrom = None
+        dateTo = None
+        if self._adf is not None:
+            dateSeries = self._adf['utc_date']
+            dateFrom = dateSeries.min()
+            dateTo = dateSeries.max()
+        return dateFrom, dateTo
 
-        @return:
+    def dbQDateCoverage(self) -> (QDate, QDate):
+        """
+        @return:first and last events dates stored in database
+        in QDate format
         """
         qDateFrom = None
         qDateTo = None
-        if self._adf is not None:
-            dateSeries = self._adf['utc_date']
-
-            dateFrom = dateSeries.min()
-            dateTo = dateSeries.max()
+        dateFrom, dateTo = self.dbCoverage()
+        if dateFrom is not None and dateTo is not None:
             qDateFrom = QDate.fromString(dateFrom, "yyyy-MM-dd")
             qDateTo = QDate.fromString(dateTo, "yyyy-MM-dd")
         return qDateFrom, qDateTo
@@ -2352,6 +2358,10 @@ class DataSource:
         if filters:
             filterList = [item.strip() for item in filters.split(',')]
             df = df[df['classification'].isin(filterList)].copy()
+            if len(df) == 0:
+                self._parent.infoMessage("Warning", "Cannot calculate sporadic background:\nevents must be classified "
+                                                    "first.")
+                return None, None, None
 
         # Create a 'datetime' column combining date and time
         df['datetime'] = pd.to_datetime(df['utc_date'] + ' ' + df['utc_time'])
