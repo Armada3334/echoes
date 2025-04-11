@@ -122,6 +122,7 @@ class MainWindow(QMainWindow):
         self._ui.pbSubset.setEnabled(False)
         self._ui.pbLastMonth.setEnabled(False)
         self._ui.pbLastYear.setEnabled(False)
+        self._ui.pbFullReset.setEnabled(False)
         self._ui.pbClassReset.setEnabled(False)
         self._ui.pbAttrReset.setEnabled(False)
 
@@ -194,7 +195,7 @@ class MainWindow(QMainWindow):
         self._ui.pbOpen.clicked.connect(self._openDataSource)
         self._ui.pbSave.clicked.connect(self._updateDataSource)
         self._ui.pbSubset.clicked.connect(self._createSubset)
-        self._ui.pbClassReset.clicked.connect(self._resetClassifications)
+        self._ui.pbFullReset.clicked.connect(self._resetFullJSON)
         self._ui.pbStop.clicked.connect(self._stopMe)
         self._ui.pbQuit.clicked.connect(self._quit)
         self._ui.pbLastMonth.clicked.connect(self.coverLastMonth)
@@ -365,6 +366,7 @@ class MainWindow(QMainWindow):
                 self._ui.pbSave.setEnabled(False)
                 self._ui.pbSubset.setEnabled(False)
                 self._ui.pbOpen.setEnabled(False)
+                self._ui.pbFullReset.setEnabled(False)
                 self._ui.pbClassReset.setEnabled(False)
                 self._ui.pbAttrReset.setEnabled(False)
                 self._ui.pbEditParms.setEnabled(False)
@@ -414,6 +416,7 @@ class MainWindow(QMainWindow):
                         self._ui.pbLastYear.setEnabled(True)
                         self._ui.pbSave.setEnabled(True)
                         self._ui.pbSubset.setEnabled(True)
+                        self._ui.pbFullReset.setEnabled(True)
                         self._ui.pbClassReset.setEnabled(True)
                         self._ui.pbAttrReset.setEnabled(True)
                         self._ui.pbEditParms.setEnabled(True)
@@ -662,6 +665,7 @@ class MainWindow(QMainWindow):
                         if self.dataSource.updateFile():
                             self.updateStatusBar("Changes saved")
                             self.eventDataChanges = [False] * (self.lastEvent + 1)
+                            self.dataSource.cacheNeedsUpdate = False
                             self.busy(False)
                             return True
                     self.busy(False)
@@ -683,7 +687,7 @@ class MainWindow(QMainWindow):
                 self.dataSource.createSubset(subsetDBpath, self.fromDate, self.toDate)
                 self.busy(False)
 
-    def _resetClassifications(self):
+    def _resetFullJSON(self):
         if self.dataSource is not None:
             if self.confirmMessage("Warning",
                                    """
@@ -695,7 +699,7 @@ class MainWindow(QMainWindow):
                 self.busy(True)
                 self._settings.save()
                 self.updateStatusBar("Clearing classifications and attributes...")
-                if self.dataSource.resetClassifications():
+                if self.dataSource.resetClassAndAttributes():
                     self.eventDataChanges = [False] * (self.lastEvent + 1)
                     self.updateStatusBar("Performing classifications...")
                     self.dataSource.classifyEvents(self.fromId, self.toId)
@@ -733,7 +737,7 @@ class MainWindow(QMainWindow):
 
         self.updateStatusBar("{} classifications ready, including manual overrides".format(updated - 1))
         # self._ui.pbSave.setEnabled(False)
-        # self._ui.pbClassReset.setEnabled(False)
+        # self._ui.pbFullReset.setEnabled(False)
         self.busy(False)
         return True
 
@@ -797,6 +801,7 @@ class MainWindow(QMainWindow):
             self.updateStatusBar("Opening ok, performing classifications...")
             self.eventDataChanges = [False] * (self.lastEvent + 1)
             self.dataSource.classifyEvents(self.fromId, self.toId)
+            self._ui.pbClassReset.clicked.connect(self.dataSource.deleteClassifications)
             if not self.isBatchRMOB:
                 # attributes are always calculated before generating an automatic report
                 # but this is not needed for RMOB exports
@@ -819,6 +824,7 @@ class MainWindow(QMainWindow):
             self.getCoverage()
             self._ui.pbSave.setEnabled(True)
             self._ui.pbSubset.setEnabled(True)
+            self._ui.pbFullReset.setEnabled(True)
             self._ui.pbClassReset.setEnabled(True)
             self._ui.pbAttrReset.setEnabled(True)
             self._ui.pbLastMonth.setEnabled(False)

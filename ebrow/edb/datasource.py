@@ -107,10 +107,10 @@ class DataSource:
 
     def _loadAutoDataTable(self):
         """
-        Loads the CSV automatic_data table as dataframe
+        Loads the JSON automatic_data table as dataframe
         self._adf. If the file doesn't exist, the
         data will be taken from the DB.
-        If the file exists but it's older, its data
+        If the file exists but it's older than DB, its data
         will be loaded first. Then, the newer events
         data will be taken from DB.
         The time reference for this is the timestamp_ms
@@ -1976,7 +1976,7 @@ class DataSource:
                 print("BUG! eventId=", eventID)
         return False
 
-    def resetClassifications(self):
+    def resetClassAndAttributes(self):
         """
         Clears the cache file and rebuilds it by reloading the DB
         :return:
@@ -2113,8 +2113,8 @@ class DataSource:
         cf = cf[cols]
 
         if filters == '':
-            # everything has been filtered out
-            cf = cf.head(0)
+            # everything has been filtered out except unclassified items
+            cf = cf[cf['classification'] == '']
         cf.reset_index(drop=True, inplace=True)
         rcf = cf.round(
             {'up_thr': 3, 'dn_thr': 3, 'S': 3, 'avgS': 3, 'N': 3, 'diff': 3, 'avg_diff': 3, 'std_dev': 3,
@@ -2620,5 +2620,14 @@ class DataSource:
         if len(self._adf):
             self._adf['attributes'] = ''
             self.cacheNeedsUpdate = True
-            self._parent.updateStatusBar(
-                "Attributes deleted, press Update Data Source or quit the program to update the cache file")
+            self._parent.infoMessage("Warning",  "Attributes deleted, press \'Update Data Source\' or quit the program to update the cache file")
+
+
+
+    def deleteClassifications(self):
+        if len(self._adf):
+            self._adf['classifications'] = ''
+            self.cacheNeedsUpdate = True
+            self._parent.infoMessage("Warning",
+                                     "Classifications deleted, press \'Update Data Source\' or quit the program to update the cache file")
+

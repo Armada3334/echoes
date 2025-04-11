@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>21</hour>
+                    <hour>18</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>12</hour>
+                    <hour>6</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>10</hour>
+                    <hour>4</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -31396,7 +31396,7 @@ alternate-background-color: rgb(170, 0, 0);
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>300</width>
+                 <width>600</width>
                  <height>32</height>
                 </size>
                </property>
@@ -31439,7 +31439,7 @@ alternate-background-color: rgb(170, 0, 0);
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>300</width>
+                   <width>600</width>
                    <height>32</height>
                   </size>
                  </property>
@@ -31456,7 +31456,7 @@ alternate-background-color: rgb(170, 0, 0);
                   <string notr="true">min-height: 32px;</string>
                  </property>
                  <property name="text">
-                  <string>Reset attributes only</string>
+                  <string>Reset attributes</string>
                  </property>
                 </widget>
                </item>
@@ -31476,7 +31476,7 @@ alternate-background-color: rgb(170, 0, 0);
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>300</width>
+                   <width>600</width>
                    <height>32</height>
                   </size>
                  </property>
@@ -31493,11 +31493,52 @@ alternate-background-color: rgb(170, 0, 0);
                   <string notr="true">min-height: 32px;</string>
                  </property>
                  <property name="text">
-                  <string>Reset full cache</string>
+                  <string>Reset classifications</string>
                  </property>
                 </widget>
                </item>
               </layout>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pbFullReset">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>60</width>
+                 <height>32</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>600</width>
+                 <height>32</height>
+                </size>
+               </property>
+               <property name="sizeIncrement">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Erase both classifications and attributes by deleting the JSON file and starting a rebuild&lt;span style=&quot; font-style:italic;&quot;&gt;&lt;br/&gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">min-height: 32px;</string>
+               </property>
+               <property name="text">
+                <string>&amp;Reset classifications and attributes</string>
+               </property>
+               <property name="icon">
+                <iconset resource="ebrow.qrc">
+                 <normaloff>:/cancel</normaloff>:/cancel</iconset>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
