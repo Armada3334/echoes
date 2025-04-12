@@ -309,7 +309,7 @@ class Settings(QSettings):
         d = self._settings
         return self._settings[key]
 
-    def readSettingAsString(self, key: str, default: str = '----'):
+    def readSettingAsString(self, key: str, default: str = ''):
         d = self._settings
         s = str(self._settings[key])
         if len(s) == 0:

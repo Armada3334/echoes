@@ -198,11 +198,15 @@ class MainWindow(QMainWindow):
         self._ui.pbFullReset.clicked.connect(self._resetFullJSON)
         self._ui.pbStop.clicked.connect(self._stopMe)
         self._ui.pbQuit.clicked.connect(self._quit)
+        self._ui.pbClassReset.clicked.connect(self.deleteClassifications)
+        self._ui.pbAttrReset.clicked.connect(self.deleteAttributes)
         self._ui.pbLastMonth.clicked.connect(self.coverLastMonth)
         self._ui.pbLastYear.clicked.connect(self.coverLastYear)
         self._ui.dtFrom.dateChanged.connect(self.getCoverage)
         self._ui.dtTo.dateChanged.connect(self.getCoverage)
         self._ui.twMain.currentChanged.connect(self._handleTabChanges)
+        self._ui.pbClassReset.setEnabled(False)
+        self._ui.pbAttrReset.setEnabled(False)
 
         # the following tabs remain hidden until a db is opened:
         self._ui.twMain.setTabVisible(1, False)  # Screenshots
@@ -614,6 +618,20 @@ class MainWindow(QMainWindow):
         qDateFrom.setDate(y, 1, 1)
         self._ui.dtFrom.setDate(qDateFrom)
 
+    def deleteAttributes(self):
+        if self.dataSource:
+            if self.dataSource.deleteAttributes():
+                self.infoMessage("Warning",
+                "Attributes deleted, press \'Update Data Source\' or quit the program to update the cache file")
+
+    def deleteClassifications(self):
+        if self.dataSource:
+            if self.dataSource.deleteClassifications():
+                self.infoMessage("Warning",
+                "Classifications deleted, press \'Update Data Source\' or quit the program to update the cache file")
+
+
+
     def _quit(self):
         if self.busyCount == 0 and not self.isQuitting :
             self.isQuitting = True
@@ -801,7 +819,7 @@ class MainWindow(QMainWindow):
             self.updateStatusBar("Opening ok, performing classifications...")
             self.eventDataChanges = [False] * (self.lastEvent + 1)
             self.dataSource.classifyEvents(self.fromId, self.toId)
-            self._ui.pbClassReset.clicked.connect(self.dataSource.deleteClassifications)
+            self._ui.pbClassReset.setEnabled(True)
             if not self.isBatchRMOB:
                 # attributes are always calculated before generating an automatic report
                 # but this is not needed for RMOB exports
@@ -819,7 +837,7 @@ class MainWindow(QMainWindow):
                         self.updateStatusBar("Attributes already up to date, no recalc needed")
                 else:
                     self.updateStatusBar("Attributes up to date, recalc done")
-                self._ui.pbAttrReset.clicked.connect(self.dataSource.deleteAttributes)
+                self._ui.pbAttrReset.setEnabled(True)
 
             self.getCoverage()
             self._ui.pbSave.setEnabled(True)

@@ -1318,7 +1318,16 @@ class DataSource:
         return 0
 
     def eventsToClassify(self):
-        return self._deltaEvents
+        # return self._deltaEvents
+        emptyClassifications = self._adf[self._adf['classification'] == '']
+
+        if emptyClassifications.empty:
+            return 0, 0
+
+        firstId = emptyClassifications['id'].iloc[0]
+        lastId = emptyClassifications['id'].iloc[-1]
+
+        return firstId, lastId
 
     def lastEvent(self):
         return self._lastID
@@ -1859,7 +1868,8 @@ class DataSource:
                     if overOnly:
                         # only for overdense events
                         fallRecords = df.loc[
-                            (df['event_status'] == 'Fall') & (df['attributes'] == '') & (df['classification'] == 'OVER')]
+                            (df['event_status'] == 'Fall') & (df['attributes'] == '') & (
+                                        df['classification'] == 'OVER')]
                     else:
                         # on any event, including fakes
                         fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['attributes'] == '')]
@@ -2468,7 +2478,7 @@ class DataSource:
             rawDf.loc['Total'] = rawDf.sum()
             finalDf.loc['Total'] = finalDf.sum()
 
-        if not(compensate or considerBackground):
+        if not (compensate or considerBackground):
             # if background is not used, shows one table only
             sbDf = None
             rawDf = None
@@ -2620,14 +2630,10 @@ class DataSource:
         if len(self._adf):
             self._adf['attributes'] = ''
             self.cacheNeedsUpdate = True
-            self._parent.infoMessage("Warning",  "Attributes deleted, press \'Update Data Source\' or quit the program to update the cache file")
-
-
+        return self.cacheNeedsUpdate
 
     def deleteClassifications(self):
         if len(self._adf):
-            self._adf['classifications'] = ''
+            self._adf['classification'] = ''
             self.cacheNeedsUpdate = True
-            self._parent.infoMessage("Warning",
-                                     "Classifications deleted, press \'Update Data Source\' or quit the program to update the cache file")
-
+        return self.cacheNeedsUpdate
