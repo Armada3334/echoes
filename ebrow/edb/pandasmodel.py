@@ -47,9 +47,11 @@ class PandasModel(QAbstractTableModel):
             parent: The parent object.
         """
         QAbstractTableModel.__init__(self, parent)
-        self._dataFrame = dataFrame
+        self._dataFrame = dataFrame.copy()  # Copia per evitare modifiche dirette
         self._rowStyles = rowStyles or {}
         self._columnStyles = columnStyles or {}
+        self._sortColumn = None
+        self._sortAscending = True
 
     def rowCount(self, parent=QModelIndex()) -> int:
         """Override method from QAbstractTableModel. Return row count of the pandas DataFrame."""
@@ -125,3 +127,20 @@ class PandasModel(QAbstractTableModel):
             if orientation == Qt.Vertical:
                 return str(self._dataFrame.index[section])
         return None
+
+    def sort(self, column: int, order: Qt.SortOrder):
+        """Override method from QAbstractTableModel. Sort DataFrame by column number."""
+        columnName = self._dataFrame.columns[column]
+        self._dataFrame = self._dataFrame.sort_values(by=columnName, ascending=(order == Qt.AscendingOrder))
+        self.layoutChanged.emit()
+
+    def setSortColumn(self, column: int):
+        """Function to handle the sorting logic."""
+        if self._sortColumn == column:
+            self._sortAscending = not self._sortAscending
+        else:
+            self._sortColumn = column
+            self._sortAscending = True
+
+        order = Qt.AscendingOrder if self._sortAscending else Qt.DescendingOrder
+        self.sort(column, order)

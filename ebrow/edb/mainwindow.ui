@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>18</hour>
+                    <hour>17</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>6</hour>
+                    <hour>4</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>4</hour>
+                    <hour>2</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -4071,7 +4071,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>265</width>
+             <width>285</width>
              <height>1131</height>
             </rect>
            </property>
@@ -11290,7 +11290,7 @@ font: 10pt &quot;Gauge&quot;;
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>283</width>
+             <width>285</width>
              <height>915</height>
             </rect>
            </property>
@@ -11389,6 +11389,16 @@ font: 10pt &quot;Gauge&quot;;
                  <item>
                   <property name="text">
                    <string>Mass Index by lastings</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Power distribution</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Lasting distribution</string>
                   </property>
                  </item>
                  <item>

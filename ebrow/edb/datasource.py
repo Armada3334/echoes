@@ -1413,6 +1413,12 @@ class DataSource:
         verFloat = df.iloc[0]['echoes_ver']
         return f"{verFloat:.2f}"  # Forces 2 decimals release
 
+    def getEchoesSamplingInterval(self):
+        outDf = self.loadTableConfig('cfg_output')
+        lastRow = outDf.iloc[-1]
+        return lastRow['interval'].astype(int)
+
+
     def getIDsOfTheDay(self, date: str):
         """
         Returns a list of event IDs happened in the given day

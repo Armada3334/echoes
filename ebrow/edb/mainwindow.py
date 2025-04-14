@@ -620,15 +620,26 @@ class MainWindow(QMainWindow):
 
     def deleteAttributes(self):
         if self.dataSource:
-            if self.dataSource.deleteAttributes():
-                self.infoMessage("Warning",
-                "Attributes deleted, press \'Update Data Source\' or quit the program to update the cache file")
+            if self.confirmMessage("Warning",
+                             "You are about to clear all calculated and cached attributes.\n"
+                                    "Please note that you will only be able to recalculate attributes \n"
+                                    "for the most recent events, which still have an associated dump file.\n"
+                                    "Are you sure this is what you want to do?"):
+                if self.dataSource.deleteAttributes():
+                    self.infoMessage("Done",
+                    "Attributes deleted, press \'Update Data Source\' or quit the program to update the cache file")
 
     def deleteClassifications(self):
         if self.dataSource:
-            if self.dataSource.deleteClassifications():
-                self.infoMessage("Warning",
-                "Classifications deleted, press \'Update Data Source\' or quit the program to update the cache file")
+            if self.confirmMessage("Warning",
+                                   "You are about to delete all classifications from events. \n"
+                                        "Please note that the next time you load this database, \n"
+                                        "all events will be reclassified.\n"
+                                        "Are you sure this is what you want to do?" ):
+
+                if self.dataSource.deleteClassifications():
+                    self.infoMessage("Done",
+                    "Classifications deleted, press \'Update Data Source\' or quit the program to update the cache file")
 
 
 

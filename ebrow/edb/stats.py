@@ -71,10 +71,12 @@ class Stats:
     TAB_LASTINGS_BY_10M = 8
     TAB_MASS_INDEX_BY_POWERS = 9
     TAB_MASS_INDEX_BY_LASTINGS = 10
-    TAB_SESSIONS_REGISTER = 11
-    TAB_RMOB_MONTH = 12
-    TAB_SPORADIC_BG_BY_HOUR = 13
-    TAB_SPORADIC_BG_BY_10M = 14
+    TAB_POWER_DISTRIBUTION = 11
+    TAB_LASTING_DISTRIBUTION = 12
+    TAB_SESSIONS_REGISTER = 13
+    TAB_RMOB_MONTH = 14
+    TAB_SPORADIC_BG_BY_HOUR = 15
+    TAB_SPORADIC_BG_BY_10M = 16
 
     GRAPH_PLOT = 0
     GRAPH_HEATMAP = 1
@@ -1004,6 +1006,12 @@ class Stats:
             tuple3df = self._calcMassIndicesDf(df, TUsize=self._timeUnitSize, metric='lasting')
             if tuple3df is not None:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
+
+        if row == self.TAB_POWER_DISTRIBUTION:
+            self._dataFrame = self._calculateDistributionDf(df, metric='power')
+
+        if row == self.TAB_LASTING_DISTRIBUTION:
+            self._dataFrame = self._calculateDistributionDf(df, metric='lasting')
 
         if self._dataFrame is not None:
             self._ui.tvTabs.setEnabled(True)
@@ -1995,6 +2003,35 @@ class Stats:
 
         # Store the Heatmap object for future reference
         self._plot = heatmap
+
+
+    def _calculateDistributionDf(self, df: pd.DataFrame, metric: str):
+        """
+        Calculates the power or lasting distribution of all events in df
+
+        Args:
+            df (pd.DataFrame): DataFrame of events (falling edges only)
+            metric: power or lasting
+
+        Returns:
+            pd.DataFrame: DataFrame of required distribution, crescent powers or lastings
+            associated with the counts of events having the same power or lasting
+            For power, one row for each dBfs (approximate to integer values), while
+            lastings instead are approximated by multiples of the latest scan interval time
+        """
+        sdf = None
+        df = df.loc[df['event_status'] == 'Fall']
+        if metric == 'power':
+            sdf = df['S'].astype(int).value_counts().sort_index().reset_index()
+            sdf.columns = ['S', 'counts']
+
+        if metric == 'lasting':
+            si = self._dataSource.getEchoesSamplingInterval()
+            lastingsRounded = (df['lasting_ms'] / si).round() * si
+            sdf = lastingsRounded.value_counts().sort_index().reset_index()
+            sdf.columns = ['lasting_ms', 'counts']
+        return sdf
+
 
     def _calcMassIndicesDf(self, df: pd.DataFrame, TUsize: int, metric: str, finalDfOnly: bool = False):
         sbf = None
