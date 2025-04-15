@@ -23,12 +23,12 @@ class MIplot(BaseGraph):
         @param metric: "power" or "lasting"
         @param title: Title of the chart.
         @param yLabel: Label of the Y-axis.
-        @param showValues: If True, shows the values ​​of the data points.
+        @param showValues: If True, shows the values of the data points.
         @param showGrid: If True, shows the chart grid.
         """
 
         self._series = series
-        x = self._series.index[:-2]  # Esclude le ultime due colonne (Totals e Mass index)
+        x = self._series.index[:-2]
         y = self._series.values[:-2]
 
         colors = settings.readSettingAsObject('colorDict')

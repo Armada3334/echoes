@@ -40,6 +40,10 @@ mp.use('Qt5Agg')
 
 
 class StatPlot(BaseGraph):
+    """
+    X-Y graphs having datetimes on X axis
+
+    """
 
     def __init__(self, series: pd.Series, settings: Settings, inchWidth: float, inchHeight: float, title: str, yLabel: str,
                  res: str = 'hour', showValues: bool = False, showGrid: bool = False,  smooth: bool = True,

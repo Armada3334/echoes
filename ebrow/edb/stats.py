@@ -51,6 +51,7 @@ from .bg_rmob import BargraphRMOB
 from .bargraph import Bargraph
 from .statplot import StatPlot
 from .miplot import MIplot
+from .distplot import DistPlot
 from .pandasmodel import PandasModel
 from .utilities import notice, cryptDecrypt, mkExportFolder, addDateDelta
 from .logprint import print, fprint
@@ -329,8 +330,6 @@ class Stats:
                 "fullScale": -1
             },
 
-            # FIXME: visualizzazione grafica del fit: è bilogaritmico
-            # per cui il tempo non va specificato
             self.TAB_MASS_INDEX_BY_POWERS: {
                 "title": "Mass indexes by power thresholds",
                 "resolution": "D",
@@ -338,8 +337,8 @@ class Stats:
                 "dataArgs": {"TUsize": self._timeUnitSize,
                              "metric": 'power',
                              "finalDfOnly": True},
-                "seriesFunction": None,
-                "seriesArgs": {"metric": "power"},
+                "seriesFunction": lambda df: df.loc['Totals'],
+                "seriesArgs": {},
                 "yLabel": "Counts",
                 "fullScale": -1
             },
@@ -352,11 +351,34 @@ class Stats:
                              "metric": 'lasting',
                              "finalDfOnly": True},
 
-                "seriesFunction": None,
-                "seriesArgs": {"metric": "lasting"},
+                "seriesFunction": lambda df: df.loc['Totals'],
+                "seriesArgs": {},
                 "yLabel": "Counts",
                 "fullScale": -1
             },
+
+            self.TAB_POWER_DISTRIBUTION: {
+                "title": "Events distribution by power",
+                "resolution": "D",
+                "dataFunction": self._calculateDistributionDf,
+                "dataArgs": {"metric": 'power'},
+                "seriesFunction": lambda df: df.set_index('S')['counts'],
+                "seriesArgs": {"xScale": "linear", "yScale": "linear"},
+                "yLabel": "Counts",
+                "fullScale": -1
+            },
+
+            self.TAB_LASTING_DISTRIBUTION: {
+                "title": "Events distribution by lasting",
+                "resolution": "D",
+                "dataFunction": self._calculateDistributionDf,
+                "dataArgs": {"metric": 'lasting'},
+                "seriesFunction": lambda df: df.set_index('lasting_ms')['counts'],
+                "seriesArgs": {"xScale": "log", "yScale": "linear"},
+                "yLabel": "Counts",
+                "fullScale": -1
+            },
+
             self.TAB_SPORADIC_BG_BY_HOUR: {
                 "title": "Sporadic background by hour",
                 "resolution": "hour",
@@ -368,6 +390,7 @@ class Stats:
                 "yLabel": "Filtered counts",
                 "fullScale": -1
             },
+
             self.TAB_SPORADIC_BG_BY_10M: {
                 "title": "Sporadic background by 10-minute intervals",
                 "resolution": "10m",
@@ -1057,6 +1080,8 @@ class Stats:
                 7,  # daily lastings by 10min
                 30,  # mass index by powers
                 30,  # mass index by lastings
+                366,  # events distribution by power
+                366,  # events distribution by lasting
                 0,  # session table, no graphics
                 1,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
@@ -1077,6 +1102,8 @@ class Stats:
                 7,  # daily lastings by 10min
                 0,  # mass index by powers, only plots
                 0,  # mass index by lastings, only plots
+                0,  # events distribution by power
+                0,  # events distribution by lasting
                 0,  # session table, no graphics
                 31,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
@@ -1098,6 +1125,8 @@ class Stats:
                 7,  # daily lastings by 10min
                 0,  # mass index by powers, only plots
                 0,  # mass index by lastings, only plots
+                366,  # events distribution by power
+                366,  # events distribution by lasting
                 0,  # session table, no graphics
                 1,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
@@ -1165,8 +1194,10 @@ class Stats:
         # try because things can go bad when the month / year changes:
         try:
             if graphRow == self.GRAPH_PLOT:
-                if tableRow == self.TAB_MASS_INDEX_BY_LASTINGS or tableRow == self.TAB_MASS_INDEX_BY_POWERS:
+                if self.TAB_MASS_INDEX_BY_POWERS <= tableRow <= self.TAB_MASS_INDEX_BY_LASTINGS:
                     self._MIplot(tableRow, layout)
+                elif self.TAB_POWER_DISTRIBUTION <= tableRow <= self.TAB_LASTING_DISTRIBUTION:
+                    self._distPlot(tableRow, layout)
                 else:
                     self._XYplot(tableRow, layout)
 
@@ -1722,14 +1753,12 @@ class Stats:
         dataArgs = config.get("dataArgs", {})
         title = config["title"]
         yLabel = config["yLabel"]
-
-        # seriesFunction is not used here, but its arguments
-        # allow to pass ad-hoc config parameters
-        metric = config["seriesArgs"]["metric"]
+        metric = config["dataArgs"]["metric"]
 
         # Generate the DataFrame and extracts the total series
         dataFrame = dataFunction(baseDataFrame, **dataArgs)
-        series = dataFrame.loc['Totals']
+        seriesFunction = config['seriesFunction']
+        series = seriesFunction(dataFrame)
 
         # Check if the DataFrame is valid
         if series is None:
@@ -1749,7 +1778,7 @@ class Stats:
         migraph = MIplot(series, self._settings, inchWidth, inchHeight, metric, title, yLabel,
                          self._showValues, self._showGrid)
 
-        # Embeds the xygraph in the layout
+        # Embeds the migraph in the layout
         canvas = migraph.widget()
         canvas.setMinimumSize(QSize(int(pixelWidth), int(pixelHeight)))
         self._diagram.setWidget(canvas)
@@ -1757,6 +1786,75 @@ class Stats:
 
         # Store the migraph object for future reference
         self._plot = migraph
+
+    def _distPlot(self, tableRow: int, layout: QHBoxLayout):
+
+        """
+        XY plot for distributions
+        """
+        # Mapping tableRow values to configuration parameters
+        tableRowConfig = self._get2DgraphsConfig()
+
+        # Show colormap settings and get the current colormap
+        self._showColormapSetting(True)
+        colormap = self._parent.cmapDict[self._currentColormap]
+
+        # Retrieve the base dataset
+        baseDataFrame = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
+
+        # Get configuration for the current tableRow
+        config = tableRowConfig.get(tableRow)
+        if not config:
+            return
+
+        # Retrieve specific data based on the tableRow configuration
+        dataFunction = config["dataFunction"]
+        dataArgs = config.get("dataArgs", {})
+        title = config["title"]
+        yLabel = config["yLabel"]
+        metric = config["dataArgs"]["metric"]
+        xLabel = None
+
+        if metric == "lasting":
+            xLabel = "lasting [mS]"
+        if metric == "power":
+            xLabel = "power [dBfs]"
+
+        # Generate the DataFrame and extracts the total series
+        dataFrame = dataFunction(baseDataFrame, **dataArgs)
+        seriesFunction = config['seriesFunction']
+        series = seriesFunction(dataFrame)
+
+        # the series args are used to carry additional params for plot function
+        extraArgs = config['seriesArgs']
+        xScale = extraArgs["xScale"]
+        yScale = extraArgs["yScale"]
+        # Check if the DataFrame is valid
+        if series is None:
+            return
+
+        # Calculate chart dimensions in pixels and inches
+        pixelWidth = (self._szBase.width() * self._hZoom)
+        pixelHeight = (self._szBase.height() * self._vZoom)
+        if pixelWidth > 65535:
+            pixelWidth = 65535
+        if pixelHeight > 65535:
+            pixelHeight = 65535
+        inchWidth = pixelWidth / self._px  # from  pixels to inches
+        inchHeight = pixelHeight / self._px  # from  pixels to inches
+        print("pixelWidth={}, pixelHeight={}, inchWidth={}, inchHeight={}".format(pixelWidth, pixelHeight,
+                                                                                  inchWidth, inchHeight))
+        distgraph = DistPlot(series, self._settings, inchWidth, inchHeight, metric, title, xLabel, yLabel,
+                         xScale, yScale, self._showValues, self._showGrid)
+
+        # Embeds the distgraph in the layout
+        canvas = distgraph.widget()
+        canvas.setMinimumSize(QSize(int(pixelWidth), int(pixelHeight)))
+        self._diagram.setWidget(canvas)
+        layout.addWidget(self._diagram)
+
+        # Store the distgraph object for future reference
+        self._plot = distgraph
 
     def _bargraph(self, tableRow: int, layout: QHBoxLayout):
         """
