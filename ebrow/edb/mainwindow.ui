@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>17</hour>
+                    <hour>16</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>4</hour>
+                    <hour>2</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>2</hour>
+                    <hour>0</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -11564,7 +11564,7 @@ font: 10pt &quot;Gauge&quot;;
                     </size>
                    </property>
                    <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;DB counts are multiplied by this constant before being represented in the statistical tables.&lt;/p&gt;&lt;p&gt;Its main purpose is to statistically compensate for the GRAVES radar scanning effect,&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Since GRAVES only illuminates a third of the sky and a 3-second scan is needed to cover it all, it follows that for every captured event, two more are lost. So the value to set to compensate for the loss is 3.00.&lt;br/&gt;Please note that since GRAVES is a military facility, there is no guarantee that this parameter will not change in the future.&lt;br/&gt;&lt;/p&gt;&lt;p&gt;By default, the value is 1.00 (no compensation)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;DB counts are multiplied by this constant before being represented in the statistical tables.&lt;/p&gt;&lt;p&gt;Its main purpose is to statistically compensate for the GRAVES radar scanning effect.&lt;/p&gt;&lt;p&gt;Since GRAVES only illuminates a third of the sky and a 3-second scan is needed to cover it all, it follows that for every captured event, two more are lost. &lt;br/&gt;&lt;br/&gt;So the value to set to compensate for the loss is 3.00.&lt;br/&gt;&lt;br/&gt;Please note that the radar compensation affects implicitly the sporadic background counts too.&lt;br/&gt;&lt;br/&gt;By default, the value is 1.00 (no compensation)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="minimum">
                     <double>1.000000000000000</double>

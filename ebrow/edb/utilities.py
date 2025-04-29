@@ -39,6 +39,7 @@ from matplotlib.colors import ListedColormap
 from ctypes import *
 from datetime import datetime, timedelta
 from matplotlib.dates import num2date
+from math import sin, radians
 from pathlib import Path
 from .logprint import print
 
@@ -491,8 +492,80 @@ def toChars(pixel: int):
     return pixel / 8
 
 
-def timeToSeconds(timeStr):
+def timeToSeconds(timeStr: str):
     """Convert time string DD/MM/YYYY;HH:MM:SS.MSEC to seconds since 1970."""
     timeFormat = "%d/%m/%Y;%H:%M:%S.%f"
     dt = datetime.strptime(timeStr, timeFormat)
     return (dt - datetime(1970, 1, 1)).total_seconds()
+
+def utcToLSA(isoUtc: str):
+    """
+    Calculate apparent solar longitude from ISO UTC timestamp.
+
+    Parameters:
+  isoUtc (str): UTC timestamp in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS[Z])
+
+    Returns:
+    float: Apparent solar longitude in degrees (0-360)
+    """
+    # Normalize input format
+    normalized = isoUtc.replace('T', ' ').replace('Z', '').strip()
+
+    # Split into date and optional time parts
+    parts = normalized.split(' ', 1)  # Split at first space only
+    datePart = parts[0]
+    timePart = parts[1] if len(parts) > 1 else '00:00:00'  # Default to midnight
+
+    # Parse date components
+    year, month, day = map(int, datePart.split('-'))
+
+    # Parse time components (support HH, HH:MM, HH:MM:SS)
+    timeElements = timePart.split(':')
+    hour = int(timeElements[0]) if len(timeElements) >= 1 else 0
+    minute = int(timeElements[1]) if len(timeElements) >= 2 else 0
+    second = float(timeElements[2]) if len(timeElements) >= 3 else 0.0
+
+    # Convert to decimal hours
+    utcHour = hour + minute / 60 + second / 3600
+
+    # Parse time components (support HH, HH:MM, HH:MM:SS)
+    timeElements = timePart.split(':')
+    hour = int(timeElements[0]) if len(timeElements) >= 1 else 0
+    minute = int(timeElements[1]) if len(timeElements) >= 2 else 0
+    second = float(timeElements[2]) if len(timeElements) >= 3 else 0.0
+
+    # Convert to decimal hours
+    utcHour = hour + minute / 60 + second / 3600
+
+    # Julian Day calculation (simplified)
+    a = (14 - month) // 12
+    y = year + 4800 - a
+    m = month + 12 * a - 3
+    jd = day + ((153 * m + 2) // 5) + 365 * y + y // 4 - y // 100 + y // 400 - 32045
+    jd += (utcHour - 12) / 24.0  # UTC to Julian Day fraction
+
+    # Time in Julian centuries since J2000
+    t = (jd - 2451545.0) / 36525.0
+
+    # Mean longitude (degrees)
+    meanLong = (280.46646 + 36000.76983 * t + 0.0003032 * t ** 2) % 360
+
+    # Mean anomaly (degrees)
+    meanAnomaly = (357.52911 + 35999.05029 * t - 0.0001537 * t ** 2) % 360
+
+    # Equation of center
+    eqCenter = (
+            (1.914602 - 0.004817 * t) * sin(radians(meanAnomaly)) +
+            0.019993 * sin(radians(2 * meanAnomaly)) +
+            0.00029 * sin(radians(3 * meanAnomaly))  # Third-order term
+    )
+
+    # True longitude
+    trueLong = (meanLong + eqCenter) % 360
+
+    # Nutation correction (simplified)
+    omega = 125.04 - 1934.136 * t
+    nutation = -0.00569 - 0.00478 * sin(radians(omega))
+
+    lat = (trueLong + nutation) % 360
+    return f"{lat:.2f}"
