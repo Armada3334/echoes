@@ -440,7 +440,7 @@ def cryptDecrypt(st: str, key: int) -> str:
     return stCrypt
 
 
-def timestamp2sideral(ts: str) -> str:
+def timestamp2sidereal(ts: str) -> str:
     jd = pd.Timestamp(ts).to_julian_date()
 
     # sideral time in degrees
@@ -456,8 +456,8 @@ def timestamp2sideral(ts: str) -> str:
     stHexaSec = math.modf(stHexaMin)[0] * 60
 
     # formatting string
-    sideralTime = "{:02}:{:02}:{:02}".format(int(stDecHour), int(stHexaMin), int(stHexaSec))
-    return sideralTime
+    siderealTime = "{:02}:{:02}:{:02}".format(int(stDecHour), int(stHexaMin), int(stHexaSec))
+    return siderealTime
 
 
 def getFromModule(moduleName, attrName):
@@ -503,7 +503,7 @@ def utcToLSA(isoUtc: str):
     Calculate apparent solar longitude from ISO UTC timestamp.
 
     Parameters:
-  isoUtc (str): UTC timestamp in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS[Z])
+    isoUtc (str): UTC timestamp in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS[Z])
 
     Returns:
     float: Apparent solar longitude in degrees (0-360)

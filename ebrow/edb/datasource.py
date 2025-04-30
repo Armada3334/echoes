@@ -40,7 +40,7 @@ from PyQt5.QtSql import QSqlDatabase, QSqlQuery, QSqlError, QSqlTableModel
 from PyQt5.QtWidgets import QFileDialog, qApp
 from PyQt5.QtCore import QDir, QDate, qUncompress, QMetaType, QResource, QFile, QByteArray
 
-from .utilities import fuzzyCompare, castFloatPrecision, timestamp2sideral
+from .utilities import fuzzyCompare, castFloatPrecision, timestamp2sidereal, utcToLSA
 from .logprint import print
 
 
@@ -68,6 +68,7 @@ class DataSource:
         self._adPath = None
         self._connectName = None
         self._workingDir = None
+        self._idOffset = 0
         self._db = None  # database handle
         self._adf = None  # automatic_data dataframe
         self._sdf = None  # automatic_sessions dataframe
@@ -135,6 +136,7 @@ class DataSource:
             self._adf = df
             self._parent.updateStatusBar("Reading newer events from DB")
             # self._parent.busy(False)
+
             self._loadPartialAutoDataTableFromDB(oldestRecordID, oldestRecordDate, newestRecordID,
                                                  newestRecordDate)
         else:
@@ -245,10 +247,15 @@ class DataSource:
                                                 self.cacheNeedsUpdate = True
                                                 # calculate the sidereal times for the new events
                                                 adfUpdate['sidereal_utc'] = adfUpdate.apply(
-                                                    lambda x: timestamp2sideral(x['timestamp_ms']), axis=1)
+                                                    lambda x: timestamp2sidereal(x['timestamp_ms']), axis=1)
+
+                                                # calculate the apparent solar longitude for the new events
+                                                adfUpdate['solar_long'] = adfUpdate.apply(
+                                                    lambda x: utcToLSA(x['timestamp_ms']))
 
                                                 self._adf = pd.concat([self._adf, adfUpdate], ignore_index=True)
                                                 self._adf.reset_index(inplace=True, drop=True)
+
                                             self._stripIncompleteEvents()
                                             self._deltaEvents = (newestRecordID + 1, lastProcessedId)
 
@@ -262,12 +269,17 @@ class DataSource:
 
                         self._deltaEvents = (lastProcessedId, lastProcessedId)
                         self._parent.updateStatusBar("The cache file is aligned with DB, data loaded successfully.")
+
+                        # adds a new columns with the UTC Sidereal Time and solar longitude
+                        self._idOffset = self._adf.loc[0, 'id']
+                        self._addNewColumns()
+
                         self._parent.updateProgressBar()  # hide progressbar
                         self._parent.busy(False)
                         self.dataReady = True
                         return True
                 else:
-                    # the JSON contains expired events that must be removed from JSON.
+                    # the JSON contains expired events that must be removed
                     q = QSqlQuery(self._db)
                     select = "SELECT min(id), utc_date FROM automatic_data"
                     result = q.exec(select)
@@ -394,10 +406,6 @@ class DataSource:
                         self._parent.updateProgressBar(currentRow, totalRows)
                     q.next()
 
-                # for debugging only:
-                # for key in dataDict.keys():
-                #    print("column: {}, len: {}".format(key, len(dataDict[key])))
-
                 self._adf = pd.DataFrame(dataDict)
                 rows = self._adf.shape[0]
                 if rows > 0:
@@ -408,11 +416,8 @@ class DataSource:
                     e = QSqlError(q.lastError())
                     self._stripIncompleteEvents()
 
-                    # adds a new column with the UTC Sidereal Time
-                    if 'sidereal_utc' not in self._adf.columns:
-                        self._parent.updateStatusBar("Calculating sidereal time for each event in DB")
-                        self._adf = self._adf.assign(sidereal_utc='')
-                        self._adf['sidereal_utc'] = self._adf.apply(lambda x: self._makeSideral(x), axis=1)
+                    # adds a new columns with the UTC Sidereal Time and solar longitude
+                    self._addNewColumns()
 
                     # adds the attributes column
                     if 'attributes' not in self._adf.columns:
@@ -421,6 +426,7 @@ class DataSource:
                     print("DataSource._loadAutoDataTableFromDB() ", e.text())
                     self._parent.busy(False)
                     self._deltaEvents = (firstID, lastID)
+                    self.dataReady = True
                     return True
 
         self._parent.infoMessage("Warning", "This database is empty, choose another one to work with")
@@ -429,10 +435,29 @@ class DataSource:
         self._parent.busy(False)
         return False
 
-    def _makeSideral(self, record):
+    def _makeSideral(self, record, lastRow):
         currentRow = ((record['id'] - self._idOffset) * 3)
-        timestamp2sideral(record['timestamp_ms'])
-        self._parent.updateProgressBar(currentRow)
+        sidereal = timestamp2sidereal(record['timestamp_ms'])
+        self._parent.updateProgressBar(currentRow, lastRow)
+        return sidereal
+    def _makeSolarLong(self, record, lastRow):
+        currentRow = ((record['id'] - self._idOffset) * 3)
+        try:
+            dateObject = datetime.strptime(record['utc_date'], '%Y-%m-%d').date()
+            timeObject = datetime.strptime(record['utc_time'], '%H:%M:%S.%f').time()
+            dateTimeObject = datetime.combine(dateObject, timeObject)
+            isoString = dateTimeObject.isoformat()
+
+        except ValueError:
+            print("Error: Invalid date or time format.")
+            return None
+        except Exception as inst:
+            print("Exception: ", inst)
+            return None
+
+        lsa = utcToLSA(isoString)
+        self._parent.updateProgressBar(currentRow, lastRow)
+        return lsa
 
     def _stripIncompleteEvents(self):
         """
@@ -1302,6 +1327,22 @@ class DataSource:
             sbDf['Total'] = totalColumnResult.astype(int)
         return newDf, rawDf, sbDf
 
+    def _addNewColumns(self):
+        # adds a new columns with the UTC Sidereal Time and solar longitude
+        self._parent.updateProgressBar(0)
+        lastRow = (self._adf.iloc[-1]['id'] * 3)
+        if 'sidereal_utc' not in self._adf.columns:
+            self._parent.updateStatusBar("Calculating sidereal times for each event in DB")
+            self._adf = self._adf.assign(sidereal_utc='')
+            self._adf['sidereal_utc'] = self._adf.apply(lambda x: self._makeSideral(x, lastRow), axis=1)
+            self.cacheNeedsUpdate = True
+
+        if 'solar_long' not in self._adf.columns:
+            self._parent.updateStatusBar("Calculating solar longitudes for each event in DB")
+            self._adf = self._adf.assign(solar_long='')
+            self._adf['solar_long'] = self._adf.apply(lambda x: self._makeSolarLong(x, lastRow), axis=1)
+            self.cacheNeedsUpdate = True
+
     def totalsUnclassified(self, dateFrom: str = None, dateTo: str = None) -> int:
         """
         @return:
@@ -1947,7 +1988,7 @@ class DataSource:
 
                     # reordering columns
                     cols = ['id', 'daily_nr', 'event_status', 'utc_date', 'utc_time',
-                            'timestamp_ms', 'sidereal_utc',
+                            'timestamp_ms', 'sidereal_utc', 'solar_long',
                             'revision', 'up_thr', 'dn_thr', 'S', 'avgS', 'N', 'diff', 'avg_diff',
                             'top_peak_hz', 'std_dev', 'lasting_ms', 'lasting_scans', 'freq_shift',
                             'echo_area', 'interval_area', 'peaks_count', 'LOS_speed', 'scan_ms',
@@ -2122,7 +2163,7 @@ class DataSource:
         cf = cf.merge(peakDf[['id', 'utc_peak']], on='id', how='left')
         # reordering columns, the utc_raise and utc_peak columns are moved between utc_date and utc_fall
         cols = ['id', 'daily_nr', 'utc_date', 'utc_raise', 'utc_peak', 'utc_fall', 'timestamp_ms', 'sidereal_utc',
-                'revision', 'up_thr', 'dn_thr', 'S',
+                'solar_long', 'revision', 'up_thr', 'dn_thr', 'S',
                 'avgS', 'N', 'diff', 'avg_diff', 'top_peak_hz', 'std_dev', 'lasting_ms', 'lasting_scans', 'freq_shift',
                 'echo_area', 'interval_area', 'peaks_count', 'LOS_speed', 'scan_ms', 'diff_start', 'diff_end',
                 'classification', 'attributes', 'shot_name', 'dump_name']
