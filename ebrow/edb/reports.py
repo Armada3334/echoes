@@ -100,6 +100,7 @@ class Report:
         self._ui.pbReportHTML.clicked.connect(self._reportHTML)
         self._ui.pbRecallDefault.clicked.connect(self._recallDefaultPrefaceText)
         self._ui.pbRecallStored.clicked.connect(self._recallDefaultStoredText)
+        self._ui.pbStoreNew.clicked.connect(self._savePrefaceText)
 
         # filter checkboxes toggling
         self._ui.chkOverdense_3.clicked.connect(self._setClassFilter)
@@ -143,6 +144,10 @@ class Report:
         if preface != "":
             preface = preface.replace("<br>", "\n")
         self._ui.pteReportPreface.setPlainText(preface)
+
+    def _savePrefaceText(self):
+        prefaceDef = self._ui.pteReportPreface.toPlainText()
+        self._settings.writeSetting("preface", prefaceDef)
 
     def updateTabReport(self):
         self._parent.busy(True)
@@ -736,6 +741,8 @@ class Report:
         self._prepareTables()
         self._parent.isReporting = True
         self._parent.busy(True)
+        self._savePrefaceText()
+        # preface = self._formatPreface(prefaceDef)
         # create a excel writer object
         defaultFilename = "report.xlsx"
         self._parent.updateStatusBar("Saving XLSX report file")
@@ -1047,8 +1054,8 @@ class Report:
         self._div = [None] * self.DIV_TOTAL  # report divs (-->HTML)
         self._parent.isReporting = True
 
+        self._savePrefaceText()
         prefaceDef = self._ui.pteReportPreface.toPlainText()
-        self._settings.writeSetting("preface", prefaceDef)
         preface = self._formatPreface(prefaceDef)
 
         if self._settings.readSettingAsBool('aeScreenshot') or self._settings.readSettingAsBool('aePowerPlot') or self._settings.readSettingAsBool('ae2Dplot') or self._settings.readSettingAsBool('ae3Dplot') or self._settings.readSettingAsBool('aeDetails'):
