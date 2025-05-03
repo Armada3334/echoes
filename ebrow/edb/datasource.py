@@ -35,10 +35,11 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 from math import isnan
+from io import StringIO
 
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery, QSqlError, QSqlTableModel
 from PyQt5.QtWidgets import QFileDialog, qApp
-from PyQt5.QtCore import QDir, QDate, qUncompress, QMetaType, QResource, QFile, QByteArray
+from PyQt5.QtCore import QDir, QDate, qUncompress, QMetaType, QResource, QFile, QByteArray, QIODevice
 
 from .utilities import fuzzyCompare, castFloatPrecision, timestamp2sidereal, utcToLSA
 from .logprint import print
@@ -82,9 +83,16 @@ class DataSource:
         self.avgHourDf = None
         self.avg10minDf = None
 
-        # pd.set_option('display.precision', 4)
-        # Configure Pandas to show 4-decimal floats
-        # pd.options.display.float_format = '{:.4f}'.format
+        mscFile = QFile(":/meteorShowersTable")
+        contents = None
+        if mscFile.open(QIODevice.ReadOnly):
+            contents = mscFile.readAll()
+        mscBytes = contents.data()
+        mscStr = mscBytes.decode("utf-8")
+        mscBuffer = StringIO(mscStr)
+        self._msCalendar = pd.read_csv(mscBuffer, sep=';')
+
+
 
     def _getDailyNrFromID(self, eventId: int):
         """
@@ -245,16 +253,10 @@ class DataSource:
                                             adfUpdate = pd.DataFrame(dataDict)
                                             if not adfUpdate.empty:
                                                 self.cacheNeedsUpdate = True
-                                                # calculate the sidereal times for the new events
-                                                adfUpdate['sidereal_utc'] = adfUpdate.apply(
-                                                    lambda x: timestamp2sidereal(x['timestamp_ms']), axis=1)
-
-                                                # calculate the apparent solar longitude for the new events
-                                                adfUpdate['solar_long'] = adfUpdate.apply(
-                                                    lambda x: utcToLSA(x['timestamp_ms']))
-
                                                 self._adf = pd.concat([self._adf, adfUpdate], ignore_index=True)
                                                 self._adf.reset_index(inplace=True, drop=True)
+                                                self._idOffset = self._adf.loc[0, 'id']
+                                                self._addNewColumns()
 
                                             self._stripIncompleteEvents()
                                             self._deltaEvents = (newestRecordID + 1, lastProcessedId)
@@ -1342,6 +1344,8 @@ class DataSource:
             self._adf = self._adf.assign(solar_long='')
             self._adf['solar_long'] = self._adf.apply(lambda x: self._makeSolarLong(x, lastRow), axis=1)
             self.cacheNeedsUpdate = True
+
+
 
     def totalsUnclassified(self, dateFrom: str = None, dateTo: str = None) -> int:
         """
