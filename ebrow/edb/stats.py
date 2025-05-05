@@ -78,6 +78,7 @@ class Stats:
     TAB_RMOB_MONTH = 14
     TAB_SPORADIC_BG_BY_HOUR = 15
     TAB_SPORADIC_BG_BY_10M = 16
+    TAB_METEOR_SHOWERS = 17
 
     GRAPH_PLOT = 0
     GRAPH_HEATMAP = 1
@@ -514,7 +515,17 @@ class Stats:
                     # extracts the events in the given date,
                     # ignoring the intervals that are not fully included into the database coverage
                     fromDate, toDate = self._dataSource.dbCoverage()
+
                     if fromDate <= dates[0] and toDate >= dates[1]:
+                        clashes = self._dataSource.getActiveShowers(dates[0], dates[1])
+                        if len(clashes) > 0:
+                            result = self._parent.confirmMessage("Warning",
+                                f"The date interval {dates} clashes with the following meteor showers: {clashes}\n"
+                                "Press Cancel to stop calculation to change this interval")
+                            if result is False:
+                                self._parent.busy(False)
+                                return False
+
                         dfEvents = self._dataSource.getADpartialFrame(dates[0], dates[1])
                         if dfEvents is not None:
                             dfCountsHourlyUnder, rawDf, sbDf = self._dataSource.makeCountsDf(dfEvents, dates[0],
@@ -1036,6 +1047,9 @@ class Stats:
         if row == self.TAB_LASTING_DISTRIBUTION:
             self._dataFrame = self._calculateDistributionDf(df, metric='lasting')
 
+        if row == self.TAB_METEOR_SHOWERS:
+            self._dataFrame = self._dataSource.getMeteorShowersTable()
+
         if self._dataFrame is not None:
             self._ui.tvTabs.setEnabled(True)
             model = PandasModel(self._dataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
@@ -1086,7 +1100,7 @@ class Stats:
                 1,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
                 1,  # daily sporadic background by 10min
-                0,  # undefined
+                0,  # meteor showers
             ],
 
             # [self.GRAPH_HEATMAP]
@@ -1108,7 +1122,7 @@ class Stats:
                 31,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
                 1,  # daily sporadic background by 10min
-                0,  # undefined
+                0,  # meteor showers
 
             ],
 
@@ -1131,7 +1145,7 @@ class Stats:
                 1,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
                 1,  # daily sporadic background by 10min
-                0,  # undefined
+                0,  #  meteor showers
             ],
         ]
 

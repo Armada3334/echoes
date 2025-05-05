@@ -69,7 +69,6 @@ class DataSource:
         self._adPath = None
         self._connectName = None
         self._workingDir = None
-        self._idOffset = 0
         self._db = None  # database handle
         self._adf = None  # automatic_data dataframe
         self._sdf = None  # automatic_sessions dataframe
@@ -91,8 +90,12 @@ class DataSource:
         mscStr = mscBytes.decode("utf-8")
         mscBuffer = StringIO(mscStr)
         self._msCalendar = pd.read_csv(mscBuffer, sep=';')
-
-
+        strongest = self._msCalendar[self._msCalendar['enough_zhr'] == 'Yes']
+        self._mscShort = strongest[['acronym', 'sl_start', 'sl_end', 'start_date', 'end_date']]
+        self._mscShort['sl_start'] = pd.to_numeric(self._mscShort['sl_start'], errors='coerce')
+        self._mscShort['sl_end'] = pd.to_numeric(self._mscShort['sl_end'], errors='coerce')
+        self._mscShort['start_date'] = pd.to_datetime(self._mscShort['start_date'], format='%d/%m/%Y', errors='coerce')
+        self._mscShort['end_date'] = pd.to_datetime(self._mscShort['end_date'], format='%d/%m/%Y', errors='coerce')
 
     def _getDailyNrFromID(self, eventId: int):
         """
@@ -255,7 +258,6 @@ class DataSource:
                                                 self.cacheNeedsUpdate = True
                                                 self._adf = pd.concat([self._adf, adfUpdate], ignore_index=True)
                                                 self._adf.reset_index(inplace=True, drop=True)
-                                                self._idOffset = self._adf.loc[0, 'id']
                                                 self._addNewColumns()
 
                                             self._stripIncompleteEvents()
@@ -273,7 +275,6 @@ class DataSource:
                         self._parent.updateStatusBar("The cache file is aligned with DB, data loaded successfully.")
 
                         # adds a new columns with the UTC Sidereal Time and solar longitude
-                        self._idOffset = self._adf.loc[0, 'id']
                         self._addNewColumns()
 
                         self._parent.updateProgressBar()  # hide progressbar
@@ -411,8 +412,6 @@ class DataSource:
                 self._adf = pd.DataFrame(dataDict)
                 rows = self._adf.shape[0]
                 if rows > 0:
-                    self._idOffset = self._adf.loc[0, 'id']
-
                     self._parent.updateProgressBar(0, rows)
 
                     e = QSqlError(q.lastError())
@@ -437,13 +436,13 @@ class DataSource:
         self._parent.busy(False)
         return False
 
-    def _makeSideral(self, record, lastRow):
-        currentRow = ((record['id'] - self._idOffset) * 3)
+    def _makeSideral(self, record, lastRow, idOffset):
+        currentRow = ((record['id'] - idOffset) * 3)
         sidereal = timestamp2sidereal(record['timestamp_ms'])
         self._parent.updateProgressBar(currentRow, lastRow)
         return sidereal
-    def _makeSolarLong(self, record, lastRow):
-        currentRow = ((record['id'] - self._idOffset) * 3)
+    def _makeSolarLong(self, record, lastRow, idOffset):
+        currentRow = ((record['id'] - idOffset) * 3)
         try:
             dateObject = datetime.strptime(record['utc_date'], '%Y-%m-%d').date()
             timeObject = datetime.strptime(record['utc_time'], '%H:%M:%S.%f').time()
@@ -460,6 +459,15 @@ class DataSource:
         lsa = utcToLSA(isoString)
         self._parent.updateProgressBar(currentRow, lastRow)
         return lsa
+
+    def _makeActiveShowers(self, record, lastRow, idOffset):
+        currentRow = ((record['id'] - idOffset) * 3)
+        sl = record['solar_long']
+        df = self._mscShort
+
+        subset = df[(self._mscShort['sl_start'] <= sl) & (self._mscShort['sl_end'] >= sl)]
+        self._parent.updateProgressBar(currentRow, lastRow)
+        return subset['acronym'].tolist()
 
     def _stripIncompleteEvents(self):
         """
@@ -1331,21 +1339,154 @@ class DataSource:
 
     def _addNewColumns(self):
         # adds a new columns with the UTC Sidereal Time and solar longitude
+
+        idOffset = self._adf.loc[0, 'id']
         self._parent.updateProgressBar(0)
         lastRow = (self._adf.iloc[-1]['id'] * 3)
+
         if 'sidereal_utc' not in self._adf.columns:
             self._parent.updateStatusBar("Calculating sidereal times for each event in DB")
             self._adf = self._adf.assign(sidereal_utc='')
-            self._adf['sidereal_utc'] = self._adf.apply(lambda x: self._makeSideral(x, lastRow), axis=1)
+            self._adf['sidereal_utc'] = self._adf.apply(lambda x: self._makeSideral(x, lastRow, idOffset), axis=1)
             self.cacheNeedsUpdate = True
 
         if 'solar_long' not in self._adf.columns:
             self._parent.updateStatusBar("Calculating solar longitudes for each event in DB")
             self._adf = self._adf.assign(solar_long='')
-            self._adf['solar_long'] = self._adf.apply(lambda x: self._makeSolarLong(x, lastRow), axis=1)
+            self._adf['solar_long'] = self._adf.apply(lambda x: self._makeSolarLong(x, lastRow, idOffset), axis=1)
+            self.cacheNeedsUpdate = True
+
+        if 'active_showers' not in self._adf.columns:
+            self._parent.updateStatusBar("Calculating active showers for each event in DB")
+            self._adf = self._adf.assign(active_showers='')
+            self._adf['active_showers'] = self._adf.apply(lambda x: self._makeActiveShowers(x, lastRow, idOffset), axis=1)
             self.cacheNeedsUpdate = True
 
 
+    def _formatColumnName(self, dtFrom, dtRes):
+        """
+            Formats the column name based on the time resolution.
+
+            :param dtFrom: Start datetime of the interval.
+            :param dtRes: Time resolution ('D', 'h', '10T').
+            :return: Formatted column name.
+            """
+        if dtRes == 'D':
+            return dtFrom.strftime('%Y-%m-%d')
+        elif dtRes == 'h':
+            return f"{dtFrom.hour:02}h"
+        elif dtRes == '10T':
+            return f"{dtFrom.hour:02}h{dtFrom.minute:02}m"
+        else:
+            raise ValueError(f"Resolution {dtRes} not supported.")
+
+    def _generateColumns(self, dtRange, dtRes):
+        """
+           Generates column names based on the time resolution.
+
+           :param dtRange: Range of datetime intervals.
+           :param dtRes: Time resolution ('D', 'h', '10T').
+           :return: List of formatted column names.
+        """
+        if dtRes == 'D':
+            return [dt.strftime('%Y-%m-%d') for dt in dtRange[:-1]]
+        elif dtRes == 'h':
+            return [f'{hour:02}h' for hour in range(24)]
+        elif dtRes == '10T':
+            return [f'{hour:02}h{minute:02}m' for hour in range(24) for minute in range(0, 60, 10)]
+        else:
+            raise ValueError(f"Resolution {dtRes} not supported.")
+
+    def _makeAverageDf(self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, targetColumn: str, dtDec: int = 1,
+                       filters: str = '', highestAvgRow: bool = True, highestAvgColumn: bool = True):
+        """
+        Generates a DataFrame with averages of the specified column at the required resolution.
+
+        @param df: Source DataFrame.
+        @param dtStart: Start date in 'YYYY-MM-DD' format.
+        @param dtEnd: End date in 'YYYY-MM-DD' format.
+        @param dtRes: Resolution ('D' = daily, 'h' = hourly, '10T' = every 10 minutes).
+        @param targetColumn: Column to calculate averages on ('diff' or 'lasting_ms').
+        @param dtDec: number of decimals to show, zero=integer
+        @param filters: Classification filters (comma-separated).
+        @param highestAvgRow: If True, appends a row with the max of each column.
+        @param highestAvgColumn: If True, adds a column with the max of each row.
+        @return: DataFrame with average values.
+        """
+        df.set_index('id', inplace=True, drop=False)
+        df = df.loc[df['event_status'] == 'Fall'].copy()
+
+        # Apply classification filters
+        filterList = [item.strip() for item in filters.split(',')]
+        fdf = df.loc[df['classification'].isin(filterList)].copy()
+
+        # Add datetime column
+        fdf['datetime'] = pd.to_datetime(fdf['utc_date'] + ' ' + fdf['utc_time'])
+        dtEndInclusive = datetime.strptime(dtEnd, '%Y-%m-%d') + timedelta(days=1)
+
+        # Initialize output DataFrame
+        columns = []
+        intvlRange = None
+        dtRange = pd.date_range(dtStart, dtEndInclusive, freq='D')
+        intvlRange = pd.date_range(dtRange[0], dtRange[-1], freq=dtRes)
+        if dtRes == 'D':
+            columns = [f"{dt.day:02}" for dt in dtRange]
+            odf = pd.DataFrame(columns=columns, dtype='float')
+
+        elif dtRes == 'h':
+            columns = [f"{hour:02}h" for hour in range(24)]
+            odf = pd.DataFrame(columns=columns, dtype='float', index=dtRange.strftime('%Y-%m-%d'))
+
+        elif dtRes == '10T':
+            columns = [f"{hour:02}h{minute:02}m" for hour in range(24) for minute in range(0, 60, 10)]
+            odf = pd.DataFrame(columns=columns, dtype='float', index=dtRange.strftime('%Y-%m-%d'))
+
+        else:
+            raise ValueError(f"Resolution '{dtRes}' not implemented.")
+
+        # Fill output DataFrame with averages
+        # for start, end in zip(dtRange[:-1], dtRange[1:]):
+        for start, end in zip(intvlRange[:-1], intvlRange[1:]):
+            qApp.processEvents()
+            subdf = fdf[(fdf['datetime'] >= start) & (fdf['datetime'] < end)]
+            avg = subdf[targetColumn].mean() if not subdf.empty else float('nan')
+            avg = round(avg, dtDec) if not pd.isna(avg) else None
+
+            if dtRes == 'D':
+                odf.at[start.strftime('%Y-%m-%d'), f"{start.day:02}"] = avg
+            elif dtRes == 'h':
+                odf.at[start.strftime('%Y-%m-%d'), f"{start.hour:02}h"] = avg
+            elif dtRes == '10T':
+                odf.at[start.strftime('%Y-%m-%d'), f"{start.hour:02}h{start.minute:02}m"] = avg
+
+        odf = odf.drop(odf.index[-1])
+
+        # Add highest average row/column if required
+        if highestAvgColumn:
+            odf['Highest average'] = odf.max(axis=1)
+        if highestAvgRow:
+            highestRow = odf.max(axis=0)
+            odf.loc['Highest average'] = highestRow
+            if highestAvgColumn:
+                odf.at['Highest average', 'Highest average'] = None
+
+        # NOTE: when plotting, floats (dtDec > 0) are better because NaN values aren't plotted
+        # while on a table they appear as 'NaN'
+        # Integers (dtDec=0) instead can't contain NaN so it will be replaced with -1
+        # but this is clean in a table but are nasty when plotting.
+
+        return odf if dtDec != 0 else odf.fillna(-1).astype(int)
+
+
+    def getMeteorShowersTable(self):
+        return self._mscShort
+
+    def getActiveShowers(self, startDate:str, endDate:str):
+        startDt = pd.to_datetime(startDate, format='%Y-%m-%d')
+        endDt = pd.to_datetime(endDate, format='%Y-%m-%d')
+        df =  self._mscShort
+        intersections = df[(df['start_date'] <= endDt) & (df['end_date'] >= startDt)]
+        return intersections['acronym'].to_list()
 
     def totalsUnclassified(self, dateFrom: str = None, dateTo: str = None) -> int:
         """
@@ -1992,7 +2133,7 @@ class DataSource:
 
                     # reordering columns
                     cols = ['id', 'daily_nr', 'event_status', 'utc_date', 'utc_time',
-                            'timestamp_ms', 'sidereal_utc', 'solar_long',
+                            'timestamp_ms', 'sidereal_utc', 'solar_long', 'active_showers',
                             'revision', 'up_thr', 'dn_thr', 'S', 'avgS', 'N', 'diff', 'avg_diff',
                             'top_peak_hz', 'std_dev', 'lasting_ms', 'lasting_scans', 'freq_shift',
                             'echo_area', 'interval_area', 'peaks_count', 'LOS_speed', 'scan_ms',
@@ -2167,7 +2308,7 @@ class DataSource:
         cf = cf.merge(peakDf[['id', 'utc_peak']], on='id', how='left')
         # reordering columns, the utc_raise and utc_peak columns are moved between utc_date and utc_fall
         cols = ['id', 'daily_nr', 'utc_date', 'utc_raise', 'utc_peak', 'utc_fall', 'timestamp_ms', 'sidereal_utc',
-                'solar_long', 'revision', 'up_thr', 'dn_thr', 'S',
+                'solar_long', 'active_showers', 'revision', 'up_thr', 'dn_thr', 'S',
                 'avgS', 'N', 'diff', 'avg_diff', 'top_peak_hz', 'std_dev', 'lasting_ms', 'lasting_scans', 'freq_shift',
                 'echo_area', 'interval_area', 'peaks_count', 'LOS_speed', 'scan_ms', 'diff_start', 'diff_end',
                 'classification', 'attributes', 'shot_name', 'dump_name']
@@ -2537,120 +2678,6 @@ class DataSource:
             sbDf = (sbDf * radarComp).round().astype(int)
 
         return finalDf, rawDf, sbDf
-
-    def _formatColumnName(self, dtFrom, dtRes):
-        """
-            Formats the column name based on the time resolution.
-
-            :param dtFrom: Start datetime of the interval.
-            :param dtRes: Time resolution ('D', 'h', '10T').
-            :return: Formatted column name.
-            """
-        if dtRes == 'D':
-            return dtFrom.strftime('%Y-%m-%d')
-        elif dtRes == 'h':
-            return f"{dtFrom.hour:02}h"
-        elif dtRes == '10T':
-            return f"{dtFrom.hour:02}h{dtFrom.minute:02}m"
-        else:
-            raise ValueError(f"Resolution {dtRes} not supported.")
-
-    def _generateColumns(self, dtRange, dtRes):
-        """
-           Generates column names based on the time resolution.
-
-           :param dtRange: Range of datetime intervals.
-           :param dtRes: Time resolution ('D', 'h', '10T').
-           :return: List of formatted column names.
-        """
-        if dtRes == 'D':
-            return [dt.strftime('%Y-%m-%d') for dt in dtRange[:-1]]
-        elif dtRes == 'h':
-            return [f'{hour:02}h' for hour in range(24)]
-        elif dtRes == '10T':
-            return [f'{hour:02}h{minute:02}m' for hour in range(24) for minute in range(0, 60, 10)]
-        else:
-            raise ValueError(f"Resolution {dtRes} not supported.")
-
-    def _makeAverageDf(self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, targetColumn: str, dtDec: int = 1,
-                       filters: str = '', highestAvgRow: bool = True, highestAvgColumn: bool = True):
-        """
-        Generates a DataFrame with averages of the specified column at the required resolution.
-
-        @param df: Source DataFrame.
-        @param dtStart: Start date in 'YYYY-MM-DD' format.
-        @param dtEnd: End date in 'YYYY-MM-DD' format.
-        @param dtRes: Resolution ('D' = daily, 'h' = hourly, '10T' = every 10 minutes).
-        @param targetColumn: Column to calculate averages on ('diff' or 'lasting_ms').
-        @param dtDec: number of decimals to show, zero=integer
-        @param filters: Classification filters (comma-separated).
-        @param highestAvgRow: If True, appends a row with the max of each column.
-        @param highestAvgColumn: If True, adds a column with the max of each row.
-        @return: DataFrame with average values.
-        """
-        df.set_index('id', inplace=True, drop=False)
-        df = df.loc[df['event_status'] == 'Fall'].copy()
-
-        # Apply classification filters
-        filterList = [item.strip() for item in filters.split(',')]
-        fdf = df.loc[df['classification'].isin(filterList)].copy()
-
-        # Add datetime column
-        fdf['datetime'] = pd.to_datetime(fdf['utc_date'] + ' ' + fdf['utc_time'])
-        dtEndInclusive = datetime.strptime(dtEnd, '%Y-%m-%d') + timedelta(days=1)
-
-        # Initialize output DataFrame
-        columns = []
-        intvlRange = None
-        dtRange = pd.date_range(dtStart, dtEndInclusive, freq='D')
-        intvlRange = pd.date_range(dtRange[0], dtRange[-1], freq=dtRes)
-        if dtRes == 'D':
-            columns = [f"{dt.day:02}" for dt in dtRange]
-            odf = pd.DataFrame(columns=columns, dtype='float')
-
-        elif dtRes == 'h':
-            columns = [f"{hour:02}h" for hour in range(24)]
-            odf = pd.DataFrame(columns=columns, dtype='float', index=dtRange.strftime('%Y-%m-%d'))
-
-        elif dtRes == '10T':
-            columns = [f"{hour:02}h{minute:02}m" for hour in range(24) for minute in range(0, 60, 10)]
-            odf = pd.DataFrame(columns=columns, dtype='float', index=dtRange.strftime('%Y-%m-%d'))
-
-        else:
-            raise ValueError(f"Resolution '{dtRes}' not implemented.")
-
-        # Fill output DataFrame with averages
-        # for start, end in zip(dtRange[:-1], dtRange[1:]):
-        for start, end in zip(intvlRange[:-1], intvlRange[1:]):
-            qApp.processEvents()
-            subdf = fdf[(fdf['datetime'] >= start) & (fdf['datetime'] < end)]
-            avg = subdf[targetColumn].mean() if not subdf.empty else float('nan')
-            avg = round(avg, dtDec) if not pd.isna(avg) else None
-
-            if dtRes == 'D':
-                odf.at[start.strftime('%Y-%m-%d'), f"{start.day:02}"] = avg
-            elif dtRes == 'h':
-                odf.at[start.strftime('%Y-%m-%d'), f"{start.hour:02}h"] = avg
-            elif dtRes == '10T':
-                odf.at[start.strftime('%Y-%m-%d'), f"{start.hour:02}h{start.minute:02}m"] = avg
-
-        odf = odf.drop(odf.index[-1])
-
-        # Add highest average row/column if required
-        if highestAvgColumn:
-            odf['Highest average'] = odf.max(axis=1)
-        if highestAvgRow:
-            highestRow = odf.max(axis=0)
-            odf.loc['Highest average'] = highestRow
-            if highestAvgColumn:
-                odf.at['Highest average', 'Highest average'] = None
-
-        # NOTE: when plotting, floats (dtDec > 0) are better because NaN values aren't plotted
-        # while on a table they appear as 'NaN'
-        # Integers (dtDec=0) instead can't contain NaN so it will be replaced with -1
-        # but this is clean in a table but are nasty when plotting.
-
-        return odf if dtDec != 0 else odf.fillna(-1).astype(int)
 
     def makePowersDf(self, df: pd.DataFrame, dtStart: str, dtEnd: str, dtRes: str, filters: str = '',
                      highestAvgRow: bool = False, highestAvgColumn: bool = False):
