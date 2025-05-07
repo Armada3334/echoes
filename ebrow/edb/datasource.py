@@ -92,7 +92,7 @@ class DataSource:
         self._msCalendar = pd.read_csv(mscBuffer, sep=';')
         strongest = self._msCalendar[self._msCalendar['enough_zhr'] == 'Yes']
         self._mscShort = strongest[['acronym', 'sl_start', 'sl_end', 'start_date', 'end_date']]
-        self._mscShort['sl_start'] = pd.to_numeric(self._mscShort['sl_start'], errors='coerce')
+        self._mscShort['sl_start'] = pd.to_numeric(self._mscShort.loc[:, 'sl_start'], errors='coerce')
         self._mscShort['sl_end'] = pd.to_numeric(self._mscShort['sl_end'], errors='coerce')
         self._mscShort['start_date'] = pd.to_datetime(self._mscShort['start_date'], format='%d/%m/%Y', errors='coerce')
         self._mscShort['end_date'] = pd.to_datetime(self._mscShort['end_date'], format='%d/%m/%Y', errors='coerce')
@@ -462,7 +462,7 @@ class DataSource:
 
     def _makeActiveShowers(self, record, lastRow, idOffset):
         currentRow = ((record['id'] - idOffset) * 3)
-        sl = record['solar_long']
+        sl = float(record['solar_long'])
         df = self._mscShort
 
         subset = df[(self._mscShort['sl_start'] <= sl) & (self._mscShort['sl_end'] >= sl)]
@@ -1341,27 +1341,28 @@ class DataSource:
         # adds a new columns with the UTC Sidereal Time and solar longitude
 
         idOffset = self._adf.loc[0, 'id']
-        self._parent.updateProgressBar(0)
         lastRow = (self._adf.iloc[-1]['id'] * 3)
 
         if 'sidereal_utc' not in self._adf.columns:
+            self._parent.updateProgressBar(0)
             self._parent.updateStatusBar("Calculating sidereal times for each event in DB")
             self._adf = self._adf.assign(sidereal_utc='')
             self._adf['sidereal_utc'] = self._adf.apply(lambda x: self._makeSideral(x, lastRow, idOffset), axis=1)
             self.cacheNeedsUpdate = True
 
         if 'solar_long' not in self._adf.columns:
+            self._parent.updateProgressBar(0)
             self._parent.updateStatusBar("Calculating solar longitudes for each event in DB")
             self._adf = self._adf.assign(solar_long='')
             self._adf['solar_long'] = self._adf.apply(lambda x: self._makeSolarLong(x, lastRow, idOffset), axis=1)
             self.cacheNeedsUpdate = True
 
         if 'active_showers' not in self._adf.columns:
+            self._parent.updateProgressBar(0)
             self._parent.updateStatusBar("Calculating active showers for each event in DB")
             self._adf = self._adf.assign(active_showers='')
             self._adf['active_showers'] = self._adf.apply(lambda x: self._makeActiveShowers(x, lastRow, idOffset), axis=1)
             self.cacheNeedsUpdate = True
-
 
     def _formatColumnName(self, dtFrom, dtRes):
         """
@@ -2180,7 +2181,9 @@ class DataSource:
 
     def resetClassAndAttributes(self):
         """
-        Clears the cache file and rebuilds it by reloading the DB
+        Clears the cache file and rebuilds it by reloading the DB.
+        This forces also the re-creation of additional columns:
+        sideral times, solar longitudes, active showers...
         :return:
         """
         try:

@@ -520,8 +520,8 @@ class Stats:
                         clashes = self._dataSource.getActiveShowers(dates[0], dates[1])
                         if len(clashes) > 0:
                             result = self._parent.confirmMessage("Warning",
-                                f"The date interval {dates} clashes with the following meteor showers: {clashes}\n"
-                                "Press Cancel to stop calculation to change this interval")
+                                                                 f"The date interval {dates} clashes with the following meteor showers: {clashes}\n"
+                                                                 "Press Cancel to stop calculation to change this interval")
                             if result is False:
                                 self._parent.busy(False)
                                 return False
@@ -556,8 +556,6 @@ class Stats:
                                                                                            filters='OVER',
                                                                                            totalRow=False,
                                                                                            totalColumn=False)
-
-
 
                             excludeIndexes = []
                             for rowIndex in dfCountsHourlyUnder.index:
@@ -1145,7 +1143,7 @@ class Stats:
                 1,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
                 1,  # daily sporadic background by 10min
-                0,  #  meteor showers
+                0,  # meteor showers
             ],
         ]
 
@@ -1859,7 +1857,7 @@ class Stats:
         print("pixelWidth={}, pixelHeight={}, inchWidth={}, inchHeight={}".format(pixelWidth, pixelHeight,
                                                                                   inchWidth, inchHeight))
         distgraph = DistPlot(series, self._settings, inchWidth, inchHeight, metric, title, xLabel, yLabel,
-                         xScale, yScale, self._showValues, self._showGrid)
+                             xScale, yScale, self._showValues, self._showGrid)
 
         # Embeds the distgraph in the layout
         canvas = distgraph.widget()
@@ -2116,7 +2114,6 @@ class Stats:
         # Store the Heatmap object for future reference
         self._plot = heatmap
 
-
     def _calculateDistributionDf(self, df: pd.DataFrame, metric: str):
         """
         Calculates the power or lasting distribution of all events in df
@@ -2143,7 +2140,6 @@ class Stats:
             sdf = lastingsRounded.value_counts().sort_index().reset_index()
             sdf.columns = ['lasting_ms', 'counts']
         return sdf
-
 
     def _calcMassIndicesDf(self, df: pd.DataFrame, TUsize: int, metric: str, finalDfOnly: bool = False):
         sbf = None
@@ -2211,8 +2207,7 @@ class Stats:
 
         return pd.DataFrame(results, index=['alpha']).T
 
-
-    def _completeMIdataframe(self, df: pd.DataFrame,  metric: str, thresholds: list) -> pd.DataFrame:
+    def _completeMIdataframe(self, df: pd.DataFrame, metric: str, thresholds: list) -> pd.DataFrame:
         if df is not None:
             # totals and mass indices are not calculated for sporadic background
             self._parent.updateStatusBar("Calculating counts totals")
@@ -2387,14 +2382,9 @@ class Stats:
                     else:
                         colName = str(threshold)
 
-                    # Check if the value is within the correct range for this threshold
-                    if i == 0:  # First threshold (rightmost column: no upper bound)
-                        if value > threshold:
-                            finalDf.loc[(utcDate, timeUnit), colName] += 1
-                    else:  # Subsequent thresholds (check upper bound)
-                        upperBound = sortedThresholds[i - 1]
-                        if threshold < value <= upperBound:
-                            finalDf.loc[(utcDate, timeUnit), colName] += 1
+                    # Check if the value exceeds the correct range for this threshold
+                    if value > threshold:
+                        finalDf.loc[(utcDate, timeUnit), colName] += 1
 
             doneItems += 1
             self._parent.updateProgressBar(doneItems, len(finalDf.index))
