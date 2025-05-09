@@ -92,6 +92,7 @@ class Stats:
                   "ACQ ACT": "Acquisition active"}
 
     def __init__(self, parent, ui, settings):
+        self._subDataFrame = None
         self._bakClass = None
         self._ui = ui
         self._parent = parent
@@ -181,6 +182,7 @@ class Stats:
         self._showColormapSetting(False)
         self._ui.twTables.setTabVisible(1, False)
         self._ui.twTables.setTabVisible(2, False)
+        self._ui.twTables.setTabVisible(3, False)
 
     def _get2DgraphsConfig(self):
         # 2D graphs (XY, scatter and bar graphs) configuration structure
@@ -703,7 +705,7 @@ class Stats:
             return None
 
         # Calculate sporadic averages for a given date range
-        odf, dummy1, dummy2 = self._dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric,
+        odf, dummy1, dummy2, dummy3 = self._dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric,
                                                             isSporadic=True, radarComp=radarComp)
 
         if odf is None or odf.empty:
@@ -907,8 +909,10 @@ class Stats:
 
         self._rawDataFrame = None
         self._ui.twTables.setTabVisible(1, False)
-        self._sbDataFrame = None
+        self._subDataFrame = None
         self._ui.twTables.setTabVisible(2, False)
+        self._sbDataFrame = None
+        self._ui.twTables.setTabVisible(3, False)
 
         row = self._ui.lwTabs.currentRow()
         self._ui.tvTabs.setEnabled(False)
@@ -1030,14 +1034,14 @@ class Stats:
                 self._dataFrame = df.filter(items=['OVER'], axis=0)
 
         if row == self.TAB_MASS_INDEX_BY_POWERS:
-            tuple3df = self._calcMassIndicesDf(df, TUsize=self._timeUnitSize, metric='power')
-            if tuple3df is not None:
-                self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
+            tuple4df = self._calcMassIndicesDf(df, TUsize=self._timeUnitSize, metric='power')
+            if tuple4df is not None:
+                self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
-            tuple3df = self._calcMassIndicesDf(df, TUsize=self._timeUnitSize, metric='lasting')
-            if tuple3df is not None:
-                self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
+            tuple4df = self._calcMassIndicesDf(df, TUsize=self._timeUnitSize, metric='lasting')
+            if tuple4df is not None:
+                self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
 
         if row == self.TAB_POWER_DISTRIBUTION:
             self._dataFrame = self._calculateDistributionDf(df, metric='power')
@@ -1053,19 +1057,26 @@ class Stats:
             model = PandasModel(self._dataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
             self._ui.tvTabs.setModel(model)
 
-        if self._rawDataFrame is not None:
+        if self._subDataFrame is not None:
             self._ui.twTables.setTabVisible(1, True)
-            model = PandasModel(self._rawDataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
-            self._ui.tvTabsRaw.setModel(model)
+            model = PandasModel(self._subDataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
+            self._ui.tvTabsSub.setModel(model)
         else:
             self._ui.twTables.setTabVisible(1, False)
 
-        if self._sbDataFrame is not None:
+        if self._rawDataFrame is not None:
             self._ui.twTables.setTabVisible(2, True)
+            model = PandasModel(self._rawDataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
+            self._ui.tvTabsRaw.setModel(model)
+        else:
+            self._ui.twTables.setTabVisible(2, False)
+
+        if self._sbDataFrame is not None:
+            self._ui.twTables.setTabVisible(3, True)
             model = PandasModel(self._sbDataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
             self._ui.tvTabsBg.setModel(model)
         else:
-            self._ui.twTables.setTabVisible(2, False)
+            self._ui.twTables.setTabVisible(3, False)
 
         self._parent.busy(False)
 
@@ -1368,9 +1379,12 @@ class Stats:
                     self._dataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
 
                 if subTab == 1:
-                    self._rawDataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
+                    self._subDataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
 
                 if subTab == 2:
+                    self._rawDataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
+
+                if subTab == 3:
                     self._sbDataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
 
                 self._parent.updateStatusBar("Exported  {}".format(csvName))
@@ -1639,7 +1653,7 @@ class Stats:
             self._ui.gbClassFilter_2.setVisible(True)
             self._ui.gbClassFilter_2.setEnabled(True)
 
-        if row == self.TAB_SESSIONS_REGISTER or row == self.TAB_RMOB_MONTH:
+        if row == self.TAB_SESSIONS_REGISTER or row == self.TAB_RMOB_MONTH or row == self.TAB_METEOR_SHOWERS:
             # RMOB data use an hardcoded filters, including only
             # non-fake events
             self._ui.gbDataSettings.setVisible(False)
@@ -2150,7 +2164,7 @@ class Stats:
             fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
             sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=TUsize, metric=metric,
                                                      aggregateSporadic=True, radarComp=self._radarComp)
-        tuple3df = self._dailyCountsByThresholds(df, self._classFilter,
+        tuple4df = self._dailyCountsByThresholds(df, self._classFilter,
                                                  self._parent.fromDate,
                                                  self._parent.toDate,
                                                  TUsize=TUsize,
@@ -2159,8 +2173,8 @@ class Stats:
                                                  radarComp=self._radarComp)
 
         if finalDfOnly:
-            return tuple3df[0]
-        return tuple3df
+            return tuple4df[0]
+        return tuple4df
 
     def _calculateMassIndex(self, df: pd.DataFrame, thresholds: list):
         """
@@ -2194,7 +2208,7 @@ class Stats:
                 # Perform linear regression using numpy.polyfit()
                 coefficients = np.polyfit(logThresholds, logCounts, 1)
                 slope = coefficients[0]  # Slope is the coefficient of x
-                k = 2.166  # according to Flavio Falcinelli sample code
+                k = 1           #2.166  # according to Flavio Falcinelli sample code
                 results[timeUnit] = 1 - (
                         ((abs(slope) - k) * 4.0) / 3.0)  # derived from Mario Sandri's thesis chap.6 formula 6.16
 
@@ -2209,15 +2223,8 @@ class Stats:
 
     def _completeMIdataframe(self, df: pd.DataFrame, metric: str, thresholds: list) -> pd.DataFrame:
         if df is not None:
-            # totals and mass indices are not calculated for sporadic background
+            # the mass indices are not calculated for sporadic background
             self._parent.updateStatusBar("Calculating counts totals")
-
-            # Calculate total events per time unit (convert to integer)
-            df['Totals'] = df.sum(axis=1).astype(int)
-
-            # Calculate totals per threshold
-            totalsPerThreshold = df.drop('Totals', axis=1).sum(axis=0)
-            totalsPerThreshold.name = 'Totals'
 
             if metric == 'power':
                 # Convert thresholds to linear values to avoid calculate log(0)
@@ -2229,7 +2236,7 @@ class Stats:
                 thresholds = thresholdsMw
 
             # Calculate mass index
-            massIndices = self._calculateMassIndex(df.drop('Totals', axis=1), thresholds)
+            massIndices = self._calculateMassIndex(df, thresholds)
 
             if massIndices is None:
                 raise ValueError("Mass index calculation failed.")
@@ -2237,32 +2244,27 @@ class Stats:
             # Add mass index as a column (round to 8 decimal places)
             df['Mass index'] = massIndices['alpha'].round(8).values
 
-            # Handle zero counts in time unit by setting mass index to NaN
-            df.loc[df['Totals'] == 0, 'Mass index'] = np.nan
+        return df
 
-            # Add totals per threshold
-            df = pd.concat([df, pd.DataFrame(totalsPerThreshold).T])
-
-            # Calculate total events in the penultimate cell
-            df.loc['Totals', 'Totals'] = df['Totals'].sum()
-
-            # Convert 'Totals' column to integer after concat
-            df['Totals'] = df['Totals'].astype(int)
-
-            # Calculate average mass index in the last cell
-            # avgMI = df['Mass index'].mean().round(8)
-            # df.loc['Totals', 'Mass index'] = avgMI
-
-            # Calculate mass index for the 'Totals' row
-
-            totalsRow = df.loc[['Totals']].drop('Totals', axis=1)
-            totalsMassIndex = self._calculateMassIndex(totalsRow, thresholds)
-
-            if totalsMassIndex is not None:
-                df.loc['Totals', 'Mass index'] = totalsMassIndex['alpha'].round(8).values[0]
-            else:
-                df.loc['Totals', 'Mass index'] = np.nan
-
+    def _patchMIdataframe(self, df):
+        """
+        Ensure the df counts are decreasing by increasing thresholds,
+        (monotonic) patching the values if it isn't
+        """
+        # scanning counts rows
+        patched = False
+        for index, row in df.iterrows():
+            print(f"index={index}")
+            # scanning counts columns
+            for j in range(len(row)-1):
+                k = j+1
+                # Compare current cell with next one
+                print(f"j={j} content: {df.loc[index, df.columns[j]]}")
+                if  df.loc[index, df.columns[k]] > df.loc[index, df.columns[j]]:
+                    # if greater, aligns its value
+                    print(f"patching value { df.loc[index, df.columns[k]] } at k={k} to { df.loc[index, df.columns[j]] }")
+                    df.loc[index, df.columns[k]] =  df.loc[index, df.columns[j]]
+                    patched = True
         return df
 
     def _dailyCountsByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
@@ -2284,8 +2286,8 @@ class Stats:
             radarComp (float, optional): radar scan effect compensation factor
 
         Returns:
-            tuple of 3 pd.DataFrame: DataFrame with counts, totals per threshold, mass index, and average mass index.
-                            final data, raw data and sporadic background (same of sporadicBackgroundDf)
+            tuple of 4 pd.DataFrame: DataFrame with counts, totals per threshold, mass index, and average mass index.
+                            final data, subtracted data, raw data and sporadic background (same of sporadicBackgroundDf)
                           Returns None on error.
         """
         retval = None
@@ -2340,16 +2342,16 @@ class Stats:
                 dateTimeUnits.append((date, timeUnit))
 
         # Initialize odf with zeros for ALL date and time unit combinations and thresholds
-        finalDf = pd.DataFrame(index=pd.MultiIndex.from_tuples(dateTimeUnits, names=['utc_date', 'time_unit']))
+        subDf = pd.DataFrame(index=pd.MultiIndex.from_tuples(dateTimeUnits, names=['utc_date', 'time_unit']))
         rawDf = None
         if metric == 'power':
             for threshold in thresholds:
                 colName = f"{threshold:.1f}"
-                finalDf[colName] = 0  # Initialize all columns to 0
+                subDf[colName] = 0  # Initialize all columns to 0
         else:
             for threshold in thresholds:
                 colName = str(threshold)
-                finalDf[colName] = 0  # Initialize all columns to 0
+                subDf[colName] = 0  # Initialize all columns to 0
 
         # Sort thresholds in descending order (for range checking)
         sortedThresholds = sorted(thresholds, reverse=True)
@@ -2361,7 +2363,7 @@ class Stats:
             self._parent.updateStatusBar("Calculating cumulative counts by time unit")
 
         doneItems = 0
-        for utcDate, timeUnit in finalDf.index:  # Iterate through the MultiIndex
+        for utcDate, timeUnit in subDf.index:  # Iterate through the MultiIndex
             # Extract start and end hour from timeUnit
             startHour = int(timeUnit[:2])
             endHour = startHour + TUsize
@@ -2384,25 +2386,26 @@ class Stats:
 
                     # Check if the value exceeds the correct range for this threshold
                     if value > threshold:
-                        finalDf.loc[(utcDate, timeUnit), colName] += 1
+                        subDf.loc[(utcDate, timeUnit), colName] += 1
 
             doneItems += 1
-            self._parent.updateProgressBar(doneItems, len(finalDf.index))
+            self._parent.updateProgressBar(doneItems, len(subDf.index))
 
         # Convert counts to integers, handling NaN values (after the loop)
-        for col in finalDf.columns:
-            # finalDf[col] = finalDf[col].fillna(0).astype(int)
-            finalDf[col] = finalDf[col].mul(radarComp, fill_value=0).astype(int)
+        for col in subDf.columns:
+            # subDf[col] = subDf[col].fillna(0).astype(int)
+            subDf[col] = subDf[col].mul(radarComp, fill_value=0).astype(int)
 
         if isSporadic is False and sporadicBackgroundDf is not None:
-            rawDf = finalDf.copy()
+            rawDf = subDf.copy()
             self._parent.updateStatusBar("Subtracting sporadic background by thresholds")
             # Check sporadicBackgroundDf dimensions
             if len(sporadicBackgroundDf.columns) != (len(thresholds)):
                 raise ValueError("sporadicBackgroundDf columns and thresholds don't match")
 
+            # background subtraction
             doneItems = 0
-            for timeUnit in finalDf.index:
+            for timeUnit in subDf.index:
                 for threshold in thresholds:
                     qApp.processEvents()
                     if metric == 'power':
@@ -2412,19 +2415,23 @@ class Stats:
                     hourOnly = timeUnit[1]
                     backgroundValue = sporadicBackgroundDf.loc[
                         hourOnly, colName] if hourOnly in sporadicBackgroundDf.index else 0
-                    finalDf.loc[timeUnit, colName] = max(0, finalDf.loc[timeUnit, colName] - backgroundValue)
+                    subDf.loc[timeUnit, colName] = max(0, subDf.loc[timeUnit, colName] - backgroundValue)
                 doneItems += 1
-                self._parent.updateProgressBar(doneItems, len(finalDf.index))
+                self._parent.updateProgressBar(doneItems, len(subDf.index))
 
         try:
             if not isSporadic:
+                subDf = self._completeMIdataframe(subDf, metric, thresholds)
+                finalDf = subDf.copy()
+                finalDf = self._patchMIdataframe(finalDf)
                 finalDf = self._completeMIdataframe(finalDf, metric, thresholds)
                 rawDf = self._completeMIdataframe(rawDf, metric, thresholds)
-                retval = finalDf, rawDf, sporadicBackgroundDf
+                retval = finalDf, subDf, rawDf, sporadicBackgroundDf
 
             else:
-                # finalDf contains sporadic background, no need to calculate MI
-                retval = finalDf, None, None
+                # subDf contains sporadic background, no need to calculate MI
+                sbDf = subDf
+                retval = sbDf, None, None, None
 
         except Exception as e:
             print(f"Error in _dailyCountsByThresholds: {e}")

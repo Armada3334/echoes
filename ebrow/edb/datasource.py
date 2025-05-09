@@ -91,11 +91,14 @@ class DataSource:
         mscBuffer = StringIO(mscStr)
         self._msCalendar = pd.read_csv(mscBuffer, sep=';')
         strongest = self._msCalendar[self._msCalendar['enough_zhr'] == 'Yes']
-        self._mscShort = strongest[['acronym', 'sl_start', 'sl_end', 'start_date', 'end_date']]
+        self._mscShort = strongest[['acronym', 'sl_start', 'sl_peak', 'sl_end', 'start_date', 'peak_date', 'end_date']]
         self._mscShort['sl_start'] = pd.to_numeric(self._mscShort.loc[:, 'sl_start'], errors='coerce')
-        self._mscShort['sl_end'] = pd.to_numeric(self._mscShort['sl_end'], errors='coerce')
-        self._mscShort['start_date'] = pd.to_datetime(self._mscShort['start_date'], format='%d/%m/%Y', errors='coerce')
-        self._mscShort['end_date'] = pd.to_datetime(self._mscShort['end_date'], format='%d/%m/%Y', errors='coerce')
+        self._mscShort['sl_peak'] = pd.to_numeric(self._mscShort.loc[:, 'sl_peak'], errors='coerce')
+        self._mscShort['sl_end'] = pd.to_numeric(self._mscShort.loc[:, 'sl_end'], errors='coerce')
+
+        self._mscShort['start_date'] = pd.to_datetime(self._mscShort.loc[:, 'start_date'], format='%d/%m/%Y', errors='coerce').dt.date
+        self._mscShort['peak_date'] = pd.to_datetime(self._mscShort.loc[:, 'peak_date'], format='%d/%m/%Y', errors='coerce').dt.date
+        self._mscShort['end_date'] = pd.to_datetime(self._mscShort.loc[:, 'end_date'], format='%d/%m/%Y', errors='coerce').dt.date
 
     def _getDailyNrFromID(self, eventId: int):
         """
@@ -1483,10 +1486,12 @@ class DataSource:
         return self._mscShort
 
     def getActiveShowers(self, startDate:str, endDate:str):
-        startDt = pd.to_datetime(startDate, format='%Y-%m-%d')
-        endDt = pd.to_datetime(endDate, format='%Y-%m-%d')
-        df =  self._mscShort
-        intersections = df[(df['start_date'] <= endDt) & (df['end_date'] >= startDt)]
+        startDataDt = pd.to_datetime(startDate, format='%Y-%m-%d')
+        endDataDt = pd.to_datetime(endDate, format='%Y-%m-%d')
+        df = self._mscShort
+        startDt = pd.to_datetime(df['start_date'], format='%Y-%m-%d')
+        endDt = pd.to_datetime(df['end_date'], format='%Y-%m-%d')
+        intersections = df[(startDt <= endDataDt) & (endDt >= startDataDt)]
         return intersections['acronym'].to_list()
 
     def totalsUnclassified(self, dateFrom: str = None, dateTo: str = None) -> int:

@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>14</hour>
+                    <hour>10</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>22</hour>
+                    <hour>14</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>20</hour>
+                    <hour>12</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -4071,7 +4071,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>265</width>
+             <width>285</width>
              <height>1131</height>
             </rect>
            </property>
@@ -13893,6 +13893,9 @@ font: 10pt &quot;Gauge&quot;;
              <layout class="QVBoxLayout" name="verticalLayout_66">
               <item>
                <widget class="QTabWidget" name="twTables">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Data views&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="currentIndex">
                  <number>0</number>
                 </property>
@@ -13904,7 +13907,30 @@ font: 10pt &quot;Gauge&quot;;
                   <item>
                    <widget class="QTableView" name="tvTabs">
                     <property name="toolTip">
-                     <string>to display tables as stored in database</string>
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Final data after all the processing&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    </property>
+                    <property name="frameShape">
+                     <enum>QFrame::Box</enum>
+                    </property>
+                    <property name="frameShadow">
+                     <enum>QFrame::Plain</enum>
+                    </property>
+                    <property name="alternatingRowColors">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+                <widget class="QWidget" name="tabSub">
+                 <attribute name="title">
+                  <string>Subtracted data</string>
+                 </attribute>
+                 <layout class="QVBoxLayout" name="verticalLayout_68">
+                  <item>
+                   <widget class="QTableView" name="tvTabsSub">
+                    <property name="toolTip">
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Data after background subtraction&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                     </property>
                     <property name="frameShape">
                      <enum>QFrame::Box</enum>
@@ -13927,7 +13953,7 @@ font: 10pt &quot;Gauge&quot;;
                   <item>
                    <widget class="QTableView" name="tvTabsRaw">
                     <property name="toolTip">
-                     <string>to display tables as stored in database</string>
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Data without background subtraction&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                     </property>
                     <property name="frameShape">
                      <enum>QFrame::Box</enum>
