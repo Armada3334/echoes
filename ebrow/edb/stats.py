@@ -53,8 +53,9 @@ from .statplot import StatPlot
 from .miplot import MIplot
 from .distplot import DistPlot
 from .pandasmodel import PandasModel
-from .utilities import notice, cryptDecrypt, mkExportFolder, addDateDelta
+from .utilities import notice, cryptDecrypt, mkExportFolder, addDateDelta, radiantAltitudeSine
 from .logprint import print, fprint
+
 
 
 class Stats:
@@ -111,6 +112,7 @@ class Stats:
         self._compensation = False
         self._timeUnitSize = 1
         self._radarComp = 1.0
+        self._targetShower = 'None'
         self._ui.chkSubSB.setEnabled(False)
         self._ui.chkCompensation.setEnabled(False)
         self._px = plt.rcParams['figure.dpi']  # from inches to pixels
@@ -177,6 +179,7 @@ class Stats:
         self._ui.chkLinked_3.clicked.connect(self._toggleLinkedCursors)
         self._ui.sbTUsize.valueChanged.connect(self._changeTUsize)
         self._ui.sbRadarComp.valueChanged.connect(self._changeRadarComp)
+        self._ui.cbShower.currentTextChanged.connect(self._changeTargetShower)
 
         self._showDiagramSettings(False)
         self._showColormapSetting(False)
@@ -523,7 +526,8 @@ class Stats:
                         if len(clashes) > 0:
                             result = self._parent.confirmMessage("Warning",
                                                                  f"The date interval {dates} clashes with the following meteor showers: {clashes}\n"
-                                                                 "Press Cancel to stop calculation to change this interval")
+                                                                 "Press Cancel to stop calculation and change this interval\n"
+                                                                 "or press OK to go ahead anyway.")
                             if result is False:
                                 self._parent.busy(False)
                                 return False
@@ -623,6 +627,11 @@ class Stats:
 
                         prog += 1
                         self._parent.updateProgressBar(prog, len(sporadicDatesList))
+                    else:
+                        self._parent.infoMessage("Error", f"Date interval {dates} overlaps the selected DB coverage {fromDate}->{toDate}.\n"
+                                                 "Please change this interval and perform a new calculation.")
+                        self._parent.busy(False)
+                        return calcDone
 
             avgDailyCountUnder = 0
             avgDailyCountOver = 0
@@ -1613,6 +1622,10 @@ class Stats:
             self._diagram.ensureVisible(int(pixWidth / 2), int(pixHeight / 2))
         self._ui.hsHzoom_3.blockSignals(False)
 
+    def _changeTargetShower(self, val):
+        if  self._dataSource is not None:
+            self._settings.writeSetting('targetShower', val)
+            self._targetShower = val
     def _changeTUsize(self, val):
         self._settings.writeSetting('MItimeUnitSize', val)
         self._timeUnitSize = val
@@ -1716,6 +1729,10 @@ class Stats:
         yLabel = config["yLabel"]
         fullScale = config["fullScale"]
 
+        considerBackground = False
+        if "considerBackground" in dataArgs.keys():
+            considerBackground = dataArgs["considerBackground"]
+
         # Generate the DataFrame
         retval = dataFunction(baseDataFrame, **dataArgs)
         dataFrame = retval
@@ -1743,7 +1760,7 @@ class Stats:
                                                                                   inchWidth, inchHeight))
         xygraph = StatPlot(series, self._settings, inchWidth, inchHeight, title, yLabel, resolution,
                            self._showValues,
-                           self._showGrid, self._smoothPlots, self._considerBackground)
+                           self._showGrid, self._smoothPlots, considerBackground)
 
         # Embeds the xygraph in the layout
         canvas = xygraph.widget()
@@ -1909,6 +1926,10 @@ class Stats:
         yLabel = config["yLabel"]
         fullScale = config["fullScale"]
 
+        considerBackground = False
+        if "considerBackground" in dataArgs.keys():
+            considerBackground = dataArgs["considerBackground"]
+
         # Generate the DataFrame
         retval = dataFunction(baseDataFrame, **dataArgs)
         dataFrame = retval
@@ -1944,7 +1965,7 @@ class Stats:
         else:
             bargraph = Bargraph(series, self._settings, inchWidth, inchHeight, title, yLabel, resolution,
                                 self._showValues,
-                                self._showGrid, self._considerBackground)
+                                self._showGrid, considerBackground)
 
         # Embeds the bargraph in the layout
         canvas = bargraph.widget()
@@ -2092,6 +2113,10 @@ class Stats:
         title = config["title"]
         resolution = config["resolution"]
 
+        considerBackground = False
+        if "considerBackground" in dataArgs.keys():
+            considerBackground = dataArgs["considerBackground"]
+
         # Generate the DataFrame
         retval = dataFunction(baseDataFrame, **dataArgs)
         dataFrame = retval
@@ -2117,7 +2142,7 @@ class Stats:
                                   self._parent.cmapDict['colorgramme'])
         else:
             heatmap = Heatmap(dataFrame, self._settings, inchWidth, inchHeight, colormap, title, resolution,
-                              self._showValues, self._showGrid, self._considerBackground)
+                              self._showValues, self._showGrid, considerBackground)
 
         # Embed the Heatmap in the layout
         canvas = heatmap.widget()
@@ -2208,10 +2233,9 @@ class Stats:
                 # Perform linear regression using numpy.polyfit()
                 coefficients = np.polyfit(logThresholds, logCounts, 1)
                 slope = coefficients[0]  # Slope is the coefficient of x
-                k = 1           #2.166  # according to Flavio Falcinelli sample code
+                k = 1
                 results[timeUnit] = 1 - (
-                        ((abs(slope) - k) * 4.0) / 3.0)  # derived from Mario Sandri's thesis chap.6 formula 6.16
-
+                        ((abs(slope) - k) * 4.0) / 3.0)
             except Exception as e:
                 print(f"Error during fit for {timeUnit}: {e}")
                 results[timeUnit] = np.nan
@@ -2241,8 +2265,8 @@ class Stats:
             if massIndices is None:
                 raise ValueError("Mass index calculation failed.")
 
-            # Add mass index as a column (round to 8 decimal places)
-            df['Mass index'] = massIndices['alpha'].round(8).values
+            # Add mass index as a column (round to 2 decimal places)
+            df['Mass index'] = massIndices['alpha'].round(2).values
 
         return df
 
@@ -2255,16 +2279,51 @@ class Stats:
         patched = False
         for index, row in df.iterrows():
             print(f"index={index}")
-            # scanning counts columns
-            for j in range(len(row)-1):
-                k = j+1
+            # scanning counts columns backwards to highest to lowest threshold
+            for j in range(len(row)-2, -1, -1):
+                k = j-1
                 # Compare current cell with next one
                 print(f"j={j} content: {df.loc[index, df.columns[j]]}")
-                if  df.loc[index, df.columns[k]] > df.loc[index, df.columns[j]]:
+                if  df.loc[index, df.columns[k]] < df.loc[index, df.columns[j]]:
                     # if greater, aligns its value
                     print(f"patching value { df.loc[index, df.columns[k]] } at k={k} to { df.loc[index, df.columns[j]] }")
                     df.loc[index, df.columns[k]] =  df.loc[index, df.columns[j]]
                     patched = True
+
+        # hiding timeunits when radiant was not visible. If None shower specified, skips this code
+        self._targetShower = self._ui.cbShower.currentText()
+        if self._targetShower != "None":
+            lat = self._settings.readSettingAsFloat('latitude')
+            lon = self._settings.readSettingAsFloat('longitude')
+            alt = self._settings.readSettingAsFloat('altitude')
+            msc = self._parent.tabPrefs.getMSC()
+            ts = msc[msc['name'] == self._targetShower]
+            rowsToDrop = []
+            for index, row in df.iterrows():
+                print(f"index={index}")
+                ds, tr = index
+                startHourStr, endHourStr = tr.replace('h', '').split('-')
+                startHour = int(startHourStr)
+                endHour = int(endHourStr)
+
+                # Compute the average time in hours (can be float)
+                meanHour = (startHour + endHour) / 2
+
+                # Extract hour and minutes from the fractional hour
+                hour = int(meanHour)
+                minute = int(round((meanHour - hour) * 60))
+
+                # Build ISO 8601 datetime string
+                utcDatetimeStr = f"{ds}T{hour:02d}:{minute:02d}:00"
+
+                sinAlt = radiantAltitudeSine(ts['ra'], ts['dec'], utcDatetimeStr, lat, lon, alt)
+                if sinAlt == 0:
+                    print(f"discarding timeunit {index} since radiant was not above the horizon")
+                    rowsToDrop.append(index)
+                else:
+                    df.loc[index] = (row * sinAlt).round().astype(int)
+                    print(f"timeunit {index} radiant was {sinAlt} above the horizon")
+            df.drop(index=rowsToDrop, inplace=True)
         return df
 
     def _dailyCountsByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,

@@ -35,6 +35,9 @@ import pandas as pd
 import math
 import matplotlib.ticker as ticker
 import matplotlib as mp
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz
+from astropy.time import Time
+import astropy.units as u
 from matplotlib.colors import ListedColormap
 from ctypes import *
 from datetime import datetime, timedelta
@@ -569,3 +572,39 @@ def utcToLSA(isoUtc: str):
 
     lat = (trueLong + nutation) % 360
     return f"{lat:.2f}"
+
+def radiantAltitudeSine(raDeg, decDeg, utcDatetimeStr, latDeg, lonDeg, elevMeters=0):
+    """
+    Computes the sine of the altitude angle of a radiant (RA, Dec) at a given UTC datetime and observer location.
+
+    Args:
+        raDeg (float): Right ascension of the radiant in degrees.
+        decDeg (float): Declination of the radiant in degrees.
+        utcDatetimeStr (str): UTC date and time in ISO 8601 format, e.g., "2025-04-24T22:00:00".
+        latDeg (float): Observer's latitude in degrees (positive for North).
+        lonDeg (float): Observer's longitude in degrees (positive for East).
+        elevMeters (float): Observer's elevation in meters (default: 0).
+
+    Returns:
+        float: Sine of the radiant's altitude angle.
+    """
+    # Define the celestial coordinates of the radiant
+    radiantCoord = SkyCoord(ra=raDeg, dec=decDeg, unit=(u.deg, u.deg), frame='icrs')
+
+    # Define the observer's location on Earth
+    observerLocation = EarthLocation(lat=latDeg * u.deg, lon=lonDeg * u.deg, height=elevMeters * u.m)
+
+    # Define the observation time
+    observationTime = Time(utcDatetimeStr)
+
+    # Set up the AltAz coordinate frame for the observer's location and time
+    altAzFrame = AltAz(obstime=observationTime, location=observerLocation)
+
+    # Transform the celestial coordinates into the local AltAz frame
+    radiantAltAz = radiantCoord.transform_to(altAzFrame)
+
+    # Get the altitude in degrees
+    altitudeDeg = radiantAltAz.alt.deg
+
+    # Return 0 if the radiant is below the horizon, otherwise return sine of altitude
+    return math.sin(math.radians(altitudeDeg)) if altitudeDeg > 0 else 0.0

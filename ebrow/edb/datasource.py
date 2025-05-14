@@ -35,11 +35,11 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 from math import isnan
-from io import StringIO
+
 
 from PyQt5.QtSql import QSqlDatabase, QSqlQuery, QSqlError, QSqlTableModel
 from PyQt5.QtWidgets import QFileDialog, qApp
-from PyQt5.QtCore import QDir, QDate, qUncompress, QMetaType, QResource, QFile, QByteArray, QIODevice
+from PyQt5.QtCore import QDir, QDate, qUncompress, QMetaType, QResource, QFile, QByteArray
 
 from .utilities import fuzzyCompare, castFloatPrecision, timestamp2sidereal, utcToLSA
 from .logprint import print
@@ -81,24 +81,7 @@ class DataSource:
         self.avgDailyDict = dict()
         self.avgHourDf = None
         self.avg10minDf = None
-
-        mscFile = QFile(":/meteorShowersTable")
-        contents = None
-        if mscFile.open(QIODevice.ReadOnly):
-            contents = mscFile.readAll()
-        mscBytes = contents.data()
-        mscStr = mscBytes.decode("utf-8")
-        mscBuffer = StringIO(mscStr)
-        self._msCalendar = pd.read_csv(mscBuffer, sep=';')
-        strongest = self._msCalendar[self._msCalendar['enough_zhr'] == 'Yes']
-        self._mscShort = strongest[['acronym', 'sl_start', 'sl_peak', 'sl_end', 'start_date', 'peak_date', 'end_date']]
-        self._mscShort['sl_start'] = pd.to_numeric(self._mscShort.loc[:, 'sl_start'], errors='coerce')
-        self._mscShort['sl_peak'] = pd.to_numeric(self._mscShort.loc[:, 'sl_peak'], errors='coerce')
-        self._mscShort['sl_end'] = pd.to_numeric(self._mscShort.loc[:, 'sl_end'], errors='coerce')
-
-        self._mscShort['start_date'] = pd.to_datetime(self._mscShort.loc[:, 'start_date'], format='%d/%m/%Y', errors='coerce').dt.date
-        self._mscShort['peak_date'] = pd.to_datetime(self._mscShort.loc[:, 'peak_date'], format='%d/%m/%Y', errors='coerce').dt.date
-        self._mscShort['end_date'] = pd.to_datetime(self._mscShort.loc[:, 'end_date'], format='%d/%m/%Y', errors='coerce').dt.date
+        self._msCalendar = dict()
 
     def _getDailyNrFromID(self, eventId: int):
         """
@@ -466,9 +449,8 @@ class DataSource:
     def _makeActiveShowers(self, record, lastRow, idOffset):
         currentRow = ((record['id'] - idOffset) * 3)
         sl = float(record['solar_long'])
-        df = self._mscShort
-
-        subset = df[(self._mscShort['sl_start'] <= sl) & (self._mscShort['sl_end'] >= sl)]
+        df = self._parent.tabPrefs.getMSC()
+        subset = df[(self._msCalendar['sl_start'] <= sl) & (self._msCalendar['sl_end'] >= sl)]
         self._parent.updateProgressBar(currentRow, lastRow)
         return subset['acronym'].tolist()
 
@@ -1482,13 +1464,10 @@ class DataSource:
         return odf if dtDec != 0 else odf.fillna(-1).astype(int)
 
 
-    def getMeteorShowersTable(self):
-        return self._mscShort
-
     def getActiveShowers(self, startDate:str, endDate:str):
         startDataDt = pd.to_datetime(startDate, format='%Y-%m-%d')
         endDataDt = pd.to_datetime(endDate, format='%Y-%m-%d')
-        df = self._mscShort
+        df = self._parent.tabPrefs.getMSC()
         startDt = pd.to_datetime(df['start_date'], format='%Y-%m-%d')
         endDt = pd.to_datetime(df['end_date'], format='%Y-%m-%d')
         intersections = df[(startDt <= endDataDt) & (endDt >= startDataDt)]

@@ -25,7 +25,7 @@ class DistPlot(BaseGraph):
         @param showValues: If True, shows the values of the data points.
         @param showGrid: If True, shows the chart grid.
         """
-
+        BaseGraph.__init__(self, settings)
         self._series = series
         x = self._series.index
         y = self._series.values
@@ -34,7 +34,8 @@ class DistPlot(BaseGraph):
 
         self._fig, self._ax = plt.subplots(figsize=(inchWidth, inchHeight))
 
-        self._ax.set_title(title)
+        # self._ax.set_title(title)
+        self._fig.suptitle(title + '\n')
         self._ax.set_xlabel(xLabel)
         self._ax.set_ylabel(yLabel)
 

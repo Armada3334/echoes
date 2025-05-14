@@ -1283,19 +1283,19 @@ alternate-background-color: rgb(170, 0, 0);</string>
                    <date>
                     <year>2016</year>
                     <month>9</month>
-                    <day>16</day>
+                    <day>15</day>
                    </date>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>10</hour>
+                    <hour>1</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>14</hour>
+                    <hour>20</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,12 +2000,12 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>12</hour>
+                    <hour>18</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
                     <month>9</month>
-                    <day>16</day>
+                    <day>15</day>
                    </datetime>
                   </property>
                   <property name="calendarPopup">
@@ -11291,7 +11291,7 @@ font: 10pt &quot;Gauge&quot;;
              <x>0</x>
              <y>0</y>
              <width>285</width>
-             <height>915</height>
+             <height>947</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_10">
@@ -11552,6 +11552,9 @@ font: 10pt &quot;Gauge&quot;;
                 <layout class="QHBoxLayout" name="horizontalLayout_73" stretch="7,0">
                  <item>
                   <widget class="QLabel" name="label_8">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="text">
                     <string>Radar scan compensation</string>
                    </property>
@@ -11562,6 +11565,9 @@ font: 10pt &quot;Gauge&quot;;
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="sbRadarComp">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="minimumSize">
                     <size>
                      <width>0</width>
@@ -11609,6 +11615,42 @@ font: 10pt &quot;Gauge&quot;;
                    </property>
                    <property name="maximum">
                     <number>24</number>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_75" stretch="1,2">
+                 <item>
+                  <widget class="QLabel" name="label_33">
+                   <property name="text">
+                    <string>Target shower:</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="cbShower">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>24</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>300</width>
+                     <height>24</height>
+                    </size>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;By selecting the meteor shower to investigate, the program is able to trace the height of its radiant and consequently correct the net counts per time units accordingly.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="modelColumn">
+                    <number>0</number>
                    </property>
                   </widget>
                  </item>
@@ -23610,7 +23652,7 @@ alternate-background-color: rgb(170, 0, 0);
          </layout>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="verticalLayout_60">
+         <layout class="QVBoxLayout" name="verticalLayout_69">
           <item>
            <widget class="QGroupBox" name="groupBox_4">
             <property name="enabled">
@@ -31620,17 +31662,137 @@ alternate-background-color: rgb(170, 0, 0);
            </widget>
           </item>
           <item>
-           <spacer name="verticalSpacer_14">
+           <widget class="QGroupBox" name="groupBox_12">
+            <property name="title">
+             <string>Meteor Showers Calendar</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_60">
+             <item>
+              <widget class="QLabel" name="lbMSC">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>60</width>
+                 <height>32</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>1000</width>
+                 <height>32</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true"> background-color: rgb(10, 10, 10); 
+ color: rgb(0, 255, 0);
+border-radius: 6px; 
+
+</string>
+               </property>
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;DEFAULT&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_74">
+               <item>
+                <widget class="QPushButton" name="pbChangeMSC">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>60</width>
+                   <height>32</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>1000</width>
+                   <height>32</height>
+                  </size>
+                 </property>
+                 <property name="sizeIncrement">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select another CSV file containing the meteor shower calendar to be used in place of the integrated one&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">min-height: 32px;</string>
+                 </property>
+                 <property name="text">
+                  <string>&amp;Choose another</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="ebrow.qrc">
+                   <normaloff>:/calendar</normaloff>:/calendar</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pbDefaultMSC">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>60</width>
+                   <height>32</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>600</width>
+                   <height>32</height>
+                  </size>
+                 </property>
+                 <property name="sizeIncrement">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">min-height: 32px;</string>
+                 </property>
+                 <property name="text">
+                  <string>Restore default</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <spacer name="verticalSpacer_12">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Expanding</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
               <width>20</width>
-              <height>102</height>
+              <height>40</height>
              </size>
             </property>
            </spacer>

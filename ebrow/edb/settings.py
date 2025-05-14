@@ -57,7 +57,7 @@ class Settings(QSettings):
                        'compensation', 'horizontalZoomStat', 'verticalZoomStat', 'linkedSlidersStat',
                        'currentColormapStat', 'RMOBfilePrefix',
                        'sporadicDates', 'sporadicBackgroundDaily', 'sporadicBackgroundByHour', 'sporadicTypeMin',
-                       'sporadicBackgroundBy10min', 'MItimeUnitSize', 'RadarCompensation']
+                       'sporadicBackgroundBy10min', 'MItimeUnitSize', 'RadarCompensation', 'targetShower']
 
         self._plotStyles = ['fontFamily', 'fontSize', 'fontStyle', 'majorLineStyle', 'majorLineWidth', 'minorLineStyle',
                             'minorLineWidth', 'dataLineStyle', 'dataLineWidth',
@@ -87,10 +87,13 @@ class Settings(QSettings):
 
         self._massIndexes = ['miLastCount', 'miLastLo', 'miLastHi', 'miPowCount', 'miPowLo', 'miPowHi']
 
+        self._auxData = ['meteorShowerCalendar']
+
         self._groups = {'General': self._general, 'Plotting styles': self._plotStyles,
                         'Table styles': self._tableStyles, 'Site infos': self._siteInfos,
                         'Screenshots': self._screenshots, 'Stats': self._stats, 'Filters': self._filters,
-                        'Report': self._report, 'Attributes': self._attrFilters, 'Mass Indexes': self._massIndexes}
+                        'Report': self._report, 'Attributes': self._attrFilters, 'Mass Indexes': self._massIndexes,
+                        'AuxData': self._auxData}
 
         d = dict()
 
@@ -192,6 +195,7 @@ class Settings(QSettings):
         d['sporadicTypeMin'] = 0
         d['MItimeUnitSize'] = 1
         d['RadarCompensation'] = 1.00
+        d['targetShower'] = 'None'
 
         # filters
         d['RFIfilter'] = True
@@ -249,6 +253,7 @@ class Settings(QSettings):
         d['miPowLo'] = -150
         d['miPowHi'] = 0
 
+        d['meteorShowerCalendar'] = ":/defaultMeteorShowersCalendar"
         self._defaults = d
         self._settings = d
 

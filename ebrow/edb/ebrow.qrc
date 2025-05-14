@@ -73,7 +73,7 @@
         <file>resources/fonts/Gauge-Regular.woff</file>
 
         <file alias="emptyDB">resources/auxfiles/echoes.sqlite3</file>
-        <file alias="meteorShowersTable">resources/auxfiles/meteor_showers_table.csv</file>
+        <file alias="defaultMeteorShowersCalendar">resources/auxfiles/meteor_showers_table.csv</file>
    </qresource>
    
 </RCC>

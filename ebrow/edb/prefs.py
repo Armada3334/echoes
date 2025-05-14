@@ -26,10 +26,14 @@ import os
 import locale
 import json
 import sys
+import pandas as pd
 from glob import glob
+from pathlib import Path
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QColorDialog, QWidget, QButtonGroup, QFileDialog
+from io import StringIO
+from PyQt5.QtWidgets import QColorDialog, QWidget, QButtonGroup, QFileDialog, qApp
 from PyQt5.QtGui import QColor, QIcon, QPixmap, QStandardItem, QStandardItemModel
+from PyQt5.QtCore import QDir, QIODevice, QFile
 from .logprint import print
 from .dateintervaldialog import DateIntervalDialog
 from .utilities import getFromModule
@@ -46,6 +50,7 @@ class Prefs(QWidget):
         self._plottingColors = dict()
         self._tableColors = dict()
         self._RMOBclient = "UNKNOWN"
+        self._workingDir = None
         self._pressedButton = None
         self._tabStats = self._parent.tabStats
         self._dataSource = self._parent.dataSource
@@ -56,6 +61,7 @@ class Prefs(QWidget):
         self._attributeFilterObject = list()
         self._attributeFilterEnabled = list()
         self._attributeFilters = dict()
+        self._msCalendar = dict()
 
         self._ssBase = "min-height: 20px; min-width: 20px; border: 1px solid yellow; background-color: {};"
         self._colorButtons = [self._ui.pbScolor, self._ui.pbNcolor, self._ui.pbDiffColor, self._ui.pbAvgDiffColor,
@@ -144,6 +150,8 @@ class Prefs(QWidget):
         self._ui.pbDel.pressed.connect(self._removeDateInterval)
         self._ui.pbCalc.pressed.connect(self._calculateSporadicBackground)
         self._ui.pbEditParms.pressed.connect(self._editAttributeParms)
+        self._ui.pbChangeMSC.pressed.connect(self._changeMSC)
+        self._ui.pbDefaultMSC.pressed.connect(self._defaultMSC)
 
         self._ui.chkOverOnly.clicked.connect(lambda checked: self._settings.writeSetting('afOverOnly', checked))
         self._ui.chkAttributes.clicked.connect(lambda checked: self._settings.writeSetting('afEnable', checked))
@@ -154,11 +162,21 @@ class Prefs(QWidget):
         self._ui.sbMIpowCount.valueChanged.connect(lambda val: self._settings.writeSetting('miPowCount', val))
         self._ui.sbMIpowLo.valueChanged.connect(lambda val: self._settings.writeSetting('miPowLo', val))
         self._ui.sbMIpowHi.valueChanged.connect(lambda val: self._settings.writeSetting('miPowHi', val))
-
         self.updateTabPrefs()
 
     def updateTabPrefs(self):
         enableSB = 0
+
+        self.mscReload()
+        showers = self._msCalendar['name']
+        self._ui.cbShower.clear()
+        self._ui.cbShower.addItem("None")
+        self._ui.cbShower.addItems(showers.astype(str).tolist())
+
+        ts = self._settings.readSettingAsString('targetShower')
+        if ts:
+            self._ui.cbShower.setCurrentText(ts)
+
         avgDailyStr = self._settings.readSettingAsObject('sporadicBackgroundDaily')
         if len(avgDailyStr) > 0:
             enableSB |= 1
@@ -197,6 +215,8 @@ class Prefs(QWidget):
             button.setStyleSheet(ss)
             button.setWhatsThis(colorKey)
             tableColorGroup.addButton(button)
+
+
 
         self._ui.sbMIlastCount.setValue(self._settings.readSettingAsInt('miLastCount'))
         self._ui.sbMIlastLo.setValue(self._settings.readSettingAsInt('miLastLo'))
@@ -253,6 +273,7 @@ class Prefs(QWidget):
         self._ui.pbLogo.setText('')
         self._ui.pbLogo.setIcon(logoIcon)
         self._ui.pbLogo.setIconSize(self._ui.pbLogo.size())
+
         self._ui.leAntenna.setText(self._settings.readSettingAsString('antenna'))
         self._ui.sbAntennaAzimuth.setValue(self._settings.readSettingAsInt('antAzimuth'))
         self._ui.sbAntennaElevation.setValue(self._settings.readSettingAsInt('antElevation'))
@@ -265,6 +286,9 @@ class Prefs(QWidget):
         self._RMOBclient = self._settings.readSettingAsString('RMOBclient')
         self._ui.lbRMOBclientPath.setText(self._RMOBclient)
         self._ui.lbRMOBclientPath.setToolTip(self._RMOBclient)
+
+        msc = Path(self._settings.readSettingAsString('meteorShowerCalendar'))
+        self._ui.lbMSC.setText(msc.name)
 
         sdList = self._settings.readSettingAsObject('sporadicDates')
         if len(sdList) > 0:
@@ -331,8 +355,61 @@ class Prefs(QWidget):
                     self._ui.pbEditParms.setEnabled(True)
                     self._attributeFilters[afClassName] = af
 
+    def mscReload(self):
+        msc = self._settings.readSettingAsString('meteorShowerCalendar')
+        mscFile = QFile(msc)
+        contents = None
+        if mscFile.open(QIODevice.ReadOnly):
+            contents = mscFile.readAll()
+            mscBytes = contents.data()
+            mscStr = mscBytes.decode("utf-8")
+            mscBuffer = StringIO(mscStr)
+            self._msCalendar = pd.read_csv(mscBuffer, sep=';')
+
+            self._msCalendar['sl_start'] = pd.to_numeric(self._msCalendar['sl_start'], errors='coerce')
+            self._msCalendar['sl_peak'] = pd.to_numeric(self._msCalendar['sl_peak'], errors='coerce')
+            self._msCalendar['sl_end'] = pd.to_numeric(self._msCalendar['sl_end'], errors='coerce')
+            self._msCalendar['ra'] = pd.to_numeric(self._msCalendar['ra'], errors='coerce')
+            self._msCalendar['dec'] = pd.to_numeric(self._msCalendar['dec'], errors='coerce')
+
+            self._msCalendar['start_date'] = pd.to_datetime(self._msCalendar['start_date'], format='%d/%m/%Y',
+                                                            errors='coerce').dt.date
+            self._msCalendar['peak_date'] = pd.to_datetime(self._msCalendar['peak_date'], format='%d/%m/%Y',
+                                                           errors='coerce').dt.date
+            self._msCalendar['end_date'] = pd.to_datetime(self._msCalendar['end_date'], format='%d/%m/%Y',
+                                                          errors='coerce').dt.date
+
+    def getMSC(self):
+        return self._msCalendar
+
     def afDict(self):
         return self._attributeFilters
+
+    def _changeMSC(self):
+        self._workingDir = QDir.current()
+        fileDialog = QFileDialog()
+        fileDialog.setWindowTitle("Open Meteor Shower Calendar")
+        fileDialog.setNameFilter("File CSV (*.csv)")
+        fileDialog.setFileMode(QFileDialog.ExistingFile)
+        fileDialog.setDirectory(self._workingDir)
+        if fileDialog.exec():
+            # pressed open
+            qApp.processEvents()
+            self._parent.busy(True)
+            tableFile = Path(fileDialog.selectedFiles()[0])
+            self._ui.lbMSC.setText(tableFile.name)
+            self._settings.writeSetting('meteorShowerCalendar', tableFile)
+            self._dataSource.mscReload()
+            self._parent.busy(False)
+        # pressed cancel
+        return 0
+    def _defaultMSC(self):
+        self._parent.busy(True)
+        tableFile = ':/defaultMeteorShowersCalendar'
+        self._ui.lbMSC.setText(tableFile)
+        self._settings.writeSetting('meteorShowerCalendar', tableFile)
+        self._dataSource.mscReload()
+        self._parent.busy(False)
 
     def _addDateInterval(self, intervalStr: str = None):
         if intervalStr is None:
