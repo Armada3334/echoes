@@ -501,7 +501,7 @@ def timeToSeconds(timeStr: str):
     dt = datetime.strptime(timeStr, timeFormat)
     return (dt - datetime(1970, 1, 1)).total_seconds()
 
-def utcToLSA(isoUtc: str):
+def utcToASL(isoUtc: str):
     """
     Calculate apparent solar longitude from ISO UTC timestamp.
 
@@ -573,9 +573,11 @@ def utcToLSA(isoUtc: str):
     lat = (trueLong + nutation) % 360
     return f"{lat:.2f}"
 
-def radiantAltitudeSine(raDeg, decDeg, utcDatetimeStr, latDeg, lonDeg, elevMeters=0):
+def radiantAltitudeCorrection(raDeg:float, decDeg:float, utcDatetimeStr:str, latDeg:float, lonDeg:float, elevMeters: float,
+                        limitDeg:float = 10):
     """
-    Computes the sine of the altitude angle of a radiant (RA, Dec) at a given UTC datetime and observer location.
+    Computes the 1/(2xsine) correction of the altitude angle of a radiant (RA, Dec) at a given UTC datetime
+    and observer location.
 
     Args:
         raDeg (float): Right ascension of the radiant in degrees.
@@ -584,6 +586,8 @@ def radiantAltitudeSine(raDeg, decDeg, utcDatetimeStr, latDeg, lonDeg, elevMeter
         latDeg (float): Observer's latitude in degrees (positive for North).
         lonDeg (float): Observer's longitude in degrees (positive for East).
         elevMeters (float): Observer's elevation in meters (default: 0).
+        limitDeg (float): below this altitude, the returned value is always zero
+
 
     Returns:
         float: Sine of the radiant's altitude angle.
@@ -606,5 +610,9 @@ def radiantAltitudeSine(raDeg, decDeg, utcDatetimeStr, latDeg, lonDeg, elevMeter
     # Get the altitude in degrees
     altitudeDeg = radiantAltAz.alt.deg
 
-    # Return 0 if the radiant is below the horizon, otherwise return sine of altitude
-    return math.sin(math.radians(altitudeDeg)) if altitudeDeg > 0 else 0.0
+    # Return 0 if the radiant is near or below the horizon
+    if altitudeDeg < limitDeg:
+        return 0.0
+
+    correction = 1.0 / ( 2 * math.sin(radiantAltAz.alt.rad))
+    return correction

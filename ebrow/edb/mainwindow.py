@@ -42,7 +42,7 @@ from .screenshots import ScreenShots
 from .rtsconfig import RTSconfig
 from .stats import Stats
 from .prefs import Prefs
-from .utilities import createCustomColormapsDict, cleanFolder, utcToLSA
+from .utilities import createCustomColormapsDict, cleanFolder, utcToASL
 from .reports import Report
 from .logprint import print, removeLogFile, logInit
 
@@ -601,8 +601,8 @@ class MainWindow(QMainWindow):
                 return True
 
             self.covID = (self.toId - self.fromId) + 1
-            laFrom = utcToLSA(self.fromDate)
-            laTo = utcToLSA(self.toDate)
+            laFrom = utcToASL(self.fromDate)
+            laTo = utcToASL(self.toDate)
             self.updateStatusBar(f"coverage {self.covID} IDs, from {self.fromId} to {self.toId}, apparent longitude range {laFrom} to {laTo} degrees")
         return True
 

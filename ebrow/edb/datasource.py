@@ -41,7 +41,7 @@ from PyQt5.QtSql import QSqlDatabase, QSqlQuery, QSqlError, QSqlTableModel
 from PyQt5.QtWidgets import QFileDialog, qApp
 from PyQt5.QtCore import QDir, QDate, qUncompress, QMetaType, QResource, QFile, QByteArray
 
-from .utilities import fuzzyCompare, castFloatPrecision, timestamp2sidereal, utcToLSA
+from .utilities import fuzzyCompare, castFloatPrecision, timestamp2sidereal, utcToASL
 from .logprint import print
 
 
@@ -442,7 +442,7 @@ class DataSource:
             print("Exception: ", inst)
             return None
 
-        lsa = utcToLSA(isoString)
+        lsa = utcToASL(isoString)
         self._parent.updateProgressBar(currentRow, lastRow)
         return lsa
 

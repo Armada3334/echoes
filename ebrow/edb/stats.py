@@ -40,7 +40,7 @@ import pandas as pd
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QPainter, QPixmap, QFont, QColor
-from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QInputDialog, qApp
+from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QInputDialog, qApp, QAbstractItemView
 from PyQt5.QtCore import Qt
 
 # from .mainwindow import MainWindow
@@ -51,9 +51,10 @@ from .bg_rmob import BargraphRMOB
 from .bargraph import Bargraph
 from .statplot import StatPlot
 from .miplot import MIplot
+from .aslplot import ASLplot
 from .distplot import DistPlot
 from .pandasmodel import PandasModel
-from .utilities import notice, cryptDecrypt, mkExportFolder, addDateDelta, radiantAltitudeSine
+from .utilities import notice, cryptDecrypt, mkExportFolder, addDateDelta, radiantAltitudeCorrection, utcToASL
 from .logprint import print, fprint
 
 
@@ -357,7 +358,7 @@ class Stats:
                              "metric": 'lasting',
                              "finalDfOnly": True},
 
-                "seriesFunction": lambda df: df.loc['Totals'],
+                "seriesFunction": self._getSelectedMIdata,
                 "seriesArgs": {},
                 "yLabel": "Counts",
                 "fullScale": -1
@@ -1227,6 +1228,7 @@ class Stats:
         try:
             if graphRow == self.GRAPH_PLOT:
                 if self.TAB_MASS_INDEX_BY_POWERS <= tableRow <= self.TAB_MASS_INDEX_BY_LASTINGS:
+
                     self._MIplot(tableRow, layout)
                 elif self.TAB_POWER_DISTRIBUTION <= tableRow <= self.TAB_LASTING_DISTRIBUTION:
                     self._distPlot(tableRow, layout)
@@ -1801,7 +1803,7 @@ class Stats:
         # Generate the DataFrame and extracts the total series
         dataFrame = dataFunction(baseDataFrame, **dataArgs)
         seriesFunction = config['seriesFunction']
-        series = seriesFunction(dataFrame)
+        series, selection = seriesFunction(dataFrame)
 
         # Check if the DataFrame is valid
         if series is None:
@@ -1818,17 +1820,29 @@ class Stats:
         inchHeight = pixelHeight / self._px  # from  pixels to inches
         print("pixelWidth={}, pixelHeight={}, inchWidth={}, inchHeight={}".format(pixelWidth, pixelHeight,
                                                                                   inchWidth, inchHeight))
-        migraph = MIplot(series, self._settings, inchWidth, inchHeight, metric, title, yLabel,
-                         self._showValues, self._showGrid)
 
-        # Embeds the migraph in the layout
-        canvas = migraph.widget()
+        if selection == "row":
+            # log/log counts scatter plot vs. thresholds and linear regression
+            graph = MIplot(series, self._settings, inchWidth, inchHeight, metric, title, yLabel,
+                             self._showValues, self._showGrid)
+        else:
+            yLabel = "Mass index"
+            if selection == "column":
+                yLabel = "Counts"
+
+            graph = ASLplot(series, self._settings, inchWidth, inchHeight, title, yLabel,
+                               self._showValues,
+                               self._showGrid, self._smoothPlots)
+
+
+        # Embeds the graph in the layout
+        canvas = graph.widget()
         canvas.setMinimumSize(QSize(int(pixelWidth), int(pixelHeight)))
         self._diagram.setWidget(canvas)
         layout.addWidget(self._diagram)
 
-        # Store the migraph object for future reference
-        self._plot = migraph
+        # Store the graph object for future reference
+        self._plot = graph
 
     def _distPlot(self, tableRow: int, layout: QHBoxLayout):
 
@@ -2214,8 +2228,9 @@ class Stats:
         """
 
         results = {}
-        for timeUnit, row in df.iterrows():  # Iterate over time units (rows)
-            eventCounts = row.values  # Counts for the current time unit
+        for index, row in df.iterrows():  # Iterate over time units (rows)
+            timeUnit = row['time unit']
+            eventCounts = row.values[1:]  # Counts for the current time unit
             unsortedThresholdsUsed = np.array(thresholds)  # Use all thresholds
 
             # Sort thresholds and counts in descending order
@@ -2224,7 +2239,8 @@ class Stats:
             eventCounts = eventCounts[sortedIndices]
 
             # Convert counts to log10, handling zeros
-            logCounts = np.log10(np.where(eventCounts > 0, eventCounts, 1))
+            fixedCounts = np.where(eventCounts > 0.0, eventCounts, 1.0).astype(float)
+            logCounts = np.log10(fixedCounts)
 
             # Convert thresholds to log10
             logThresholds = np.log10(thresholdsUsed)
@@ -2234,16 +2250,49 @@ class Stats:
                 coefficients = np.polyfit(logThresholds, logCounts, 1)
                 slope = coefficients[0]  # Slope is the coefficient of x
                 k = 1
-                results[timeUnit] = 1 - (
+                results[index] = 1 - (
                         ((abs(slope) - k) * 4.0) / 3.0)
             except Exception as e:
                 print(f"Error during fit for {timeUnit}: {e}")
-                results[timeUnit] = np.nan
+                results[index] = np.nan
 
         if not results:
             return None
 
         return pd.DataFrame(results, index=['alpha']).T
+
+    def _getSelectedMIdata(self, df):
+        ctv = None
+        cw = self._ui.twTables.currentWidget()
+        if cw.objectName() == "tabFinal":
+            ctv = self._ui.tvTabs
+
+        if cw.objectName() == "tabSub":
+            ctv = self._ui.tvTabsSub
+
+        if cw.objectName() == "tabRaw":
+            ctv = self._ui.tvTabsRaw
+
+        if cw.objectName() == "tabBg":
+            ctv = self._ui.tvTabsBg
+
+        selectionModel = ctv.selectionModel()
+        if selectionModel:
+            selectedIndexes = selectionModel.selectedIndexes()
+            if selectedIndexes:
+                rowCount = df.shape[0]
+                columnCount = df.shape[1]
+                selectedRows = set(index.row() for index in selectedIndexes)
+                if len(selectedRows) == 1 and len(selectedIndexes) == columnCount:
+                    # Single row fully selected
+                    return df.iloc[list(selectedRows)[0]], "row"
+
+                selectedColumns = set(index.column() for index in selectedIndexes)
+                if len(selectedColumns) == 1 and len(selectedIndexes) == rowCount:
+                    # Single column fully selected
+                    return df.iloc[:, list(selectedColumns)[0]], "column"
+
+        return df['Mass index'], "all"
 
     def _completeMIdataframe(self, df: pd.DataFrame, metric: str, thresholds: list) -> pd.DataFrame:
         if df is not None:
@@ -2273,14 +2322,16 @@ class Stats:
     def _patchMIdataframe(self, df):
         """
         Ensure the df counts are decreasing by increasing thresholds,
-        (monotonic) patching the values if it isn't
+        (monotonic) patching the values if it isn't and applicate the
+        radiant elevation correction
         """
         # scanning counts rows
         patched = False
         for index, row in df.iterrows():
             print(f"index={index}")
             # scanning counts columns backwards to highest to lowest threshold
-            for j in range(len(row)-2, -1, -1):
+            # skipping the firt column (time unit)
+            for j in range(len(row)-2, 1, -1):
                 k = j-1
                 # Compare current cell with next one
                 print(f"j={j} content: {df.loc[index, df.columns[j]]}")
@@ -2301,7 +2352,7 @@ class Stats:
             rowsToDrop = []
             for index, row in df.iterrows():
                 print(f"index={index}")
-                ds, tr = index
+                ds, tr = row['time unit']
                 startHourStr, endHourStr = tr.replace('h', '').split('-')
                 startHour = int(startHourStr)
                 endHour = int(endHourStr)
@@ -2316,15 +2367,59 @@ class Stats:
                 # Build ISO 8601 datetime string
                 utcDatetimeStr = f"{ds}T{hour:02d}:{minute:02d}:00"
 
-                sinAlt = radiantAltitudeSine(ts['ra'], ts['dec'], utcDatetimeStr, lat, lon, alt)
+                sinAlt = radiantAltitudeCorrection(ts['ra'], ts['dec'], utcDatetimeStr, lat, lon, alt)
                 if sinAlt == 0:
                     print(f"discarding timeunit {index} since radiant was not above the horizon")
                     rowsToDrop.append(index)
                 else:
-                    df.loc[index] = (row * sinAlt).round().astype(int)
+                    # skips the "time unit" column and sets the fixed counts in the following ones
+                    fromCol = df.columns[1]
+                    toCol = df.columns[-2]
+                    countsToFix = np.array(row[1:-1]).astype(float)
+                    df.loc[index, fromCol:toCol] = np.round(countsToFix * sinAlt)
                     print(f"timeunit {index} radiant was {sinAlt} above the horizon")
+
             df.drop(index=rowsToDrop, inplace=True)
         return df
+
+
+
+    def _timeUnitsToASLindex(self, df):
+        """
+        calculate the apparent solar longitude for every time unit
+        making a new df index with them
+        """
+        # scanning counts rows
+
+        aslColumn = []
+        for index, row in df.iterrows():
+            print(f"index={index}")
+            ds, tr = index
+            startHourStr, endHourStr = tr.replace('h', '').split('-')
+            startHour = int(startHourStr)
+            endHour = int(endHourStr)
+
+            # Compute the average time in hours (can be float)
+            meanHour = (startHour + endHour) / 2
+
+            # Extract hour and minutes from the fractional hour
+            hour = int(meanHour)
+            minute = int(round((meanHour - hour) * 60))
+
+            # Build ISO 8601 datetime string
+            utcDatetimeStr = f"{ds}T{hour:02d}:{minute:02d}:00"
+            asl = utcToASL(utcDatetimeStr)
+            print(f"timeunit {index} with average time {meanHour} has apparent solar longitude {asl}")
+            aslColumn.append(asl)
+        df['asl'] = aslColumn
+        df['time unit'] = df.index
+        df = df.set_index('asl')
+        cols = df.columns.tolist()
+        cols.remove('time unit')
+        cols.insert(0,'time unit')
+        df = df[cols]
+        return df
+
 
     def _dailyCountsByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
                                  TUsize: int = 1, metric: str = 'power',
@@ -2456,6 +2551,7 @@ class Stats:
             subDf[col] = subDf[col].mul(radarComp, fill_value=0).astype(int)
 
         if isSporadic is False and sporadicBackgroundDf is not None:
+            subDf = self._timeUnitsToASLindex(subDf)
             rawDf = subDf.copy()
             self._parent.updateStatusBar("Subtracting sporadic background by thresholds")
             # Check sporadicBackgroundDf dimensions
@@ -2464,7 +2560,8 @@ class Stats:
 
             # background subtraction
             doneItems = 0
-            for timeUnit in subDf.index:
+            for index in subDf.index:
+                timeUnit = subDf.loc[index, 'time unit']
                 for threshold in thresholds:
                     qApp.processEvents()
                     if metric == 'power':
@@ -2474,7 +2571,7 @@ class Stats:
                     hourOnly = timeUnit[1]
                     backgroundValue = sporadicBackgroundDf.loc[
                         hourOnly, colName] if hourOnly in sporadicBackgroundDf.index else 0
-                    subDf.loc[timeUnit, colName] = max(0, subDf.loc[timeUnit, colName] - backgroundValue)
+                    subDf.loc[index, colName] = max(0, subDf.loc[index, colName] - backgroundValue)
                 doneItems += 1
                 self._parent.updateProgressBar(doneItems, len(subDf.index))
 
