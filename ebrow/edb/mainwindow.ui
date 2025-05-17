@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>22</hour>
+                    <hour>20</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>14</hour>
+                    <hour>10</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>12</hour>
+                    <hour>8</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -4072,7 +4072,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>-145</y>
+               <y>0</y>
                <width>283</width>
                <height>955</height>
               </rect>
@@ -11327,7 +11327,7 @@ font: 10pt &quot;Gauge&quot;;
                <x>0</x>
                <y>0</y>
                <width>283</width>
-               <height>1082</height>
+               <height>1102</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_10">
@@ -11363,7 +11363,7 @@ font: 10pt &quot;Gauge&quot;;
                    <property name="minimumSize">
                     <size>
                      <width>0</width>
-                     <height>300</height>
+                     <height>320</height>
                     </size>
                    </property>
                    <property name="toolTip">
@@ -11431,12 +11431,12 @@ font: 10pt &quot;Gauge&quot;;
                    </item>
                    <item>
                     <property name="text">
-                     <string>Mass Index by powers</string>
+                     <string>Mass Index by power</string>
                     </property>
                    </item>
                    <item>
                     <property name="text">
-                     <string>Mass Index by lastings</string>
+                     <string>Mass Index by lasting</string>
                     </property>
                    </item>
                    <item>
@@ -11447,6 +11447,16 @@ font: 10pt &quot;Gauge&quot;;
                    <item>
                     <property name="text">
                      <string>Lasting distribution</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Cumulative counts by power</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Cumulative counts by lasting</string>
                     </property>
                    </item>
                    <item>
@@ -14026,6 +14036,9 @@ font: 10pt &quot;Gauge&quot;;
                     <property name="alternatingRowColors">
                      <bool>true</bool>
                     </property>
+                    <property name="selectionMode">
+                     <enum>QAbstractItemView::NoSelection</enum>
+                    </property>
                    </widget>
                   </item>
                  </layout>
@@ -14048,6 +14061,9 @@ font: 10pt &quot;Gauge&quot;;
                     </property>
                     <property name="alternatingRowColors">
                      <bool>true</bool>
+                    </property>
+                    <property name="selectionMode">
+                     <enum>QAbstractItemView::NoSelection</enum>
                     </property>
                    </widget>
                   </item>
@@ -14072,6 +14088,9 @@ font: 10pt &quot;Gauge&quot;;
                     <property name="alternatingRowColors">
                      <bool>true</bool>
                     </property>
+                    <property name="selectionMode">
+                     <enum>QAbstractItemView::NoSelection</enum>
+                    </property>
                    </widget>
                   </item>
                  </layout>
@@ -14094,6 +14113,9 @@ font: 10pt &quot;Gauge&quot;;
                     </property>
                     <property name="alternatingRowColors">
                      <bool>true</bool>
+                    </property>
+                    <property name="selectionMode">
+                     <enum>QAbstractItemView::NoSelection</enum>
                     </property>
                    </widget>
                   </item>

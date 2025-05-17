@@ -28,8 +28,8 @@ class MIplot(BaseGraph):
         """
 
         self._series = series
-        x = self._series.index[:-2]
-        y = self._series.values[:-2]
+        x = self._series.index
+        y = self._series.values
 
         colors = settings.readSettingAsObject('colorDict')
 
@@ -49,8 +49,11 @@ class MIplot(BaseGraph):
         if showGrid:
             self._ax.grid(True, which="both", ls="--")
 
-        # converts x values from string to num
-        xNum = np.array([float(val) for val in x])
+        # converts x values from string to float and forcing zeros to 1.0
+        xNum = np.array([1.0 if float(val) == 0 else float(val) for val in x])
+        # converts y values from string to float and forcing zeros to 1.0
+        yNum = np.array([1.0 if float(val) == 0 else float(val) for val in y])
+
 
         # Regression
         if metric=='power':
@@ -60,15 +63,17 @@ class MIplot(BaseGraph):
 
             # Scatter plot
             self._ax.scatter(xMilliWatt, y, label='Counts')
-            slope, intercept, r_value, p_value, std_err = linregress(xNum, np.log10(y))
-            self._ax.plot(xMilliWatt, np.exp(intercept) * xMilliWatt ** slope, color=colors['S'].name(),
-                          label=f'Linear regression (R² = {r_value ** 2:.2f})')
+            xNum = xMilliWatt
         else:
             # Scatter plot
             self._ax.scatter(xNum, y, label='Counts')
-            slope, intercept, r_value, p_value, std_err = linregress(np.log10(xNum), np.log10(y))
-            self._ax.plot(xNum, np.exp(intercept) * xNum ** slope, color=colors['N'].name(),
-                      label=f'Linear regression (R² = {r_value ** 2:.2f})')
+
+        logX = np.log10(xNum)
+        logY = np.log10(yNum)
+        slope, intercept = np.polyfit(logX, logY, 1)
+        rFunc = slope * logX + intercept
+        self._ax.plot(xNum, 10**rFunc, color=colors['N'].name(), label=f'Linear regression')
+
 
         if showValues:
             for i, txt in enumerate(y):

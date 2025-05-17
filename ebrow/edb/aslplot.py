@@ -80,9 +80,7 @@ class ASLplot(BaseGraph):
         #ax.xaxis.set_major_formatter(myFmt)
 
         ax.plot(xdt, y, label='Counts')
-
         self._fig.suptitle(title + '\n')
-
         ax.tick_params(axis='x', which='both', labelrotation=60)
 
         if showGrid:

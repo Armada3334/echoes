@@ -49,7 +49,11 @@ class DistPlot(BaseGraph):
 
         if showValues:
             for i, txt in enumerate(y):
-                self._ax.annotate(f'{txt:d}', (x[i], y[i]))
+                if yScale == 'linear':
+                    txt = int(txt)
+                else:
+                    txt = float(txt)
+                self._ax.annotate(f'{txt}', (x[i], y[i]))
 
         self._ax.legend()
         self._fig.set_tight_layout({"pad": 5.0})

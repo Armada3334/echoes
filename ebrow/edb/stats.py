@@ -41,10 +41,8 @@ import pandas as pd
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QPainter, QPixmap, QFont, QColor
 from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QInputDialog, qApp, QAbstractItemView
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QItemSelectionModel
 
-# from .mainwindow import MainWindow
-from .nestedpie import NestedPie
 from .heatmap import Heatmap
 from .hm_rmob import HeatmapRMOB
 from .bg_rmob import BargraphRMOB
@@ -56,6 +54,7 @@ from .distplot import DistPlot
 from .pandasmodel import PandasModel
 from .utilities import notice, cryptDecrypt, mkExportFolder, addDateDelta, radiantAltitudeCorrection, utcToASL
 from .logprint import print, fprint
+
 
 
 
@@ -76,16 +75,17 @@ class Stats:
     TAB_MASS_INDEX_BY_LASTINGS = 10
     TAB_POWER_DISTRIBUTION = 11
     TAB_LASTING_DISTRIBUTION = 12
-    TAB_SESSIONS_REGISTER = 13
-    TAB_RMOB_MONTH = 14
-    TAB_SPORADIC_BG_BY_HOUR = 15
-    TAB_SPORADIC_BG_BY_10M = 16
-    TAB_METEOR_SHOWERS = 17
+    TAB_CUMULATIVE_COUNTS_BY_POWERS = 13
+    TAB_CUMULATIVE_COUNTS_BY_LASTINGS = 14
+    TAB_SESSIONS_REGISTER = 15
+    TAB_RMOB_MONTH = 16
+    TAB_SPORADIC_BG_BY_HOUR = 17
+    TAB_SPORADIC_BG_BY_10M = 18
+    TAB_METEOR_SHOWERS = 19
 
     GRAPH_PLOT = 0
     GRAPH_HEATMAP = 1
     GRAPH_BARS = 2
-    GRAPH_PIE = 3
 
     filterDesc = {'OVER': "Overdense event", 'UNDER': "Underdense event", 'FAKE RFI': "Fake event (RFI)",
                   'FAKE ESD': "Fake event (ESD)", 'FAKE CAR1': "Fake event (Carrier#1)",
@@ -338,20 +338,20 @@ class Stats:
             },
 
             self.TAB_MASS_INDEX_BY_POWERS: {
-                "title": "Mass indexes by power thresholds",
+                "title": "TBD",
                 "resolution": "D",
                 "dataFunction": self._calcMassIndicesDf,
                 "dataArgs": {"TUsize": self._timeUnitSize,
                              "metric": 'power',
                              "finalDfOnly": True},
-                "seriesFunction": lambda df: df.loc['Totals'],
+                "seriesFunction": self._getSelectedMIdata,
                 "seriesArgs": {},
-                "yLabel": "Counts",
+                "yLabel":"TBD",
                 "fullScale": -1
             },
 
             self.TAB_MASS_INDEX_BY_LASTINGS: {
-                "title": "Mass indexes by lasting thresholds",
+                "title": "TBD",
                 "resolution": "D",
                 "dataFunction": self._calcMassIndicesDf,
                 "dataArgs": {"TUsize": self._timeUnitSize,
@@ -360,7 +360,7 @@ class Stats:
 
                 "seriesFunction": self._getSelectedMIdata,
                 "seriesArgs": {},
-                "yLabel": "Counts",
+                "yLabel": "TBD",
                 "fullScale": -1
             },
 
@@ -383,6 +383,32 @@ class Stats:
                 "seriesFunction": lambda df: df.set_index('lasting_ms')['counts'],
                 "seriesArgs": {"xScale": "log", "yScale": "linear"},
                 "yLabel": "Counts",
+                "fullScale": -1
+            },
+
+            self.TAB_CUMULATIVE_COUNTS_BY_POWERS: {
+                "title": "Cumulative events count by power",
+                "resolution": "D",
+                "dataFunction": self._calculateCCountsDf,
+                "dataArgs": {"TUsize": self._timeUnitSize,
+                             "metric": 'power',
+                             "finalDfOnly": True},
+                "seriesFunction": lambda df: df.loc['Total'][1:],
+                "seriesArgs": {"xScale": "log", "yScale": "log"},
+                "yLabel": "Log10(counts)",
+                "fullScale": -1
+            },
+
+            self.TAB_CUMULATIVE_COUNTS_BY_LASTINGS: {
+                "title": "Cumulative events count by lasting",
+                "resolution": "D",
+                "dataFunction": self._calculateCCountsDf,
+                "dataArgs": {"TUsize": self._timeUnitSize,
+                             "metric": 'lasting',
+                             "finalDfOnly": True},
+                "seriesFunction": lambda df: df.loc['Total'][1:],
+                "seriesArgs": {"xScale": "log", "yScale": "log"},
+                "yLabel": "Log10(counts)",
                 "fullScale": -1
             },
 
@@ -935,6 +961,9 @@ class Stats:
             return
 
         df = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
+        sm = sm = QAbstractItemView.NoSelection
+
+        # calculating statistic dataframes:
 
         if row == self.TAB_COUNTS_BY_DAY:
             tuple3df = self._dataSource.dailyCountsByClassification(df,
@@ -1047,11 +1076,15 @@ class Stats:
             tuple4df = self._calcMassIndicesDf(df, TUsize=self._timeUnitSize, metric='power')
             if tuple4df is not None:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
+                # allows rows and columns selection
+                sm = QAbstractItemView.ExtendedSelection
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
             tuple4df = self._calcMassIndicesDf(df, TUsize=self._timeUnitSize, metric='lasting')
             if tuple4df is not None:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
+                # allows rows and columns selection
+                sm = QAbstractItemView.ExtendedSelection
 
         if row == self.TAB_POWER_DISTRIBUTION:
             self._dataFrame = self._calculateDistributionDf(df, metric='power')
@@ -1059,18 +1092,35 @@ class Stats:
         if row == self.TAB_LASTING_DISTRIBUTION:
             self._dataFrame = self._calculateDistributionDf(df, metric='lasting')
 
+        if row == self.TAB_CUMULATIVE_COUNTS_BY_POWERS:
+            tuple4df = self._calculateCCountsDf(df, TUsize=self._timeUnitSize, metric='power')
+            if tuple4df is not None:
+                self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
+
+        if row == self.TAB_CUMULATIVE_COUNTS_BY_LASTINGS:
+            tuple4df = self._calculateCCountsDf(df, TUsize=self._timeUnitSize, metric='lasting')
+            if tuple4df is not None:
+                self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
+
         if row == self.TAB_METEOR_SHOWERS:
-            self._dataFrame = self._dataSource.getMeteorShowersTable()
+            self._dataFrame = self._parent.tabPrefs.getMSC()
+            # allows columns selection for sorting
+            sm = QAbstractItemView.ExtendedSelection
+            self._ui.tvTabs.setSortingEnabled(True)
+
+        # Displaying the dataframes as QTableViews:
 
         if self._dataFrame is not None:
             self._ui.tvTabs.setEnabled(True)
             model = PandasModel(self._dataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
             self._ui.tvTabs.setModel(model)
+            self._ui.tvTabs.setSelectionMode(sm)
 
         if self._subDataFrame is not None:
             self._ui.twTables.setTabVisible(1, True)
             model = PandasModel(self._subDataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
             self._ui.tvTabsSub.setModel(model)
+            self._ui.tvTabs.setSelectionMode(sm)
         else:
             self._ui.twTables.setTabVisible(1, False)
 
@@ -1078,6 +1128,7 @@ class Stats:
             self._ui.twTables.setTabVisible(2, True)
             model = PandasModel(self._rawDataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
             self._ui.tvTabsRaw.setModel(model)
+            self._ui.tvTabs.setSelectionMode(sm)
         else:
             self._ui.twTables.setTabVisible(2, False)
 
@@ -1085,6 +1136,7 @@ class Stats:
             self._ui.twTables.setTabVisible(3, True)
             model = PandasModel(self._sbDataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
             self._ui.tvTabsBg.setModel(model)
+            self._ui.tvTabs.setSelectionMode(sm)
         else:
             self._ui.twTables.setTabVisible(3, False)
 
@@ -1115,6 +1167,8 @@ class Stats:
                 30,  # mass index by lastings
                 366,  # events distribution by power
                 366,  # events distribution by lasting
+                30,  # cumulative counts by powers
+                30,  # cumulative counts by lastings
                 0,  # session table, no graphics
                 1,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
@@ -1137,6 +1191,8 @@ class Stats:
                 0,  # mass index by lastings, only plots
                 0,  # events distribution by power
                 0,  # events distribution by lasting
+                0,  # cumulative counts by powers
+                0,  # cumulative counts by lastings
                 0,  # session table, no graphics
                 31,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
@@ -1160,6 +1216,8 @@ class Stats:
                 0,  # mass index by lastings, only plots
                 366,  # events distribution by power
                 366,  # events distribution by lasting
+                0,  # cumulative counts by powers
+                0,  # cumulative counts by lastings
                 0,  # session table, no graphics
                 1,  # RMOB month, current day only
                 1,  # daily sporadic background by hour
@@ -1228,10 +1286,11 @@ class Stats:
         try:
             if graphRow == self.GRAPH_PLOT:
                 if self.TAB_MASS_INDEX_BY_POWERS <= tableRow <= self.TAB_MASS_INDEX_BY_LASTINGS:
-
                     self._MIplot(tableRow, layout)
-                elif self.TAB_POWER_DISTRIBUTION <= tableRow <= self.TAB_LASTING_DISTRIBUTION:
+
+                elif self.TAB_POWER_DISTRIBUTION <= tableRow <= self.TAB_CUMULATIVE_COUNTS_BY_LASTINGS:
                     self._distPlot(tableRow, layout)
+
                 else:
                     self._XYplot(tableRow, layout)
 
@@ -1241,8 +1300,6 @@ class Stats:
             elif graphRow == self.GRAPH_BARS:
                 self._bargraph(tableRow, layout)
 
-            elif graphRow == self.GRAPH_PIE:
-                self._pieGraph(tableRow, layout)
 
         except AttributeError as e:
             # empty graph in case of problems
@@ -1742,6 +1799,7 @@ class Stats:
             # if retval is a tuple, takes the first element (final data)
             dataFrame = retval[0]
 
+        df = dataFrame
         series = seriesFunction(dataFrame, **seriesArgs)
 
         # Check if the DataFrame is valid
@@ -1803,7 +1861,7 @@ class Stats:
         # Generate the DataFrame and extracts the total series
         dataFrame = dataFunction(baseDataFrame, **dataArgs)
         seriesFunction = config['seriesFunction']
-        series, selection = seriesFunction(dataFrame)
+        series, selection, selTitle = seriesFunction(dataFrame)
 
         # Check if the DataFrame is valid
         if series is None:
@@ -1823,12 +1881,18 @@ class Stats:
 
         if selection == "row":
             # log/log counts scatter plot vs. thresholds and linear regression
+            title = f"Linear regression of log(counts) by thresholds for apparent solar longitude = {selTitle}°"
+            yLabel = "Log10 counts"
             graph = MIplot(series, self._settings, inchWidth, inchHeight, metric, title, yLabel,
                              self._showValues, self._showGrid)
         else:
-            yLabel = "Mass index"
+            if selection == "all":
+                yLabel = "Mass index"
+                title = "Mass indexes by apparent solar longitude"
+
             if selection == "column":
                 yLabel = "Counts"
+                title = f"Counts exceeding threshold {selTitle}"
 
             graph = ASLplot(series, self._settings, inchWidth, inchHeight, title, yLabel,
                                self._showValues,
@@ -2194,6 +2258,37 @@ class Stats:
             sdf.columns = ['lasting_ms', 'counts']
         return sdf
 
+
+    def _calculateCCountsDf(self, df: pd.DataFrame, TUsize: int, metric: str, finalDfOnly: bool = False):
+        sbf = None
+        if self._considerBackground:
+            # calculates a dataframe with sporadic background by thresholds
+            # the sporadic is calculated starting from a base of an entire year of data
+            oneYearAgo = addDateDelta(self._parent.fromDate, -366)
+            fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
+            sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=TUsize, metric=metric,
+                                                     aggregateSporadic=True, radarComp=self._radarComp)
+        tuple4df = self._dailyCountsByThresholds(df, self._classFilter,
+                                                 self._parent.fromDate,
+                                                 self._parent.toDate,
+                                                 TUsize=TUsize,
+                                                 metric=metric,
+                                                 sporadicBackgroundDf=sbf,
+                                                 radarComp=self._radarComp)
+
+        finalDf, subDf, rawDf, sporadicBackgroundDf = tuple4df
+
+        finalDf.drop('Mass index',axis=1, inplace=True)
+        subDf.drop('Mass index', axis=1,inplace=True)
+        rawDf.drop('Mass index', axis=1, inplace=True)
+        finalDf.loc['Total'] = finalDf.sum(numeric_only=True, axis=0)
+        subDf.loc['Total'] = finalDf.sum(numeric_only=True, axis=0)
+        rawDf.loc['Total'] = finalDf.sum(numeric_only=True, axis=0)
+
+        if finalDfOnly:
+            return finalDf
+        return tuple4df
+
     def _calcMassIndicesDf(self, df: pd.DataFrame, TUsize: int, metric: str, finalDfOnly: bool = False):
         sbf = None
         if self._considerBackground:
@@ -2247,8 +2342,7 @@ class Stats:
 
             try:
                 # Perform linear regression using numpy.polyfit()
-                coefficients = np.polyfit(logThresholds, logCounts, 1)
-                slope = coefficients[0]  # Slope is the coefficient of x
+                slope, intercept = np.polyfit(logThresholds, logCounts, 1)
                 k = 1
                 results[index] = 1 - (
                         ((abs(slope) - k) * 4.0) / 3.0)
@@ -2260,6 +2354,9 @@ class Stats:
             return None
 
         return pd.DataFrame(results, index=['alpha']).T
+
+    def _getSelectedCCounts(self,df):
+        pass
 
     def _getSelectedMIdata(self, df):
         ctv = None
@@ -2285,14 +2382,16 @@ class Stats:
                 selectedRows = set(index.row() for index in selectedIndexes)
                 if len(selectedRows) == 1 and len(selectedIndexes) == columnCount:
                     # Single row fully selected
-                    return df.iloc[list(selectedRows)[0]], "row"
+                    rowNum = list(selectedRows)[0]
+                    return df.iloc[rowNum, 1:-1], "row", df.index[rowNum]
 
                 selectedColumns = set(index.column() for index in selectedIndexes)
                 if len(selectedColumns) == 1 and len(selectedIndexes) == rowCount:
                     # Single column fully selected
-                    return df.iloc[:, list(selectedColumns)[0]], "column"
+                    colNum = list(selectedColumns)[0]
+                    return df.iloc[:, colNum], "column", df.columns[colNum]
 
-        return df['Mass index'], "all"
+        return df['Mass index'], "all", ""
 
     def _completeMIdataframe(self, df: pd.DataFrame, metric: str, thresholds: list) -> pd.DataFrame:
         if df is not None:
