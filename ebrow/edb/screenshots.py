@@ -150,6 +150,7 @@ class ScreenShots:
         self._ui.chkLinked.clicked.connect(self._toggleLinkedCursors)
         self._ui.chkGrid.clicked.connect(self._toggleGrid)
         self._ui.chkContour.clicked.connect(self._toggleContour)
+        self._ui.rbNone.clicked.connect(self._changeClassification)
         self._ui.rbOverdense.clicked.connect(self._changeClassification)
         self._ui.rbUnderdense.clicked.connect(self._changeClassification)
         self._ui.rbFakeEsd.clicked.connect(self._changeClassification)
@@ -736,25 +737,31 @@ class ScreenShots:
         print("classification: ", clas)
         if clas == 'OVER':
             self._ui.rbOverdense.setChecked(True)
-        if clas == 'UNDER':
+        elif clas == 'UNDER':
             self._ui.rbUnderdense.setChecked(True)
-        if clas == 'FAKE RFI':
+        elif clas == 'FAKE RFI':
             self._ui.rbFakeRfi.setChecked(True)
-        if clas == 'FAKE ESD':
+        elif clas == 'FAKE ESD':
             self._ui.rbFakeEsd.setChecked(True)
-        if clas == 'FAKE CAR1':
+        elif clas == 'FAKE CAR1':
             self._ui.rbFakeCar1.setChecked(True)
-        if clas == 'FAKE CAR2':
+        elif clas == 'FAKE CAR2':
             self._ui.rbFakeCar2.setChecked(True)
-        if clas == 'FAKE SAT':
+        elif clas == 'FAKE SAT':
             self._ui.rbFakeSat.setChecked(True)
-        if clas == 'FAKE LONG':
+        elif clas == 'FAKE LONG':
             self._ui.rbFakeLong.setChecked(True)
+        else:
+            self._ui.rbNone.setChecked(True)
         self._parent.busy(False)
 
     def _changeClassification(self):
         self._parent.busy(True)
         changed = False
+        if self._ui.rbNone.isChecked():
+            self._parent.classifications.loc[self._parent.currentID, 'classification'] = ''
+            changed = True
+
         if self._ui.rbOverdense.isChecked():
             self._parent.classifications.loc[self._parent.currentID, 'classification'] = 'OVER'
             changed = True

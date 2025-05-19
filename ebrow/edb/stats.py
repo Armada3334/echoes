@@ -343,6 +343,7 @@ class Stats:
                 "dataFunction": self._calcMassIndicesDf,
                 "dataArgs": {"TUsize": self._timeUnitSize,
                              "metric": 'power',
+                             'filters': self._classFilter,
                              "finalDfOnly": True},
                 "seriesFunction": self._getSelectedMIdata,
                 "seriesArgs": {},
@@ -356,6 +357,7 @@ class Stats:
                 "dataFunction": self._calcMassIndicesDf,
                 "dataArgs": {"TUsize": self._timeUnitSize,
                              "metric": 'lasting',
+                             'filters': self._classFilter,
                              "finalDfOnly": True},
 
                 "seriesFunction": self._getSelectedMIdata,
@@ -368,7 +370,8 @@ class Stats:
                 "title": "Events distribution by power",
                 "resolution": "D",
                 "dataFunction": self._calculateDistributionDf,
-                "dataArgs": {"metric": 'power'},
+                "dataArgs": {"metric": 'power',
+                             'filters': self._classFilter},
                 "seriesFunction": lambda df: df.set_index('S')['counts'],
                 "seriesArgs": {"xScale": "linear", "yScale": "linear"},
                 "yLabel": "Counts",
@@ -379,7 +382,8 @@ class Stats:
                 "title": "Events distribution by lasting",
                 "resolution": "D",
                 "dataFunction": self._calculateDistributionDf,
-                "dataArgs": {"metric": 'lasting'},
+                "dataArgs": {"metric": 'lasting',
+                             'filters': self._classFilter},
                 "seriesFunction": lambda df: df.set_index('lasting_ms')['counts'],
                 "seriesArgs": {"xScale": "log", "yScale": "linear"},
                 "yLabel": "Counts",
@@ -392,6 +396,7 @@ class Stats:
                 "dataFunction": self._calculateCCountsDf,
                 "dataArgs": {"TUsize": self._timeUnitSize,
                              "metric": 'power',
+                             'filters': self._classFilter,
                              "finalDfOnly": True},
                 "seriesFunction": lambda df: df.loc['Total'][1:],
                 "seriesArgs": {"xScale": "log", "yScale": "log"},
@@ -405,6 +410,7 @@ class Stats:
                 "dataFunction": self._calculateCCountsDf,
                 "dataArgs": {"TUsize": self._timeUnitSize,
                              "metric": 'lasting',
+                             'filters': self._classFilter,
                              "finalDfOnly": True},
                 "seriesFunction": lambda df: df.loc['Total'][1:],
                 "seriesArgs": {"xScale": "log", "yScale": "log"},
@@ -961,7 +967,7 @@ class Stats:
             return
 
         df = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
-        sm = sm = QAbstractItemView.NoSelection
+        sm = QAbstractItemView.NoSelection
 
         # calculating statistic dataframes:
 
@@ -1073,32 +1079,32 @@ class Stats:
                 self._dataFrame = df.filter(items=['OVER'], axis=0)
 
         if row == self.TAB_MASS_INDEX_BY_POWERS:
-            tuple4df = self._calcMassIndicesDf(df, TUsize=self._timeUnitSize, metric='power')
+            tuple4df = self._calcMassIndicesDf(df, filters=self._classFilter, TUsize=self._timeUnitSize, metric='power')
             if tuple4df is not None:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
                 # allows rows and columns selection
                 sm = QAbstractItemView.ExtendedSelection
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
-            tuple4df = self._calcMassIndicesDf(df, TUsize=self._timeUnitSize, metric='lasting')
+            tuple4df = self._calcMassIndicesDf(df, filters=self._classFilter, TUsize=self._timeUnitSize, metric='lasting')
             if tuple4df is not None:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
                 # allows rows and columns selection
                 sm = QAbstractItemView.ExtendedSelection
 
         if row == self.TAB_POWER_DISTRIBUTION:
-            self._dataFrame = self._calculateDistributionDf(df, metric='power')
+            self._dataFrame = self._calculateDistributionDf(df, filters=self._classFilter, metric='power')
 
         if row == self.TAB_LASTING_DISTRIBUTION:
-            self._dataFrame = self._calculateDistributionDf(df, metric='lasting')
+            self._dataFrame = self._calculateDistributionDf(df, filters=self._classFilter, metric='lasting')
 
         if row == self.TAB_CUMULATIVE_COUNTS_BY_POWERS:
-            tuple4df = self._calculateCCountsDf(df, TUsize=self._timeUnitSize, metric='power')
+            tuple4df = self._calculateCCountsDf(df,  filters=self._classFilter, TUsize=self._timeUnitSize, metric='power')
             if tuple4df is not None:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
 
         if row == self.TAB_CUMULATIVE_COUNTS_BY_LASTINGS:
-            tuple4df = self._calculateCCountsDf(df, TUsize=self._timeUnitSize, metric='lasting')
+            tuple4df = self._calculateCCountsDf(df,  filters=self._classFilter, TUsize=self._timeUnitSize, metric='lasting')
             if tuple4df is not None:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
 
@@ -1725,12 +1731,16 @@ class Stats:
             self._ui.gbClassFilter_2.setVisible(True)
             self._ui.gbClassFilter_2.setEnabled(True)
 
-        if row == self.TAB_SESSIONS_REGISTER or row == self.TAB_RMOB_MONTH or row == self.TAB_METEOR_SHOWERS:
+        if (row == self.TAB_SESSIONS_REGISTER or row == self.TAB_RMOB_MONTH or row == self.TAB_METEOR_SHOWERS or
+                row == self.TAB_POWER_DISTRIBUTION or row == self.TAB_LASTING_DISTRIBUTION):
             # RMOB data use an hardcoded filters, including only
-            # non-fake events
+            # non-fake events.
+            # background subtraction and compensations are senseless for distributions
             self._ui.gbDataSettings.setVisible(False)
-            self._ui.gbClassFilter_2.setVisible(False)
-            self._ui.gbClassFilter_2.setEnabled(False)
+            if row != self.TAB_POWER_DISTRIBUTION and row != self.TAB_LASTING_DISTRIBUTION:
+                # filtering could have some sense with distributions
+                self._ui.gbClassFilter_2.setVisible(False)
+                self._ui.gbClassFilter_2.setEnabled(False)
 
         if row == self.TAB_SPORADIC_BG_BY_HOUR or row == self.TAB_SPORADIC_BG_BY_10M:
             self._ui.gbDataSettings.setVisible(False)
@@ -2231,12 +2241,13 @@ class Stats:
         # Store the Heatmap object for future reference
         self._plot = heatmap
 
-    def _calculateDistributionDf(self, df: pd.DataFrame, metric: str):
+    def _calculateDistributionDf(self,  df: pd.DataFrame, filters: str, metric: str):
         """
         Calculates the power or lasting distribution of all events in df
 
         Args:
             df (pd.DataFrame): DataFrame of events (falling edges only)
+            filters:
             metric: power or lasting
 
         Returns:
@@ -2247,6 +2258,13 @@ class Stats:
         """
         sdf = None
         df = df.loc[df['event_status'] == 'Fall']
+
+        # Filter by classification
+        if filters:
+            strippedFilters = [f.strip() for f in filters.split(',')]  # Split filters string
+            df = df[df['classification'].isin(strippedFilters)]
+
+
         if metric == 'power':
             sdf = df['S'].astype(int).value_counts().sort_index().reset_index()
             sdf.columns = ['S', 'counts']
@@ -2259,53 +2277,57 @@ class Stats:
         return sdf
 
 
-    def _calculateCCountsDf(self, df: pd.DataFrame, TUsize: int, metric: str, finalDfOnly: bool = False):
+    def _calculateCCountsDf(self, df: pd.DataFrame, filters: str, TUsize: int, metric: str, finalDfOnly: bool=False):
         sbf = None
         if self._considerBackground:
             # calculates a dataframe with sporadic background by thresholds
             # the sporadic is calculated starting from a base of an entire year of data
             oneYearAgo = addDateDelta(self._parent.fromDate, -366)
             fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
-            sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=TUsize, metric=metric,
+            sbf = self._sporadicAveragesByThresholds(fullSbf, filters, TUsize=TUsize, metric=metric,
                                                      aggregateSporadic=True, radarComp=self._radarComp)
-        tuple4df = self._dailyCountsByThresholds(df, self._classFilter,
+        tuple4df = self._dailyCountsByThresholds(df, filters,
                                                  self._parent.fromDate,
                                                  self._parent.toDate,
                                                  TUsize=TUsize,
                                                  metric=metric,
                                                  sporadicBackgroundDf=sbf,
                                                  radarComp=self._radarComp)
+
+
+
 
         finalDf, subDf, rawDf, sporadicBackgroundDf = tuple4df
-
         finalDf.drop('Mass index',axis=1, inplace=True)
-        subDf.drop('Mass index', axis=1,inplace=True)
-        rawDf.drop('Mass index', axis=1, inplace=True)
         finalDf.loc['Total'] = finalDf.sum(numeric_only=True, axis=0)
-        subDf.loc['Total'] = finalDf.sum(numeric_only=True, axis=0)
-        rawDf.loc['Total'] = finalDf.sum(numeric_only=True, axis=0)
+        if self._considerBackground:
+            subDf.drop('Mass index', axis=1,inplace=True)
+            rawDf.drop('Mass index', axis=1, inplace=True)
+            subDf.loc['Total'] = finalDf.sum(numeric_only=True, axis=0)
+            rawDf.loc['Total'] = finalDf.sum(numeric_only=True, axis=0)
 
         if finalDfOnly:
-            return finalDf
+            return tuple4df[0]
+
         return tuple4df
 
-    def _calcMassIndicesDf(self, df: pd.DataFrame, TUsize: int, metric: str, finalDfOnly: bool = False):
+    def _calcMassIndicesDf(self, df: pd.DataFrame, filters: str, TUsize: int, metric: str, finalDfOnly: bool=False):
         sbf = None
         if self._considerBackground:
             # calculates a dataframe with sporadic background by thresholds
             # the sporadic is calculated starting from a base of an entire year of data
             oneYearAgo = addDateDelta(self._parent.fromDate, -366)
             fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
-            sbf = self._sporadicAveragesByThresholds(fullSbf, self._classFilter, TUsize=TUsize, metric=metric,
+            sbf = self._sporadicAveragesByThresholds(fullSbf, filters, TUsize=TUsize, metric=metric,
                                                      aggregateSporadic=True, radarComp=self._radarComp)
-        tuple4df = self._dailyCountsByThresholds(df, self._classFilter,
+
+        tuple4df = self._dailyCountsByThresholds(df, filters,
                                                  self._parent.fromDate,
                                                  self._parent.toDate,
                                                  TUsize=TUsize,
                                                  metric=metric,
                                                  sporadicBackgroundDf=sbf,
                                                  radarComp=self._radarComp)
-
         if finalDfOnly:
             return tuple4df[0]
         return tuple4df
@@ -2649,30 +2671,31 @@ class Stats:
             # subDf[col] = subDf[col].fillna(0).astype(int)
             subDf[col] = subDf[col].mul(radarComp, fill_value=0).astype(int)
 
-        if isSporadic is False and sporadicBackgroundDf is not None:
+        if isSporadic is False:
             subDf = self._timeUnitsToASLindex(subDf)
-            rawDf = subDf.copy()
-            self._parent.updateStatusBar("Subtracting sporadic background by thresholds")
-            # Check sporadicBackgroundDf dimensions
-            if len(sporadicBackgroundDf.columns) != (len(thresholds)):
-                raise ValueError("sporadicBackgroundDf columns and thresholds don't match")
+            if sporadicBackgroundDf is not None:
+                rawDf = subDf.copy()
+                self._parent.updateStatusBar("Subtracting sporadic background by thresholds")
+                # Check sporadicBackgroundDf dimensions
+                if len(sporadicBackgroundDf.columns) != (len(thresholds)):
+                    raise ValueError("sporadicBackgroundDf columns and thresholds don't match")
 
-            # background subtraction
-            doneItems = 0
-            for index in subDf.index:
-                timeUnit = subDf.loc[index, 'time unit']
-                for threshold in thresholds:
-                    qApp.processEvents()
-                    if metric == 'power':
-                        colName = f"{threshold:.1f}"  # Format power thresholds with one decimal
-                    else:
-                        colName = str(threshold)  # Lasting thresholds as integers
-                    hourOnly = timeUnit[1]
-                    backgroundValue = sporadicBackgroundDf.loc[
-                        hourOnly, colName] if hourOnly in sporadicBackgroundDf.index else 0
-                    subDf.loc[index, colName] = max(0, subDf.loc[index, colName] - backgroundValue)
-                doneItems += 1
-                self._parent.updateProgressBar(doneItems, len(subDf.index))
+                # background subtraction
+                doneItems = 0
+                for index in subDf.index:
+                    timeUnit = subDf.loc[index, 'time unit']
+                    for threshold in thresholds:
+                        qApp.processEvents()
+                        if metric == 'power':
+                            colName = f"{threshold:.1f}"  # Format power thresholds with one decimal
+                        else:
+                            colName = str(threshold)  # Lasting thresholds as integers
+                        hourOnly = timeUnit[1]
+                        backgroundValue = sporadicBackgroundDf.loc[
+                            hourOnly, colName] if hourOnly in sporadicBackgroundDf.index else 0
+                        subDf.loc[index, colName] = max(0, subDf.loc[index, colName] - backgroundValue)
+                    doneItems += 1
+                    self._parent.updateProgressBar(doneItems, len(subDf.index))
 
         try:
             if not isSporadic:
@@ -2681,7 +2704,11 @@ class Stats:
                 finalDf = self._patchMIdataframe(finalDf)
                 finalDf = self._completeMIdataframe(finalDf, metric, thresholds)
                 rawDf = self._completeMIdataframe(rawDf, metric, thresholds)
-                retval = finalDf, subDf, rawDf, sporadicBackgroundDf
+
+                if sporadicBackgroundDf is not None:
+                    retval = finalDf, subDf, rawDf, sporadicBackgroundDf
+                else:
+                    retval = finalDf, None, None, None
 
             else:
                 # subDf contains sporadic background, no need to calculate MI
