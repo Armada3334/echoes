@@ -304,7 +304,7 @@ class Stats:
                              "radarComp": self._radarComp,
                              "considerBackground": self._considerBackground},
                 "seriesFunction": self._dataSource.tableTimeSeries,
-                "seriesArgs": {"columns": range(0, 24)},
+                "seriesArgs": {"columns": range(0, 144)},
                 "yLabel": "Filtered counts by 10min",
                 "fullScale": -1
             },
@@ -1013,7 +1013,8 @@ class Stats:
             if tuple3df is not None:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
                 self._dataFrame = self._dataSource.splitAndStackDataframe(self._dataFrame, maxColumns=24)
-                self._rawDataFrame = self._dataSource.splitAndStackDataframe(self._rawDataFrame, maxColumns=24)
+                if self._rawDataFrame:
+                    self._rawDataFrame = self._dataSource.splitAndStackDataframe(self._rawDataFrame, maxColumns=24)
 
         if row == self.TAB_POWERS_BY_DAY:
             self._dataFrame = self._dataSource.dailyPowersByClassification(df, self._classFilter, self._parent.fromDate,

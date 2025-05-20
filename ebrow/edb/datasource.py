@@ -81,7 +81,6 @@ class DataSource:
         self.avgDailyDict = dict()
         self.avgHourDf = None
         self.avg10minDf = None
-        self._msCalendar = dict()
 
     def _getDailyNrFromID(self, eventId: int):
         """
@@ -450,7 +449,7 @@ class DataSource:
         currentRow = ((record['id'] - idOffset) * 3)
         sl = float(record['solar_long'])
         df = self._parent.tabPrefs.getMSC()
-        subset = df[(self._msCalendar['sl_start'] <= sl) & (self._msCalendar['sl_end'] >= sl)]
+        subset = df[(df['sl_start'] <= sl) & (df['sl_end'] >= sl)]
         self._parent.updateProgressBar(currentRow, lastRow)
         return subset['acronym'].tolist()
 
@@ -946,7 +945,7 @@ class DataSource:
                         self._parent.updateStatusBar("Copying selection of {}".format(tableName))
                         result = self._copyTable(self._db, tableName, subsetDb, tableName, covIds[2],
                                                  covIds[3])
-                        if not result:
+                        if not result or self._parent.stopRequested:
                             subsetDb.close()
                             os.remove(subPath)
                             self._parent.busy(False)
@@ -957,7 +956,7 @@ class DataSource:
                     for tableName in otherTables:
                         self._parent.updateStatusBar("Copying {}".format(tableName))
                         result = self._copyTable(self._db, tableName, subsetDb, tableName)
-                        if not result:
+                        if not result or self._parent.stopRequested:
                             subsetDb.close()
                             os.remove(subPath)
                             self._parent.busy(False)

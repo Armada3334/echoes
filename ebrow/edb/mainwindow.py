@@ -757,6 +757,8 @@ class MainWindow(QMainWindow):
         total = len(self.eventDataChanges)
         self.updateProgressBar(0)
         for xchg in self.eventDataChanges:
+            if self._parent.stopRequested:
+                break
             if xchg is True:
                 try:
                     self.dataSource.setEventClassification(idx, self.classifications.loc[idx, 'classification'])

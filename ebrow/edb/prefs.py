@@ -167,7 +167,7 @@ class Prefs(QWidget):
     def updateTabPrefs(self):
         enableSB = 0
 
-        self.mscReload()
+        self._mscReload()
         showers = self._msCalendar['name']
         self._ui.cbShower.clear()
         self._ui.cbShower.addItem("None")
@@ -215,8 +215,6 @@ class Prefs(QWidget):
             button.setStyleSheet(ss)
             button.setWhatsThis(colorKey)
             tableColorGroup.addButton(button)
-
-
 
         self._ui.sbMIlastCount.setValue(self._settings.readSettingAsInt('miLastCount'))
         self._ui.sbMIlastLo.setValue(self._settings.readSettingAsInt('miLastLo'))
@@ -355,7 +353,7 @@ class Prefs(QWidget):
                     self._ui.pbEditParms.setEnabled(True)
                     self._attributeFilters[afClassName] = af
 
-    def mscReload(self):
+    def _mscReload(self):
         msc = self._settings.readSettingAsString('meteorShowerCalendar')
         mscFile = QFile(msc)
         contents = None
@@ -399,16 +397,17 @@ class Prefs(QWidget):
             tableFile = Path(fileDialog.selectedFiles()[0])
             self._ui.lbMSC.setText(tableFile.name)
             self._settings.writeSetting('meteorShowerCalendar', tableFile)
-            self._dataSource.mscReload()
+            self._mscReload()
             self._parent.busy(False)
         # pressed cancel
         return 0
+
     def _defaultMSC(self):
         self._parent.busy(True)
         tableFile = ':/defaultMeteorShowersCalendar'
         self._ui.lbMSC.setText(tableFile)
         self._settings.writeSetting('meteorShowerCalendar', tableFile)
-        self._dataSource.mscReload()
+        self._mscReload()
         self._parent.busy(False)
 
     def _addDateInterval(self, intervalStr: str = None):
