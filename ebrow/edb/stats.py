@@ -744,6 +744,7 @@ class Stats:
                 # Concatenate results and compute mean
                 combinedSbdf = pd.concat(sbdfList, keys=range(len(sbdfList)))
                 return combinedSbdf.groupby(level=1).mean().round().astype(int)
+
             return None
 
         # Calculate sporadic averages for a given date range
@@ -764,10 +765,14 @@ class Stats:
             # Filter odf for the current time unit
             timeUnitData = odf.xs(timeUnit, level='time_unit')
 
-            # Calculate the mean for the current time unit and round to the nearest integer
-            averagedData[timeUnit] = timeUnitData.mean().round().astype(int)
+            if self._sbIsMin:
+                # Calculate the minimum for the current time unit and round to the nearest integer
+                averagedData[timeUnit] = timeUnitData.min().round().astype(int)
+            else:
+                # Calculate the mean for the current time unit and round to the nearest integer
+                averagedData[timeUnit] = timeUnitData.mean().round().astype(int)
 
-        # Create a new DataFrame from the averaged data
+        # Create a new DataFrame from the averaged/minimum data
         sbdf = pd.DataFrame.from_dict(averagedData, orient='index')
 
         return sbdf
@@ -2301,12 +2306,21 @@ class Stats:
         finalDf, subDf, rawDf, sporadicBackgroundDf = tuple4df
         finalDf.drop('Mass index',axis=1, inplace=True)
         finalDf.loc['Total'] = finalDf.sum(numeric_only=True, axis=0)
+        for col in finalDf.select_dtypes(include=['number']).columns:
+            finalDf[col] = pd.to_numeric(finalDf[col], errors='coerce').astype('Int64')
+
         if self._considerBackground:
             subDf.drop('Mass index', axis=1,inplace=True)
-            rawDf.drop('Mass index', axis=1, inplace=True)
-            subDf.loc['Total'] = finalDf.sum(numeric_only=True, axis=0)
-            rawDf.loc['Total'] = finalDf.sum(numeric_only=True, axis=0)
+            subDf.loc['Total'] = subDf.sum(numeric_only=True, axis=0)
+            for col in subDf.select_dtypes(include=['number']).columns:
+                subDf[col] = pd.to_numeric(subDf[col], errors='coerce').astype('Int64')
 
+            rawDf.drop('Mass index', axis=1, inplace=True)
+            rawDf.loc['Total'] = rawDf.sum(numeric_only=True, axis=0)
+            for col in rawDf.select_dtypes(include=['number']).columns:
+                rawDf[col] = pd.to_numeric(rawDf[col], errors='coerce').astype('Int64')
+
+        tuple4df =  finalDf, subDf, rawDf, sporadicBackgroundDf
         if finalDfOnly:
             return tuple4df[0]
 
