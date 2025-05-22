@@ -45,20 +45,24 @@ class HeatmapRMOB(BaseGraph):
         colors = self._settings.readSettingAsObject('colorDict')
 
         if len(dataFrame.columns) == 24:
-            # 24 columns, one for each hour count from 00h to 23h
+            lIdx = dataFrame.index.tolist()
+            dates = pd.to_datetime(lIdx)
+            dataFrame.index = dates
             df = dataFrame
-            days = len(df.index)
-            # calculate full-scale value (red color) taking the maximum in all the counts columns
             countsOnlyDf = df.iloc[0:, 0:]
             self._fullScale = countsOnlyDf.max(axis=1).max()
+            firstDate = df.index[0]
+            year = firstDate.year
+            month = firstDate.month
+            startOfMonth = pd.Timestamp(year=year, month=month, day=1)
+            endOfMonth = startOfMonth + pd.offsets.MonthEnd(0)  # Questo trova l'ultimo giorno del mese
+            fullMonthDates = pd.date_range(start=startOfMonth, end=endOfMonth, freq='D')
+            hourColumns = [f'{i:02d}h' for i in range(24)]  # Genera ['00h', '01h', ..., '23h']
+            fullMonthDf = pd.DataFrame(-1, index=fullMonthDates, columns=hourColumns)
+            fullMonthDf.update(df)
+            df = fullMonthDf.astype(int)
 
-            # rows header (hours)
-            rowsHdr = list()
-            # rowsHdr.append("Day / Hour")
-            for hour in range(0, 24):
-                s = "{:02d}h".format(hour)
-                rowsHdr.append(s)
-
+            days = len(fullMonthDates)
             # columns header (days)
             allColumns = list()
             colsHdr = list()
@@ -88,6 +92,8 @@ class HeatmapRMOB(BaseGraph):
                    '06h', '   ', '   ', '   ', '   ', '   ',
                    '12h', '   ', '   ', '   ', '   ', '   ',
                    '18h', '   ', '   ', '   ', '   ', '   ', ]
+
+
 
         data = np.array(allColumns)
         data = np.transpose(data)

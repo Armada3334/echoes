@@ -1288,14 +1288,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="maximumTime">
                    <time>
-                    <hour>19</hour>
+                    <hour>17</hour>
                     <minute>59</minute>
                     <second>59</second>
                    </time>
                   </property>
                   <property name="minimumTime">
                    <time>
-                    <hour>8</hour>
+                    <hour>4</hour>
                     <minute>0</minute>
                     <second>0</second>
                    </time>
@@ -2000,7 +2000,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                   </property>
                   <property name="minimumDateTime">
                    <datetime>
-                    <hour>6</hour>
+                    <hour>2</hour>
                     <minute>0</minute>
                     <second>0</second>
                     <year>2016</year>
@@ -11438,12 +11438,12 @@ font: 10pt &quot;Gauge&quot;;
                    </item>
                    <item>
                     <property name="text">
-                     <string>Mass Index by power</string>
+                     <string>Mass Indices by power</string>
                     </property>
                    </item>
                    <item>
                     <property name="text">
-                     <string>Mass Index by lasting</string>
+                     <string>Mass Indices by lasting</string>
                     </property>
                    </item>
                    <item>
@@ -15879,7 +15879,7 @@ alternate-background-color: rgb(170, 0, 0);
 [city] = station city
 [dateFrom] = first day covered by this report
 [dateTo] = last day covered by the report
-[unclassified = total number of (unfiltered) events collected in the report
+[unclassified] = total number of unfiltered events collected in the report
 
 
 

@@ -684,6 +684,11 @@ class MainWindow(QMainWindow):
 
     def _updateDataSource(self):
         print("_updateDataSource()")
+
+        # always saves the settings
+        self._settings.save()
+
+        # then updates the datasource
         if self.dataSource is not None:
             if True in self.eventDataChanges or self.dataSource.cacheNeedsUpdate:
                 if (self._settings.readSettingAsBool('autosaving')

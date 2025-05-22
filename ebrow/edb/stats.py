@@ -399,7 +399,7 @@ class Stats:
                              'filters': self._classFilter,
                              "finalDfOnly": True},
                 "seriesFunction": lambda df: df.loc['Total'][1:],
-                "seriesArgs": {"xScale": "log", "yScale": "log"},
+                "seriesArgs": {"xScale": "linear", "yScale": "log"},
                 "yLabel": "Log10(counts)",
                 "fullScale": -1
             },
@@ -413,7 +413,7 @@ class Stats:
                              'filters': self._classFilter,
                              "finalDfOnly": True},
                 "seriesFunction": lambda df: df.loc['Total'][1:],
-                "seriesArgs": {"xScale": "log", "yScale": "log"},
+                "seriesArgs": {"xScale": "linear", "yScale": "log"},
                 "yLabel": "Log10(counts)",
                 "fullScale": -1
             },
@@ -787,11 +787,14 @@ class Stats:
         self._dataSource = self._parent.dataSource
         self._ui.twStats.setCurrentIndex(self.STTW_TABLES)
 
+        # Note: the RMOB data to be sent must be the recentmost month in DB
+        # regardless the time coverage set in GUI
         (qDateFrom, qDateTo) = self._parent.dataSource.dbQDateCoverage()
         (y, m, d) = qDateTo.getDate()
         qDateFrom.setDate(y, m, 1)
         fromDate = qDateFrom.toString("yyyy-MM-dd")
-        toDate = self._parent.toDate
+        # toDate = self._parent.toDate
+        toDate = qDateTo.toString("yyyy-MM-dd")
 
         df = self._dataSource.getADpartialFrame(fromDate, toDate)
 
@@ -1277,8 +1280,7 @@ class Stats:
         if layout is None:
             layout = QHBoxLayout()
         else:
-            layout.removeWidget(self._diagram)
-            layout.removeItem(self._spacer)
+            self.clearLayout(layout)
 
         qApp.processEvents()
         scroller = QScrollArea()
@@ -1483,8 +1485,8 @@ class Stats:
                         self._ui.lbCommentsFilename.setText(commentsName)
 
             if self._ui.twStats.currentIndex() == self.STTW_DIAGRAMS:
-                title = self._ui.lwTabs.currentItem().text() + prog
-
+                title = self._ui.lwTabs.currentItem().text() + '-' + prog
+                title = title.lower().replace(' ', '_')
                 filters = ''
                 fList = self._classFilter.split(',')
                 for f in fList:
@@ -2735,3 +2737,16 @@ class Stats:
             return None
 
         return retval
+
+    def clearLayout(self, layout):
+
+        if layout is None:
+            return
+
+        while layout.count():
+            item = layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()  # Elimina il widget
+            elif item.layout():
+                self.clearLayout(item.layout())  # Ricorsivamente svuota i sub-layout
+

@@ -268,6 +268,7 @@ class Settings(QSettings):
     def writeSetting(self, key: str, value: any):
         print("writeSetting(key={}, value={})".format(key, value))
         self._settings[key] = value
+        self.save()
 
     def lastingThresholds(self):
         d = self._settings

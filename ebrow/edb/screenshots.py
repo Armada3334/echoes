@@ -1008,6 +1008,9 @@ class ScreenShots:
         if self._parent.dataSource is None:
             return
 
+        if self._parent.currentDate == '----':
+            self._parent.currentDate = self._parent.toDate
+
         self._parent.filteredIDs, self._parent.filteredDailies = \
             self._parent.dataSource.getFilteredIDsOfTheDay(self._parent.currentDate, self._classFilter)
         if len(self._parent.filteredIDs) == 0 or selectIndex == -1:

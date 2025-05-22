@@ -466,17 +466,9 @@ class Report:
         # print("splittenPreface={}".format(splittenPreface))
         # rdfDict['2'] = ['Preface', splittenPreface]
         
-        preface = self._ui.pteReportPreface.toPlainText()
-
-        # replacing macros [] in preface
-        station = self._settings.readSettingAsString("stationName"),
-        country = self._settings.readSettingAsString("country"),
-        city = self._settings.readSettingAsString("city"),
-        dateFrom = self._settings.readSettingAsString("dateFrom"),
-        dateTo =self._settings.readSettingAsString("dateTo"),
-        unclassified = self._dataSource.totalsUnclassified(self._settings.readSettingAsString("dateFrom"),
-                                            self._settings.readSettingAsString("dateTo"))
-        preface.replace("[", "{").replace("]", "}")
+        self._savePrefaceText()
+        prefaceDef = self._ui.pteReportPreface.toPlainText()
+        preface = self._formatPreface(prefaceDef)
 
         rdfDict['2'] = ['Preface:', preface]
         rdfDict['3'] = ['Created by:', 'Echoes Data Browser', 'version:', self._parent.version, ' on ',
@@ -1085,8 +1077,9 @@ class Report:
         copytree(srcAssetsPath, self._cssPath)
 
         # the site logo is copied into report's assets img
-        if self._stationLogo != 'logo.png' and self._stationLogo is not None:
+        if self._stationLogo != 'logo.png' and self._stationLogo is not None and os.path.exists(self._stationLogo):
             copy2(self._stationLogo, self._imgPath)
+
         # if the logo is the default one, there is no need to copy
         # since its file is already present under assets/
 
@@ -1970,8 +1963,12 @@ class Report:
                 fields = imgName.split('-')
                 kind = fields[-1].split('.')[0]
                 title = fields[1].replace('_', ' ')
-                resolution = fields[2].replace('_', ' ')
-                prog = fields[3]
+                if len(fields) >= 5:
+                    resolution = fields[2].replace('_', ' ')
+                    prog = fields[3]
+                else:
+                    resolution = ''
+                    prog = fields[2]
                 isCurrent = 'class="current"' if currentFile == imgName else ''
                 divStats += '\t\t\t\t\t\t<li><a href="{0}" title="{1}" {6}>{2} {3} {4} #{5}</a></li>\n'.format(
                     htmlName, imgName, kind, title, resolution, prog, isCurrent)
@@ -1982,8 +1979,13 @@ class Report:
                 fields = tabName.split('-')
                 kind = fields[-1].split('.')[0]
                 title = fields[1].replace('_', ' ')
-                resolution = fields[2].replace('_', ' ')
-                prog = fields[3]
+                if len(fields) >= 5:
+                    resolution = fields[2].replace('_', ' ')
+                    prog = fields[3]
+                else:
+                    resolution = ''
+                    prog = fields[2]
+
                 isCurrent = 'class="current"' if currentFile == tabName else ''
                 divStats += '\t\t\t\t\t\t<li><a href="{0}" title="{1}" {6}>{2} {3} {4} #{5}</a></li>\n'.format(
                     htmlName, tabName, kind, title, resolution, prog, isCurrent)
