@@ -28,6 +28,7 @@ import numpy as np
 import matplotlib as mp
 import matplotlib.pyplot as plt
 import matplotlib.dates as md
+from datetime import datetime, timedelta
 from matplotlib.ticker import MultipleLocator, MaxNLocator
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 
@@ -67,6 +68,14 @@ class Bargraph(BaseGraph):
         ax.xaxis.set_major_formatter(myFmt)
         ax.tick_params(axis='x', which='both', labelrotation=60)
         bars = None
+
+        minDate = xdt.min().astype(datetime)
+        maxDate = xdt.max().astype(datetime)
+
+        startOfFirstDay = datetime(minDate.year, minDate.month, minDate.day)
+        endOfLastDay = datetime(maxDate.year, maxDate.month, maxDate.day) + timedelta(days=1)
+        ax.set_xlim(md.date2num(startOfFirstDay), md.date2num(endOfLastDay))
+
         if res == '10m':
             if subtractBackground:
                 title += "\nafter sporadic background subtraction"

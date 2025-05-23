@@ -31,7 +31,7 @@ from pathlib import Path
 
 # from pyqtspinner import WaitingSpinner
 from PyQt5.QtCore import Qt, QDate, QEvent, QTimer
-from PyQt5.QtGui import QFontDatabase
+from PyQt5.QtGui import QFontDatabase, QCursor
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, qApp
 
 # from splash import SplashWindow
@@ -386,6 +386,7 @@ class MainWindow(QMainWindow):
                     self._spinner.raise_()
                 else:
                     QApplication.setOverrideCursor(Qt.BusyCursor)
+                    QCursor.setPos(QCursor.pos())
             self.busyCount += 1
             print("Busy [{}]".format(self.busyCount))
             stillBusy = self.busyCount
@@ -432,6 +433,7 @@ class MainWindow(QMainWindow):
                     if spinner and self._spinner is not None:
                         self._spinner.stop()
                     QApplication.restoreOverrideCursor()
+                    QCursor.setPos(QCursor.pos())
                     if force:
                         print("Still busy [{}]".format(self.busyCount))
                         stillBusy = self.busyCount

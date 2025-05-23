@@ -2347,6 +2347,9 @@ class Stats:
                                                  radarComp=self._radarComp)
         if finalDfOnly:
             return tuple4df[0]
+
+        # mass indices calculated on subtracted data are unreliable
+        tuple4df[1].drop('Mass index', axis=1, inplace=True)
         return tuple4df
 
     def _calculateMassIndex(self, df: pd.DataFrame, thresholds: list):
