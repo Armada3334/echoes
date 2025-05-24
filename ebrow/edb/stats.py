@@ -56,8 +56,6 @@ from .utilities import notice, cryptDecrypt, mkExportFolder, addDateDelta, radia
 from .logprint import print, fprint
 
 
-
-
 class Stats:
     STTW_TABLES = 0
     STTW_DIAGRAMS = 1
@@ -347,7 +345,7 @@ class Stats:
                              "finalDfOnly": True},
                 "seriesFunction": self._getSelectedMIdata,
                 "seriesArgs": {},
-                "yLabel":"TBD",
+                "yLabel": "TBD",
                 "fullScale": -1
             },
 
@@ -661,7 +659,8 @@ class Stats:
                         prog += 1
                         self._parent.updateProgressBar(prog, len(sporadicDatesList))
                     else:
-                        self._parent.infoMessage("Error", f"Date interval {dates} overlaps the selected DB coverage {fromDate}->{toDate}.\n"
+                        self._parent.infoMessage("Error",
+                                                 f"Date interval {dates} overlaps the selected DB coverage {fromDate}->{toDate}.\n"
                                                  "Please change this interval and perform a new calculation.")
                         self._parent.busy(False)
                         return calcDone
@@ -749,7 +748,7 @@ class Stats:
 
         # Calculate sporadic averages for a given date range
         odf, dummy1, dummy2, dummy3 = self._dailyCountsByThresholds(df, filters, dateFrom, dateTo, TUsize, metric,
-                                                            isSporadic=True, radarComp=radarComp)
+                                                                    isSporadic=True, radarComp=radarComp)
 
         if odf is None or odf.empty:
             return pd.DataFrame()
@@ -977,9 +976,14 @@ class Stats:
         df = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
         sm = QAbstractItemView.NoSelection
 
+        self._ui.sbTUsize.setEnabled(False)
+        self._ui.cbShower.setEnabled(False)
+        self._ui.chkCompensation.setEnabled(False)
+
         # calculating statistic dataframes:
 
         if row == self.TAB_COUNTS_BY_DAY:
+            self._ui.chkCompensation.setEnabled(True)
             tuple3df = self._dataSource.dailyCountsByClassification(df,
                                                                     self._classFilter,
                                                                     self._parent.fromDate,
@@ -992,7 +996,10 @@ class Stats:
             if tuple3df is not None:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
 
+
         if row == self.TAB_COUNTS_BY_HOUR:
+            self._ui.cbShower.setEnabled(True)
+            self._ui.chkCompensation.setEnabled(True)
             tuple3df = self._dataSource.makeCountsDf(df,
                                                      self._parent.fromDate,
                                                      self._parent.toDate,
@@ -1007,6 +1014,8 @@ class Stats:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
 
         if row == self.TAB_COUNTS_BY_10M:
+            self._ui.cbShower.setEnabled(True)
+            self._ui.chkCompensation.setEnabled(True)
             tuple3df = self._dataSource.makeCountsDf(df,
                                                      self._parent.fromDate,
                                                      self._parent.toDate,
@@ -1021,7 +1030,7 @@ class Stats:
             if tuple3df is not None:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
                 self._dataFrame = self._dataSource.splitAndStackDataframe(self._dataFrame, maxColumns=24)
-                if self._rawDataFrame:
+                if self._rawDataFrame is not None:
                     self._rawDataFrame = self._dataSource.splitAndStackDataframe(self._rawDataFrame, maxColumns=24)
 
         if row == self.TAB_POWERS_BY_DAY:
@@ -1088,6 +1097,8 @@ class Stats:
                 self._dataFrame = df.filter(items=['OVER'], axis=0)
 
         if row == self.TAB_MASS_INDEX_BY_POWERS:
+            self._ui.cbShower.setEnabled(True)
+            self._ui.sbTUsize.setEnabled(True)
             tuple4df = self._calcMassIndicesDf(df, filters=self._classFilter, TUsize=self._timeUnitSize, metric='power')
             if tuple4df is not None:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
@@ -1095,25 +1106,36 @@ class Stats:
                 sm = QAbstractItemView.ExtendedSelection
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
-            tuple4df = self._calcMassIndicesDf(df, filters=self._classFilter, TUsize=self._timeUnitSize, metric='lasting')
+            self._ui.cbShower.setEnabled(True)
+            self._ui.sbTUsize.setEnabled(True)
+            tuple4df = self._calcMassIndicesDf(df, filters=self._classFilter, TUsize=self._timeUnitSize,
+                                               metric='lasting')
             if tuple4df is not None:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
                 # allows rows and columns selection
                 sm = QAbstractItemView.ExtendedSelection
 
         if row == self.TAB_POWER_DISTRIBUTION:
+            self._ui.cbShower.setEnabled(True)
             self._dataFrame = self._calculateDistributionDf(df, filters=self._classFilter, metric='power')
 
         if row == self.TAB_LASTING_DISTRIBUTION:
+            self._ui.cbShower.setEnabled(True)
             self._dataFrame = self._calculateDistributionDf(df, filters=self._classFilter, metric='lasting')
 
         if row == self.TAB_CUMULATIVE_COUNTS_BY_POWERS:
-            tuple4df = self._calculateCCountsDf(df,  filters=self._classFilter, TUsize=self._timeUnitSize, metric='power')
+            self._ui.cbShower.setEnabled(True)
+            self._ui.sbTUsize.setEnabled(True)
+            tuple4df = self._calculateCCountsDf(df, filters=self._classFilter, TUsize=self._timeUnitSize,
+                                                metric='power')
             if tuple4df is not None:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
 
         if row == self.TAB_CUMULATIVE_COUNTS_BY_LASTINGS:
-            tuple4df = self._calculateCCountsDf(df,  filters=self._classFilter, TUsize=self._timeUnitSize, metric='lasting')
+            self._ui.cbShower.setEnabled(True)
+            self._ui.sbTUsize.setEnabled(True)
+            tuple4df = self._calculateCCountsDf(df, filters=self._classFilter, TUsize=self._timeUnitSize,
+                                                metric='lasting')
             if tuple4df is not None:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
 
@@ -1696,9 +1718,10 @@ class Stats:
         self._ui.hsHzoom_3.blockSignals(False)
 
     def _changeTargetShower(self, val):
-        if  self._dataSource is not None:
+        if self._dataSource is not None:
             self._settings.writeSetting('targetShower', val)
             self._targetShower = val
+
     def _changeTUsize(self, val):
         self._settings.writeSetting('MItimeUnitSize', val)
         self._timeUnitSize = val
@@ -1902,7 +1925,7 @@ class Stats:
             title = f"Linear regression of log(counts) by thresholds for apparent solar longitude = {selTitle}°"
             yLabel = "Log10 counts"
             graph = MIplot(series, self._settings, inchWidth, inchHeight, metric, title, yLabel,
-                             self._showValues, self._showGrid)
+                           self._showValues, self._showGrid)
         else:
             if selection == "all":
                 yLabel = "Mass index"
@@ -1913,9 +1936,8 @@ class Stats:
                 title = f"Counts exceeding threshold {selTitle}"
 
             graph = ASLplot(series, self._settings, inchWidth, inchHeight, title, yLabel,
-                               self._showValues,
-                               self._showGrid, self._smoothPlots)
-
+                            self._showValues,
+                            self._showGrid, self._smoothPlots)
 
         # Embeds the graph in the layout
         canvas = graph.widget()
@@ -2249,7 +2271,7 @@ class Stats:
         # Store the Heatmap object for future reference
         self._plot = heatmap
 
-    def _calculateDistributionDf(self,  df: pd.DataFrame, filters: str, metric: str):
+    def _calculateDistributionDf(self, df: pd.DataFrame, filters: str, metric: str):
         """
         Calculates the power or lasting distribution of all events in df
 
@@ -2272,9 +2294,9 @@ class Stats:
             strippedFilters = [f.strip() for f in filters.split(',')]  # Split filters string
             df = df[df['classification'].isin(strippedFilters)]
 
-
         if metric == 'power':
-            sdf = df['S'].astype(int).value_counts().sort_index().reset_index()
+            # sdf = df['S'].astype(int).value_counts().sort_index().reset_index()
+            sdf = df['S'].round(1).value_counts().sort_index().reset_index()
             sdf.columns = ['S', 'counts']
 
         if metric == 'lasting':
@@ -2284,8 +2306,7 @@ class Stats:
             sdf.columns = ['lasting_ms', 'counts']
         return sdf
 
-
-    def _calculateCCountsDf(self, df: pd.DataFrame, filters: str, TUsize: int, metric: str, finalDfOnly: bool=False):
+    def _calculateCCountsDf(self, df: pd.DataFrame, filters: str, TUsize: int, metric: str, finalDfOnly: bool = False):
         sbf = None
         if self._considerBackground:
             # calculates a dataframe with sporadic background by thresholds
@@ -2302,17 +2323,14 @@ class Stats:
                                                  sporadicBackgroundDf=sbf,
                                                  radarComp=self._radarComp)
 
-
-
-
         finalDf, subDf, rawDf, sporadicBackgroundDf = tuple4df
-        finalDf.drop('Mass index',axis=1, inplace=True)
+        finalDf.drop('Mass index', axis=1, inplace=True)
         finalDf.loc['Total'] = finalDf.sum(numeric_only=True, axis=0)
         for col in finalDf.select_dtypes(include=['number']).columns:
             finalDf[col] = pd.to_numeric(finalDf[col], errors='coerce').astype('Int64')
 
         if self._considerBackground:
-            subDf.drop('Mass index', axis=1,inplace=True)
+            subDf.drop('Mass index', axis=1, inplace=True)
             subDf.loc['Total'] = subDf.sum(numeric_only=True, axis=0)
             for col in subDf.select_dtypes(include=['number']).columns:
                 subDf[col] = pd.to_numeric(subDf[col], errors='coerce').astype('Int64')
@@ -2322,13 +2340,13 @@ class Stats:
             for col in rawDf.select_dtypes(include=['number']).columns:
                 rawDf[col] = pd.to_numeric(rawDf[col], errors='coerce').astype('Int64')
 
-        tuple4df =  finalDf, subDf, rawDf, sporadicBackgroundDf
+        tuple4df = finalDf, subDf, rawDf, sporadicBackgroundDf
         if finalDfOnly:
             return tuple4df[0]
 
         return tuple4df
 
-    def _calcMassIndicesDf(self, df: pd.DataFrame, filters: str, TUsize: int, metric: str, finalDfOnly: bool=False):
+    def _calcMassIndicesDf(self, df: pd.DataFrame, filters: str, TUsize: int, metric: str, finalDfOnly: bool = False):
         sbf = None
         if self._considerBackground:
             # calculates a dataframe with sporadic background by thresholds
@@ -2349,7 +2367,8 @@ class Stats:
             return tuple4df[0]
 
         # mass indices calculated on subtracted data are unreliable
-        tuple4df[1].drop('Mass index', axis=1, inplace=True)
+        if tuple4df is not None:
+            tuple4df[1].drop('Mass index', axis=1, inplace=True)
         return tuple4df
 
     def _calculateMassIndex(self, df: pd.DataFrame, thresholds: list):
@@ -2365,6 +2384,8 @@ class Stats:
         """
 
         results = {}
+        doneItems = 0
+        self._parent.updateProgressBar(doneItems, df.shape[0])
         for index, row in df.iterrows():  # Iterate over time units (rows)
             timeUnit = row['time unit']
             eventCounts = row.values[1:]  # Counts for the current time unit
@@ -2392,12 +2413,15 @@ class Stats:
                 print(f"Error during fit for {timeUnit}: {e}")
                 results[index] = np.nan
 
+            doneItems += 1
+            self._parent.updateProgressBar(doneItems, df.shape[0])
+
         if not results:
             return None
 
         return pd.DataFrame(results, index=['alpha']).T
 
-    def _getSelectedCCounts(self,df):
+    def _getSelectedCCounts(self, df):
         pass
 
     def _getSelectedMIdata(self, df):
@@ -2472,18 +2496,18 @@ class Stats:
             print(f"index={index}")
             # scanning counts columns backwards to highest to lowest threshold
             # skipping the firt column (time unit)
-            for j in range(len(row)-2, 1, -1):
-                k = j-1
+            for j in range(len(row) - 2, 1, -1):
+                k = j - 1
                 # Compare current cell with next one
                 print(f"j={j} content: {df.loc[index, df.columns[j]]}")
-                if  df.loc[index, df.columns[k]] < df.loc[index, df.columns[j]]:
+                if df.loc[index, df.columns[k]] < df.loc[index, df.columns[j]]:
                     # if greater, aligns its value
-                    print(f"patching value { df.loc[index, df.columns[k]] } at k={k} to { df.loc[index, df.columns[j]] }")
-                    df.loc[index, df.columns[k]] =  df.loc[index, df.columns[j]]
+                    print(f"patching value {df.loc[index, df.columns[k]]} at k={k} to {df.loc[index, df.columns[j]]}")
+                    df.loc[index, df.columns[k]] = df.loc[index, df.columns[j]]
                     patched = True
 
         # hiding timeunits when radiant was not visible. If None shower specified, skips this code
-        self._targetShower = self._ui.cbShower.currentText()
+        self._targetShower = self._settings.readSettingAsString("targetShower") #self._ui.cbShower.currentText()
         if self._targetShower != "None":
             lat = self._settings.readSettingAsFloat('latitude')
             lon = self._settings.readSettingAsFloat('longitude')
@@ -2523,8 +2547,6 @@ class Stats:
             df.drop(index=rowsToDrop, inplace=True)
         return df
 
-
-
     def _timeUnitsToASLindex(self, df):
         """
         calculate the apparent solar longitude for every time unit
@@ -2557,10 +2579,9 @@ class Stats:
         df = df.set_index('asl')
         cols = df.columns.tolist()
         cols.remove('time unit')
-        cols.insert(0,'time unit')
+        cols.insert(0, 'time unit')
         df = df[cols]
         return df
-
 
     def _dailyCountsByThresholds(self, df: pd.DataFrame, filters: str, dateFrom: str = None, dateTo: str = None,
                                  TUsize: int = 1, metric: str = 'power',
@@ -2752,4 +2773,3 @@ class Stats:
                 item.widget().deleteLater()  # Elimina il widget
             elif item.layout():
                 self.clearLayout(item.layout())  # Ricorsivamente svuota i sub-layout
-

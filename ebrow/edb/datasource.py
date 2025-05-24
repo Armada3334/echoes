@@ -41,7 +41,7 @@ from PyQt5.QtSql import QSqlDatabase, QSqlQuery, QSqlError, QSqlTableModel
 from PyQt5.QtWidgets import QFileDialog, qApp
 from PyQt5.QtCore import QDir, QDate, qUncompress, QMetaType, QResource, QFile, QByteArray
 
-from .utilities import fuzzyCompare, castFloatPrecision, timestamp2sidereal, utcToASL
+from .utilities import fuzzyCompare, castFloatPrecision, timestamp2sidereal, utcToASL, radiantAltitudeCorrection
 from .logprint import print
 
 
@@ -1223,6 +1223,7 @@ class DataSource:
                         value = rawValue
                     if value < 0:
                         value = 0
+
 
                 if dtDec > 0:
                     metricDict[dt] = round(value, dtDec) if not pd.isna(value) else np.nan
@@ -2647,6 +2648,35 @@ class DataSource:
             self._parent.updateProgressBar(doneItems, itemsToProcess)
 
         # finalDf = finalDf.mul(radarComp, fill_value=0).astype(int)
+
+        # applying radiant correction if a shower has been specified
+        targetShower = self._settings.readSettingAsString("targetShower")
+        if targetShower != "None" and dtRes != 'D':
+            lat = self._settings.readSettingAsFloat('latitude')
+            lon = self._settings.readSettingAsFloat('longitude')
+            alt = self._settings.readSettingAsFloat('altitude')
+            msc = self._parent.tabPrefs.getMSC()
+            ts = msc[msc['name'] == targetShower]
+            for index, row in finalDf.iterrows():
+                print(f"index={index}")
+                for col in finalDf.columns:
+                    minute = 0
+                    hour = int(col[0:2])
+                    if dtRes == '10T':
+                        minute = int(col[3:5])
+
+                    # Build ISO 8601 datetime string
+                    utcDatetimeStr = f"{index}T{hour:02d}:{minute:02d}:00"
+                    sinAlt = radiantAltitudeCorrection(ts['ra'], ts['dec'], utcDatetimeStr, lat, lon, alt)
+                    if sinAlt == 0:
+                        print(f"discarding value at {index},{col} since radiant was not above the horizon")
+                        countsFixed = 0
+                    else:
+                        # skips the "time unit" column and sets the fixed counts in the following ones
+                        countsToFix = row[col]
+                        countsFixed = np.round(countsToFix * sinAlt)
+                        print(f"timeunit {index} radiant was {sinAlt} above the horizon")
+                    finalDf.loc[index, col] = countsFixed
 
         # Add totals for rows and columns
         if totalColumn:

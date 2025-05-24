@@ -764,7 +764,7 @@ class MainWindow(QMainWindow):
         total = len(self.eventDataChanges)
         self.updateProgressBar(0)
         for xchg in self.eventDataChanges:
-            if self._parent.stopRequested:
+            if self.stopRequested:
                 break
             if xchg is True:
                 try:
