@@ -614,5 +614,5 @@ def radiantAltitudeCorrection(raDeg:float, decDeg:float, utcDatetimeStr:str, lat
     if altitudeDeg < limitDeg:
         return 0.0
 
-    correction = 1.0 / ( 2 * math.sin(radiantAltAz.alt.rad))
+    correction = 1.0 / (math.sin(2 * radiantAltAz.alt.rad))
     return correction
