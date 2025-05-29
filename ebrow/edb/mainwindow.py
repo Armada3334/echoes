@@ -849,16 +849,19 @@ class MainWindow(QMainWindow):
                 # FIXME: the range for checking attributes should be all the events
                 # still provided with dump files.
                 # When attributes have been already calculated, no recalc should happen.
-                result = self.dataSource.attributeEvents(self.fromId, self.toId,
-                                                silent=(self.isBatchReport or self.isBatchXLSX),
-                                                overwrite=self.mustCalcAttr)
-                if not result:
-                    if self.stopRequested:
-                        self.updateStatusBar("Attributes calculation stopped by user")
+                if self._settings.readSettingAsBool('afEnable'):
+                    self.fromId, self.toId = self.dataSource.eventsForAttrCalc()
+                    self.updateStatusBar(f"Calculating attributes for events#{self.fromId}..{self.toId}")
+                    result = self.dataSource.attributeEvents(self.fromId, self.toId,
+                                                    silent=(self.isBatchReport or self.isBatchXLSX),
+                                                    overwrite=self.mustCalcAttr)
+                    if not result:
+                        if self.stopRequested:
+                            self.updateStatusBar("Attributes calculation stopped by user")
+                        else:
+                            self.updateStatusBar("Attributes already up to date, no recalc needed")
                     else:
-                        self.updateStatusBar("Attributes already up to date, no recalc needed")
-                else:
-                    self.updateStatusBar("Attributes up to date, recalc done")
+                        self.updateStatusBar("Attributes up to date, recalc done")
                 self._ui.pbAttrReset.setEnabled(True)
 
             self.getCoverage()

@@ -240,10 +240,10 @@ class DataSource:
                                             # end while
                                             adfUpdate = pd.DataFrame(dataDict)
                                             if not adfUpdate.empty:
+                                                adfUpdate = self._addNewColumns(adfUpdate)
                                                 self.cacheNeedsUpdate = True
                                                 self._adf = pd.concat([self._adf, adfUpdate], ignore_index=True)
                                                 self._adf.reset_index(inplace=True, drop=True)
-                                                self._addNewColumns()
 
                                             self._stripIncompleteEvents()
                                             self._deltaEvents = (newestRecordID + 1, lastProcessedId)
@@ -260,7 +260,7 @@ class DataSource:
                         self._parent.updateStatusBar("The cache file is aligned with DB, data loaded successfully.")
 
                         # adds a new columns with the UTC Sidereal Time and solar longitude
-                        self._addNewColumns()
+                        self._adf = self._addNewColumns(self._adf)
 
                         self._parent.updateProgressBar()  # hide progressbar
                         self._parent.busy(False)
@@ -403,7 +403,7 @@ class DataSource:
                     self._stripIncompleteEvents()
 
                     # adds a new columns with the UTC Sidereal Time and solar longitude
-                    self._addNewColumns()
+                    self._adf = self._addNewColumns(self._adf)
 
                     # adds the attributes column
                     if 'attributes' not in self._adf.columns:
@@ -421,13 +421,13 @@ class DataSource:
         self._parent.busy(False)
         return False
 
-    def _makeSideral(self, record, lastRow, idOffset):
-        currentRow = ((record['id'] - idOffset) * 3)
+    def _makeSideral(self, record, lastId):
+        currentId = record['id']
         sidereal = timestamp2sidereal(record['timestamp_ms'])
-        self._parent.updateProgressBar(currentRow, lastRow)
+        self._parent.updateProgressBar(currentId, lastId)
         return sidereal
-    def _makeSolarLong(self, record, lastRow, idOffset):
-        currentRow = ((record['id'] - idOffset) * 3)
+    def _makeSolarLong(self, record, lastId):
+        currentId = record['id']
         try:
             dateObject = datetime.strptime(record['utc_date'], '%Y-%m-%d').date()
             timeObject = datetime.strptime(record['utc_time'], '%H:%M:%S.%f').time()
@@ -442,15 +442,15 @@ class DataSource:
             return None
 
         lsa = utcToASL(isoString)
-        self._parent.updateProgressBar(currentRow, lastRow)
+        self._parent.updateProgressBar(currentId, lastId)
         return lsa
 
-    def _makeActiveShowers(self, record, lastRow, idOffset):
-        currentRow = ((record['id'] - idOffset) * 3)
+    def _makeActiveShowers(self, record, lastId):
+        currentId = record['id']
         sl = float(record['solar_long'])
         df = self._parent.tabPrefs.getMSC()
         subset = df[(df['sl_start'] <= sl) & (df['sl_end'] >= sl)]
-        self._parent.updateProgressBar(currentRow, lastRow)
+        self._parent.updateProgressBar(currentId, lastId)
         return subset['acronym'].tolist()
 
     def _stripIncompleteEvents(self):
@@ -1322,32 +1322,31 @@ class DataSource:
             sbDf['Total'] = totalColumnResult.astype(int)
         return newDf, rawDf, sbDf
 
-    def _addNewColumns(self):
+    def _addNewColumns(self, df):
         # adds a new columns with the UTC Sidereal Time and solar longitude
 
-        idOffset = self._adf.loc[0, 'id']
-        lastRow = (self._adf.iloc[-1]['id'] * 3)
+        #idOffset = df.loc[0, 'id']
+        lastId = df.iloc[-1]['id']
 
-        if 'sidereal_utc' not in self._adf.columns:
+        if 'sidereal_utc' not in df.columns:
+            df = df.assign(sidereal_utc='')
             self._parent.updateProgressBar(0)
-            self._parent.updateStatusBar("Calculating sidereal times for each event in DB")
-            self._adf = self._adf.assign(sidereal_utc='')
-            self._adf['sidereal_utc'] = self._adf.apply(lambda x: self._makeSideral(x, lastRow, idOffset), axis=1)
-            self.cacheNeedsUpdate = True
+            self._parent.updateStatusBar("Calculating sidereal times for new events")
+            df['sidereal_utc'] = df.apply(lambda x: self._makeSideral(x, lastId), axis=1)
 
-        if 'solar_long' not in self._adf.columns:
+        if 'solar_long' not in df.columns:
+            df = df.assign(solar_long='')
             self._parent.updateProgressBar(0)
-            self._parent.updateStatusBar("Calculating solar longitudes for each event in DB")
-            self._adf = self._adf.assign(solar_long='')
-            self._adf['solar_long'] = self._adf.apply(lambda x: self._makeSolarLong(x, lastRow, idOffset), axis=1)
-            self.cacheNeedsUpdate = True
+            self._parent.updateStatusBar("Calculating solar longitudes for new events")
+            df['solar_long'] = df.apply(lambda x: self._makeSolarLong(x, lastId), axis=1)
 
-        if 'active_showers' not in self._adf.columns:
+        if 'active_showers' not in df.columns:
+            df = df.assign(active_showers='')
             self._parent.updateProgressBar(0)
-            self._parent.updateStatusBar("Calculating active showers for each event in DB")
-            self._adf = self._adf.assign(active_showers='')
-            self._adf['active_showers'] = self._adf.apply(lambda x: self._makeActiveShowers(x, lastRow, idOffset), axis=1)
-            self.cacheNeedsUpdate = True
+            self._parent.updateStatusBar("Calculating active showers for new events")
+            df['active_showers'] = df.apply(lambda x: self._makeActiveShowers(x, lastId), axis=1)
+
+        return df
 
     def _formatColumnName(self, dtFrom, dtRes):
         """
@@ -1489,7 +1488,6 @@ class DataSource:
         return 0
 
     def eventsToClassify(self):
-        # return self._deltaEvents
         emptyClassifications = self._adf[self._adf['classification'] == '']
 
         if emptyClassifications.empty:
@@ -1497,6 +1495,17 @@ class DataSource:
 
         firstId = emptyClassifications['id'].iloc[0]
         lastId = emptyClassifications['id'].iloc[-1]
+
+        return firstId, lastId
+
+    def eventsForAttrCalc(self):
+        emptyAttributes = self._adf[self._adf['attributes'] == '']
+
+        if emptyAttributes.empty:
+            return 0, 0
+
+        firstId = emptyAttributes['id'].iloc[0]
+        lastId = emptyAttributes['id'].iloc[-1]
 
         return firstId, lastId
 
