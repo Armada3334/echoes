@@ -275,6 +275,8 @@ def splitBinaryDumpFile(rawData: QByteArray):
         print("CRC-16 read: {:04x}".format(crc_16))
     else:
         print("*** MISSING CRC16 ***")
+        print("FAILED reading DATB file, returning None")
+        return None, None
 
     dfMap = pd.DataFrame(mapList, columns=['time', 'frequency', 'S'])
     dfPower = pd.DataFrame(powerList, columns=dfCols)

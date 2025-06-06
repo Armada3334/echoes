@@ -631,7 +631,7 @@ class MainWindow(QMainWindow):
                                     "Are you sure this is what you want to do?"):
                 if self.dataSource.deleteAttributes():
                     self.infoMessage("Done",
-                    "Attributes deleted, press \'Update Data Source\' or quit the program to update the cache file")
+                    "Attributes deleted, press \'Update Cache\' or quit the program to update the cache file")
 
     def deleteClassifications(self):
         if self.dataSource:
@@ -643,7 +643,7 @@ class MainWindow(QMainWindow):
 
                 if self.dataSource.deleteClassifications():
                     self.infoMessage("Done",
-                    "Classifications deleted, press \'Update Data Source\' or quit the program to update the cache file")
+                    "Classifications deleted, press \'Update Cache\' or quit the program to update the cache file")
 
 
 
@@ -861,7 +861,7 @@ class MainWindow(QMainWindow):
                         else:
                             self.updateStatusBar("Attributes already up to date, no recalc needed")
                     else:
-                        self.updateStatusBar("Attributes up to date, recalc done")
+                        self.updateStatusBar("Attributes recalc done")
                 self._ui.pbAttrReset.setEnabled(True)
 
             self.getCoverage()

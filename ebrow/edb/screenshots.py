@@ -375,6 +375,12 @@ class ScreenShots:
             else:
                 dfMap, dfPower = splitASCIIdumpFile(data)
 
+            if dfMap is None or dfPower is None:
+                self._parent.infoMessage("Ebrow", f"Cannot display data, {name} is corrupted.")
+                layout = self._ui.wPowerContainer.layout()
+                if layout is not None:
+                    layout.removeWidget(self._powerPlot)
+
             dfPower = dfPower.set_index('timestamp')
             print("displayPowerPlot(currentId={}) {}".format(self._parent.currentID, name))
             layout = self._ui.wPowerContainer.layout()
@@ -423,6 +429,13 @@ class ScreenShots:
                 dfMap, dfPower = splitBinaryDumpFile(data)
             else:
                 dfMap, dfPower = splitASCIIdumpFile(data)
+
+            if dfMap is None or dfPower is None:
+                self._parent.infoMessage("Ebrow", f"Cannot display data, {name} is corrupted.")
+                layout = self._ui.wCmap2Dcontainer.layout()
+                if layout is not None:
+                    layout.removeWidget(self._cmap2Dplot)
+                    return
 
             dfMap = dfMap.set_index('time')
             dfPower = dfPower.set_index('time')
@@ -489,6 +502,12 @@ class ScreenShots:
             else:
                 dfMap, dfPower = splitASCIIdumpFile(data)
 
+            if dfMap is None or dfPower is None:
+                self._parent.infoMessage("Ebrow", f"Cannot display data, {name} is corrupted.")
+                layout = self._ui.wPer3Dcontainer.layout()
+                if layout is not None:
+                    layout.removeWidget(self._per3Dplot)
+
             dfMap = dfMap.set_index('time')
             dfPower = dfPower.set_index('time')
             print("displayMapPlot3D(currentId={}) {}".format(self._parent.currentID, name))
@@ -542,8 +561,9 @@ class ScreenShots:
         if self._parent.currentID == 0:
             self._parent.infoMessage("Ebrow", "No selected events to show")
             return
-        # self._parent.busy(True)
+        self._parent.busy(True)
         self._ui.chkDatExport.hide()
+
         df = self._parent.dataSource.getEventData(self._parent.currentID)
         df.set_axis(['Raising front', 'Peak', 'Falling front'], axis=1)  # , inplace=True)
         df.set_axis(['UTC time', 'Upper threshold (calculated)', 'Lower threshold (calculated)', 'S', 'Average S',
@@ -604,6 +624,8 @@ class ScreenShots:
 
                     # Add a new tab to the QTabWidget
                     self._ui.twDetails.addTab(containerWidget, afName)
+
+        self._parent.busy(False)
 
     def autoExport(self, classFilter):
 
@@ -1237,10 +1259,14 @@ class ScreenShots:
             # TODO: convertire nel formato ASCII
             # produces 2 CSV files containing the power plot
             # and the 2D map plot data
-            dfMap.to_csv(mapName, sep=self._settings.dataSeparator())
-            self._parent.updateStatusBar(" Exported  {}".format(mapName))
-            dfPower.to_csv(powerName, sep=self._settings.dataSeparator())
-            self._parent.updateStatusBar(" Exported  {}".format(powerName))
+            done = 0
+            if dfMap is not None:
+                dfMap.to_csv(mapName, sep=self._settings.dataSeparator())
+                self._parent.updateStatusBar(" Exported  {}".format(mapName))
+
+            if dfPower is not None:
+                dfPower.to_csv(powerName, sep=self._settings.dataSeparator())
+                self._parent.updateStatusBar(" Exported  {}".format(powerName))
 
     def _exportPressed(self, checked):
         # export button event handler

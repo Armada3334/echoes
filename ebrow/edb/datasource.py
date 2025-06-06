@@ -2068,9 +2068,10 @@ class DataSource:
                     currentRow = 0
                     self._parent.updateStatusBar(f"Calculating attributes on {totalRows} events")
                     progressPercent = 0
+                    myId = 0
                     for idx in fallRecords.index:
                         if self._parent.stopRequested:
-                            return True  # loop interrupted by user
+                            break  # loop interrupted by user
 
                         startTime = 0
                         currentRow += 1  # Keep track of current row, but tqdm handles display
@@ -2081,11 +2082,8 @@ class DataSource:
 
                         if attributes == '' or overwrite:
                             print(f"Calculating attributes for eventID# {myId}")  # f-string for cleaner printing
-
-                            idp = idx - 1
-                            idr = idx - 2
-                            # mask = (self._adf['id'] == myId)
-                            self._adf.loc[myId, 'attributes'] = ''
+                            idx = (self._adf['id'] == myId) & (self._adf['event_status'] == 'Fall')
+                            self._adf.loc[idx, 'attributes'] = ''
                             attrDict = dict()
 
                             for afName in afDict.keys():
@@ -2100,17 +2098,18 @@ class DataSource:
                                         attrDict[afName] = resultDict
 
                                         if afName == 'HasHead' and 'freq_shift' in resultDict.keys():
-                                            self._adf.loc[(self._adf.index == idx), 'freq_shift'] = int(
-                                                resultDict['freq_shift'])
+                                            # fixes the broken freq_shift calculated by Echoes
+                                            self._adf.loc[idx, 'freq_shift'] = int(resultDict['freq_shift'])
 
                                         if afName == 'FreezeDetect' and len(resultDict.keys()) > 0:
-                                            self._adf.loc[(self._adf['id'] == myId), 'classification'] = "FAKE LONG"
+                                            # marks a frozen acquisition as FAKE LONG
+                                            self._adf.loc[idx, 'classification'] = "FAKE LONG"
 
                                     endTime = time.time()
 
                             if len(attrDict.keys()) > 0:
                                 print(attrDict)
-                                self._adf.loc[myId, 'attributes'] = json.dumps(attrDict)
+                                self._adf.loc[idx, 'attributes'] = json.dumps(attrDict)
 
                             try:
                                 self._parent.eventDataChanges[myId] = True
@@ -2135,8 +2134,12 @@ class DataSource:
                     self._adf = self._adf[cols]
 
                     # do not leave empty attribute cells to avoid reprocessing at next json loading
-                    mask = (self._adf['attributes'] == '') | (self._adf['attributes'].isnull())
+                    mask = (((self._adf['attributes'] == '') | self._adf['attributes'].isnull()) & (
+                                self._adf['id'] < myId))
+
+                    # the masking affects only processed events
                     self._adf.loc[mask, 'attributes'] = '{}'
+                    self._parent.updateStatusBar(f"Last processed ID={myId - 1}")
 
                 return True
 
@@ -2231,7 +2234,7 @@ class DataSource:
         print("getEventAttr({})".format(eventID))
         df = self.getADpartialFrame(idFrom=eventID, idTo=eventID)
         df.reset_index(drop=True, inplace=True)
-        attr = df.loc[0, 'attributes']
+        attr = df.loc[2, 'attributes']  # attributes present only on Fall state
         if attr and len(attr) > 0:
             try:
                 attrDict = json.loads(attr)
@@ -2343,6 +2346,10 @@ class DataSource:
                     ~df['classification'].str.contains('FAKE'))]
             elif idFrom > 0 and idTo > 0:
                 nf = df.loc[(idFrom <= df['id']) & (idTo >= df['id']) & (~df['classification'].str.contains('FAKE')),]
+
+            # discarding fakes must discard also the raise and peak events
+            nf = nf.groupby('id').filter(lambda x: len(x) == 3)
+            nf = nf.reset_index(drop=True)
 
         if nf is not None and df.empty is False:
             nf = nf.convert_dtypes(convert_integer=True, convert_floating=True)
