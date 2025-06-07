@@ -5,8 +5,8 @@
 
 # Maintainer: giuseppe massimo bertani <gmbertani@users.sourceforge.net>
 pkgname=echoes
-pkgver=0.60
-pkgrel=1
+pkgver=0.61
+pkgrel=0
 epoch=
 pkgdesc="Echoes is a RF spectrograph designed for meteor scatter purposes. It relies on SoapySDR library for audio devices and SDR devices support."
 arch=('i686' 'x86_64' 'armv6l' 'armv6h' 'armv7l' 'armv7h')
@@ -43,6 +43,6 @@ package() {
 	ln -sf /usr/bin/echoes "$pkgdir/usr/bin/console_echoes"
 }
 
-#md5sum of echoes-0.60.tar.gz
+#md5sum of echoes-0.61.tar.gz
 #to be recalculated with makepkg -g or md5sum
-md5sums=(c1fcfa182bbe951878469b1a6da8809e)
+md5sums=(242d0335552b890d8346c6cd8bb39aed)

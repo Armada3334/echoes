@@ -46,6 +46,7 @@ MainWindow::MainWindow(Settings* appSettings, Control* appControl, QWidget *pare
     init = true;
     outputEnabled = false;
     deviceChanged = false;
+    shutdownDetected = false;
     minTuneHz = 0;
     maxTuneHz = 0;
     SRRchanged = false;
@@ -284,6 +285,56 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
     return QMainWindow::eventFilter(obj, event);
 }
+
+
+// Override nativeEvent to intercept Windows-specific messages
+bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *result)
+{
+#ifdef Q_OS_WIN
+    if (eventType == "windows_generic_MSG")
+    {
+        MSG *msg = static_cast<MSG *>(message);
+        switch (msg->message)
+        {
+
+        case WM_QUERYENDSESSION:
+            // This message is sent by Windows when the system is about to shut down
+            MYINFO << "System shutdown initiated (WM_QUERYENDSESSION)";
+            shutdownDetected = true;   // Set flag for later use in closeEvent
+            *result = TRUE;            // Indicate that the application agrees to close
+            return true;               // Message was handled
+
+        case WM_ENDSESSION:
+            // This message confirms the end of the session
+            MYINFO << "Session is ending (WM_ENDSESSION), lParam=" << msg->lParam;
+            return false;              // Let Windows handle this message normally
+        }
+    }
+#endif
+    // Pass unhandled messages to the base class
+    return QMainWindow::nativeEvent(eventType, message, result);
+}
+
+// Override closeEvent to distinguish between user-initiated and system-initiated exits
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    if (shutdownDetected)
+    {
+        MYINFO << "Closing due to system shutdown (e.g., triggered by UPS)";
+        ac->slotStopAcquisition(ASC_KILLED_BY_SIGNAL);
+        // Insert cleanup code here: save files, stop threads, etc.
+    }
+    else
+    {
+        MYINFO << "Normal user-initiated closure";
+        ac->slotStopAcquisition(ASC_MANUAL_REQ);
+    }
+
+    // Call base class implementation to proceed with closing
+    QMainWindow::closeEvent(event);
+
+}
+
 
 
 

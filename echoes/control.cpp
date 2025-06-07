@@ -740,6 +740,7 @@ void Control::slotAcquisition(bool go)
         }
 
         emit GUIbusy();
+        enableCapture = false;
         manStopReq = true;
     }
 }
@@ -1243,7 +1244,7 @@ void Control::slotStopAcquisition(int what)
 
         case ASC_KILLED_BY_SIGNAL:
             MYCRITICAL << "Acquisition stop due to exception" ;
-            cause = SEC_FAULT;
+            cause = SEC_EXCEPTION;
             break;
 
         default:
@@ -2335,7 +2336,7 @@ bool Control::wfdBfs()
         {
             MYINFO << "Average N value available =" << avgN << " dBfs, value alloweed for capturing";
             enableCapture = true;
-            db->sessionStart();
+
         }
         else if(
                 am == AM_AUTOMATIC &&

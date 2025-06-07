@@ -202,6 +202,8 @@ protected:
     bool init;              ///program just started
     bool outputEnabled;     ///acquisition mode set
     bool deviceChanged;     ///device has changed manually while initing
+    bool shutdownDetected;  ///program termination required by Windows OS
+
 
     bool SRRchanged;        ///the sample rate range selection has been changed (slot called)
     bool SRchanged;         ///the sample rate spinbox has been changed (slot called)
@@ -241,9 +243,10 @@ protected:
     ///Formats the titlebar
     void setTitle();
 
-    virtual void moveEvent ( QMoveEvent * event );
-    virtual void resizeEvent ( QResizeEvent* event );
-
+    virtual void moveEvent ( QMoveEvent * event ) override;
+    virtual void resizeEvent ( QResizeEvent* event ) override;
+    virtual void closeEvent(QCloseEvent *event) override;
+    virtual bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
 
     ///
     /// \brief eventFilter
@@ -252,7 +255,7 @@ protected:
     /// \return
     //to disable tooltips globally
     ///
-    bool eventFilter(QObject *obj, QEvent *event);
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
     ///
     /// \brief GUIrefresh

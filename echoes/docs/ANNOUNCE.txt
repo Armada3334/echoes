@@ -1,4 +1,10 @@
-﻿19/01/2025
+﻿25/06/2025
+Releasing Echoes 0.61 and Ebrow 0.1.84
+This Echoes version is mostly a bugfix release, since it fixes the bug found in 0.60 (crash at midnight UTC when working with brand new databases)
+and the session table management (double session starts recorded).
+A small change has been made here to dBfs scale offset control: now it accepts floats values instead of integers only, this allows a finer calibration (matching dBfs to dBm).
+
+19/01/2025
 Bugfix release Echoes 0.60
 Fixed blobs deletion function - the bugfix in 0.59 was not so good.
 r.size() could return -1 even if records are regularly present in result,

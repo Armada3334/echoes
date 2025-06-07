@@ -249,9 +249,14 @@ bool DBif::setConfigData(Settings* appSettings)
 
     MY_ASSERT(appSettings != nullptr)
     as = appSettings;
-    r.prepare( "INSERT INTO configuration (id, name, creation) VALUES (?,?, datetime('now', 'utc'))" );
+
+    QDateTime utcNow = QDateTime::currentDateTimeUtc();
+    QString utcString = utcNow.toString("yyyy-MM-dd HH:mm:ss");
+
+    r.prepare( "INSERT INTO configuration (id, name, creation) VALUES (?,?,?)" );
     r.addBindValue( as->getRTSrevision() );
     r.addBindValue( as->getConfigName() );
+    r.addBindValue(utcString);
     bool result =  r.exec();
     if(!result)
     {
@@ -1781,8 +1786,12 @@ bool DBif::sessionStart()
         MYCRITICAL << __func__ << "() returned: " << e.text()  << " while reading last session ID";
     }
 
-    r.prepare( "INSERT INTO automatic_sessions(id, start_dt, living_dt, end_dt, delta_min, cause) VALUES (?, datetime('now', 'utc'),NULL,NULL,0, 0)" );
+    QDateTime utcNow = QDateTime::currentDateTimeUtc();
+    QString utcString = utcNow.toString("yyyy-MM-dd HH:mm:ss");
+
+    r.prepare( "INSERT INTO automatic_sessions(id, start_dt, living_dt, end_dt, delta_min, cause) VALUES (?, ?, NULL,NULL,0, 0)" );
     r.addBindValue(sessID);
+    r.addBindValue(utcString);
     qq.push_back(r);
     result = executePendingQueries();
 
@@ -1804,17 +1813,27 @@ bool DBif::sessionUpdate()
 
     QSqlQuery r(db);
 
-    r.prepare( "UPDATE automatic_sessions SET living_dt=datetime('now', 'utc'), delta_min=(JULIANDAY(datetime('now', 'utc')) - JULIANDAY(start_dt)) * 1440 WHERE id=?" );
+    QDateTime utcNow = QDateTime::currentDateTimeUtc();
+    QString utcString = utcNow.toString("yyyy-MM-dd HH:mm:ss");
+
+
+    r.prepare("UPDATE automatic_sessions "
+              "SET living_dt = ?, "
+              "delta_min = (JULIANDAY(?) - JULIANDAY(start_dt)) * 1440 "
+              "WHERE id = ?");
+    r.addBindValue(utcString);
+    r.addBindValue(utcString);
     r.addBindValue( sessID );
     qq.push_back(r);
     bool result = executePendingQueries();
     return result;
+
 }
 
 bool DBif::sessionEnd(E_SESS_END_CAUSE ec)
 {
     sessionUpdate();
-    MYINFO << __func__;
+    MYINFO << __func__ << "(" << ec << ")";
     if (!sessionOpened)
     {
         MYWARNING << "No sessions opened";
@@ -1822,7 +1841,13 @@ bool DBif::sessionEnd(E_SESS_END_CAUSE ec)
     }
 
     QSqlQuery r(db);
-    r.prepare( "UPDATE automatic_sessions SET end_dt=datetime('now', 'utc'), cause=? WHERE id=?" );
+
+
+    QDateTime utcNow = QDateTime::currentDateTimeUtc();
+    QString utcString = utcNow.toString("yyyy-MM-dd HH:mm:ss");
+
+    r.prepare( "UPDATE automatic_sessions SET end_dt=?, cause=? WHERE id=?" );
+    r.addBindValue(utcString);
     r.addBindValue( static_cast<int>(ec) );
     r.addBindValue( sessID );
 

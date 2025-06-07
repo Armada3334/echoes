@@ -842,6 +842,7 @@ void Waterfall::slotStartAcq(int shotNr, int totalShots)
 
     ui->lbTaken->show();
     ui->lbShot->show();
+    ui->lbInit->show();
 
     slotRuntimeChange();
 }
