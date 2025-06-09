@@ -93,7 +93,7 @@ class MapPlot3D(BaseGraph):
 
         # TODO: MICROSECONDLY needs matplotlib 3.6.0++ and Python 3.8++
         # yFmt = PrecisionDateFormatter('%H:%M:%S.%f', tz=timezone(timedelta(0)))
-        yFmt = DateFormatter('%H:%M:%S.%f')
+        yFmt = DateFormatter('%H:%M:%S')
 
         data = dfMap[['S']].to_numpy().reshape(totScans, totFreqs)
         self._min = data.min()
