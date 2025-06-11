@@ -9,7 +9,7 @@ setuptools.setup(
 
     # version of the module
     # !!! GMB WARNING -  IT MUST MATCH THE VERSION IN pyproject.toml and maiwindow.py !!!!!!
-    version = "0.1.84",   # PyPi
+    version = "0.1.86",   # PyPi
     # version = "99.2.1",    # TestPyPi
 
     # Name of Author
@@ -46,7 +46,9 @@ setuptools.setup(
         "jinja2>=3.1.2",
 	    "scipy>=1.11",
         "scikit-image>=0.2.2",
-        "psutil==6.0.0"
+        "psutil==6.0.0",
+        "opencv-python==4.11.0.86",
+        "astropy==6.1.7"
     ],
 
     license="GPLv3",
