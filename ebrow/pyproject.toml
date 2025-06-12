@@ -19,7 +19,7 @@ name = "ebrow"  # Required
 # https://packaging.python.org/guides/single-sourcing-package-version/
 # !!! GMB WARNING -  IT MUST MATCH THE VERSION IN setup.py and maiwindow.py!!!!!!
 # keep spaces around '='
-version = "0.1.86"       # PyPi
+version = "0.1.87"       # PyPi
 # version = "99.2.1"    # TestPyPi
 
 # This is a one-line description or tagline of what your project does. This
@@ -130,7 +130,7 @@ dependencies = [ # Optional
 	"scipy>=1.11",
     "scikit-image>=0.2.2",
     "psutil==6.0.0",
-    "opencv-python==4.11.0.86",
+    "opencv-python-headless==4.11.0.86",
     "astropy==6.1.7"
 
 ]
