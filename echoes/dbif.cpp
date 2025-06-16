@@ -413,16 +413,31 @@ bool DBif::updateCfgPrefs(Settings* appSettings)
 
     MY_ASSERT(appSettings != nullptr)
     as = appSettings;
-    r.prepare( "INSERT INTO cfg_prefs ( id, dbfs_gain, dbfs_offset, fault_sound, ping_sound, "
-               "main_geometry, db_ticks, hz_ticks, sec_ticks, show_tooltips, utc_delta, server_addr, server_port, max_event_lasting, echoes_ver )"
-               "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
+    QRect mg = as->getMainGeometry();
+    QString mgs = QString("(x=%1 y=%2 w=%3 h=%4")
+                                    .arg(mg.x())
+                                    .arg(mg.y())
+                                    .arg(mg.width())
+                                    .arg(mg.height());
+
+
+    r.prepare( "INSERT INTO cfg_prefs ( id, dbfs_gain, dbfs_offset, direct_buffers, "
+               "fault_sound, ping_sound, main_geometry, db_ticks, "
+               "hz_ticks, sec_ticks, show_tooltips, utc_delta, "
+               "server_addr, server_port, max_event_lasting, echoes_ver ) "
+               "VALUES "
+               "(?,?,?,?,"
+               "?,?,?,?,"
+               "?,?,?,?,"
+               "?,?,?,?)" );
+
     r.addBindValue( as->getRTSrevision() );
     r.addBindValue( as->getDbfsGain() );
     r.addBindValue( as->getDbfsOffset() );
     r.addBindValue( false ); //was getDirectBuffers()
     r.addBindValue( as->getFaultSound() );
     r.addBindValue( as->getPing() );
-    r.addBindValue( as->getMainGeometry() );
+    r.addBindValue( mgs );
     r.addBindValue( as->getDbfs() );
     r.addBindValue( as->getHz() );
     r.addBindValue( as->getSec() );
@@ -431,7 +446,8 @@ bool DBif::updateCfgPrefs(Settings* appSettings)
     r.addBindValue( as->getServerAddress().toString() );
     r.addBindValue( as->getServerPort() );
     r.addBindValue( as->getMaxEventLasting() );
-    r.addBindValue( APP_VERSION );
+    r.addBindValue( QString(APP_VERSION) );
+
     bool result =  r.exec();
     if(!result)
     {
@@ -509,6 +525,37 @@ int DBif::getConfigData(QString* name, QDateTime* dt)
     }
     return -1;
 }
+
+
+
+QString DBif::getEchoesVer()
+{
+    MYINFO << __func__;
+    QString ev;
+    QSqlQuery r(db);
+    r.prepare( "SELECT id,echoes_ver FROM cfg_prefs ORDER BY id DESC LIMIT 1" );
+    bool result = r.exec();
+    if (result)
+    {
+        QList<QList<QVariant>*>* rows = new QList<QList<QVariant>*>();
+        Q_CHECK_PTR(rows);
+
+        r.first();
+        if(r.isValid() == true)
+        {
+            int id = r.value(0).toInt(&result);
+            ev = r.value(1).toString();
+            MYINFO << __func__ << "latest Echoes version known: " << ev << " RTS revision: " << id;
+            if(result)
+            {
+                return ev;
+            }
+        }
+    }
+    return "00.00";
+}
+
+
 
 bool DBif::peakRollback()
 {

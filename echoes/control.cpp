@@ -390,6 +390,14 @@ void Control::slotAcquisition(bool go)
         manCount = 0;
         enableCapture = false;
 
+        QString dbVer = db->getEchoesVer();
+        if( dbVer != QString(APP_VERSION) )
+        {
+            //Echoes version changed
+            db->updateCfgPrefs(as);
+            MYWARNING << "Echoes version changed to " << QString(APP_VERSION);
+        }
+
         statClock.start();
         scanTimer.start();
 
@@ -3269,12 +3277,6 @@ void Control::updateRootDir()
             db->updateCfgWaterfall(as);
         }
 
-        if(as->getEchoesVersion() != APP_VERSION)
-        {
-            //Echoes version changed
-            db->updateCfgPrefs(as);
-            MYWARNING << "Echoes version changed from " << as->getEchoesVersion() << " to " << APP_VERSION;
-        }
 
         db->setWALmode();
         delete db;

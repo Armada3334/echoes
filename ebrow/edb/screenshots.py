@@ -457,7 +457,7 @@ class ScreenShots:
 
             fullAttrDict = self._parent.dataSource.getEventAttr(self._parent.currentID)
             attrDict = dict()
-            if 'HasHead' in fullAttrDict.keys():
+            if fullAttrDict is not None and 'HasHead' in fullAttrDict.keys():
                 attrDict = fullAttrDict['HasHead']
 
             self._plot = MapPlot(dfMap, dfPower, self._settings, inchWidth, inchHeight, cmap, name, self._plotVmin,

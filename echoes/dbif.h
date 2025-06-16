@@ -151,6 +151,13 @@ public:
 
     ~DBif();
 
+    /**
+     * @brief getEchoesVer
+     * @return
+     *
+     *  gets the last Echoes version stored in cfg_prefs
+     */
+    QString getEchoesVer();
 
     /**
      * @brief DBif::setWALmode
