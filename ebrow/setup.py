@@ -9,7 +9,7 @@ setuptools.setup(
 
     # version of the module
     # !!! GMB WARNING -  IT MUST MATCH THE VERSION IN pyproject.toml and maiwindow.py !!!!!!
-    version = "0.1.88",   # PyPi
+    version = "0.1.89",   # PyPi
     # version = "99.2.1",    # TestPyPi
 
     # Name of Author

@@ -206,6 +206,18 @@ class Report:
             preface = self._defaultPreface
 
         self._ui.pteReportPreface.setPlainText(preface)
+        if self._parent.isBatchReport and not self._parent.isReporting:
+            # when self generated, ignores the personalized preface from ebrow.ini
+            # and uses always a self generated one
+            self._ui.pteReportPreface.setPlainText(self._defaultPreface)
+            self._reportHTML()
+
+        if self._parent.isBatchXLSX and not self._parent.isReporting:
+            # when self generated, ignores the personalized preface from ebrow.ini
+            # and uses always a self generated one
+            self._ui.pteReportPreface.setPlainText(self._defaultPreface)
+            self._reportXLSX()
+
         self._parent.busy(False)
 
     def _prepareTables(self):

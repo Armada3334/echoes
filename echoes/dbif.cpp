@@ -413,12 +413,24 @@ bool DBif::updateCfgPrefs(Settings* appSettings)
 
     MY_ASSERT(appSettings != nullptr)
     as = appSettings;
+
+    r.prepare( "DELETE FROM cfg_prefs WHERE id=?" );
+    r.addBindValue( as->getRTSrevision() );
+    bool result =  r.exec();
+    if(!result)
+    {
+        QSqlError e = r.lastError();
+        MYWARNING << __func__ << "() returned: "  << e.text() << " continuing...";
+    }
+
     QRect mg = as->getMainGeometry();
     QString mgs = QString("(x=%1 y=%2 w=%3 h=%4")
                                     .arg(mg.x())
                                     .arg(mg.y())
                                     .arg(mg.width())
                                     .arg(mg.height());
+
+    QString echoesVer(APP_VERSION);
 
 
     r.prepare( "INSERT INTO cfg_prefs ( id, dbfs_gain, dbfs_offset, direct_buffers, "
@@ -446,9 +458,9 @@ bool DBif::updateCfgPrefs(Settings* appSettings)
     r.addBindValue( as->getServerAddress().toString() );
     r.addBindValue( as->getServerPort() );
     r.addBindValue( as->getMaxEventLasting() );
-    r.addBindValue( QString(APP_VERSION) );
+    r.addBindValue( echoesVer );
 
-    bool result =  r.exec();
+    result =  r.exec();
     if(!result)
     {
         QSqlError e = r.lastError();
