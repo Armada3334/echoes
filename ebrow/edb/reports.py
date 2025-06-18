@@ -2093,5 +2093,6 @@ class Report:
         preface = preface.replace("[dateFrom]", dateFrom)
         preface = preface.replace("[dateTo]", dateTo)
         preface = preface.replace("[unclassified]", str(unclassified))
+        preface = preface.replace("[ebrow]", f"Ebrow v.{self._parent.version}")
 
         return preface
