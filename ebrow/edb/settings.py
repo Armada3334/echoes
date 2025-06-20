@@ -240,7 +240,7 @@ class Settings(QSettings):
         d['afOverOnly'] = False
         d['afDummyEnabled'] = False
         d['afFreezeDetectEnabled'] = False
-        d['afFreezeDetectMissedScans'] = 4
+        d['afFreezeDetectMissedScans'] = 50
         d['afHasHeadEnabled'] = False
         d['afHasHeadPercentile'] = 90
         d['afHasHeadTimeDelta'] = 300

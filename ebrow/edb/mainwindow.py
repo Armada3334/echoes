@@ -625,7 +625,8 @@ class MainWindow(QMainWindow):
     def deleteAttributes(self):
         if self.dataSource:
             if self.confirmMessage("Warning",
-                             "You are about to clear all calculated and cached attributes.\n"
+                             "You are about to clear the attributes calculated from events\n"
+                                   f"included in the dates range {self.fromDate} to {self.toDate}.\n"
                                     "Please note that you will only be able to recalculate attributes \n"
                                     "for the most recent events, which still have an associated dump file.\n"
                                     "Are you sure this is what you want to do?"):
@@ -636,7 +637,8 @@ class MainWindow(QMainWindow):
     def deleteClassifications(self):
         if self.dataSource:
             if self.confirmMessage("Warning",
-                                   "You are about to delete all classifications from events. \n"
+                                   "You are about to delete classifications from events. \n"
+                                    f"included in the dates range {self.fromDate} to {self.toDate}.\n"
                                         "Please note that the next time you load this database, \n"
                                         "all events will be reclassified.\n"
                                         "Are you sure this is what you want to do?" ):

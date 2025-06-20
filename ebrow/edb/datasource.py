@@ -2094,6 +2094,9 @@ class DataSource:
                                 if af.isFilterEnabled():
                                     startTime = time.time()
                                     resultDict = af.evalFilter(myId)
+
+                                    #TODO: The following code should be integrated in filters by
+                                    # passing a reference to self._adf to evalFilter
                                     if resultDict is not None:
                                         attrDict[afName] = resultDict
 
