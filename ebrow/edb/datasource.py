@@ -2138,7 +2138,7 @@ class DataSource:
 
                     # do not leave empty attribute cells to avoid reprocessing at next json loading
                     mask = (((self._adf['attributes'] == '') | self._adf['attributes'].isnull()) & (
-                                self._adf['id'] < myId))
+                                self._adf['id'] <= myId))
 
                     # the masking affects only processed events
                     self._adf.loc[mask, 'attributes'] = '{}'
