@@ -2287,7 +2287,10 @@ class Stats:
             lastings instead are approximated by multiples of the latest scan interval time
         """
         sdf = None
-        df = df.loc[df['event_status'] == 'Fall']
+        if metric == 'power':
+            df = df.loc[df['event_status'] == 'Peak']
+        else:
+            df = df.loc[df['event_status'] == 'Fall']
 
         # Filter by classification
         if filters:
