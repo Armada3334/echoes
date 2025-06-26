@@ -1,8 +1,31 @@
 ﻿25/06/2025
-Releasing Echoes 0.61 and Ebrow 0.1.84
-This Echoes version is mostly a bugfix release, since it fixes the bug found in 0.60 (crash at midnight UTC when working with brand new databases)
-and the session table management (double session starts recorded).
+Released Echoes 0.61 + Ebrow 0.2
+This Echoes version is mostly a bugfix release, since it fixes the bug found in 0.60 (crash at midnight UTC when working with brand new databases) and the session table management (double session starts recorded).
+
 A small change has been made here to dBfs scale offset control: now it accepts floats values instead of integers only, this allows a finer calibration (matching dBfs to dBm).
+Still about calibration, a new page has been added to the website, for those interested in obtaining power data as dBm rather than dBfs to make them comparable with other stations.
+
+Much more important were the changes to Ebrow, which concern, in addition to the correction of several bugs, the addition of new features, especially for statistics purposes. Starting from this version, I'll use the second field of the version number (release) for releases that introduce new features, setting the third number (update) to zero and then incrementing it when bugfixes will be released.
+
+1-added solar_long and active_showers columns in the Chronological table along with sidereal time.
+In addition to this, it is now possible to sort the chronological table differently by clicking on the column headers.
+
+2-added the Attribute filters. Currently only 2 kind of filters have been defined: FreezeDetect that is ready to be used, and HasHead that is still under development.
+
+3-it is now possible to reset the classification of a single event in Event details by setting its classification to None To make the classification filters tuning faster.
+
+4-Added the Stop loading button in the Database tab to interrupt classifications or attribute calculation operations, which will be later saved in their current state. The next time the same DB is loaded, the interrupted operation will continue from where it was left off.
+
+5-Added the Mass Indices calculation tables and graphs. The calculation can be both power-based or duration-based.
+
+6-Added the events power distribution and duration distribution tables and graphs.
+
+7-Added the events cumulative counts by power and by duration tables and graphs.
+
+8-Added an integrated meteor shower calendar containing the radiant informations for the most important showers along the year (with ZHR >=10). The table can be sorted differently by clicking on column headers.
+
+9-In the report page, changes have been made regarding the Preface, which is now also generated on xlsx reports. In addition, some macros have been defined that can be used inside the preface to print the value of internal variables, reducing the need to change manually the preface from one report to another.
+
 
 19/01/2025
 Bugfix release Echoes 0.60
