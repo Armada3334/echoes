@@ -49,7 +49,7 @@ class Settings(QSettings):
         self._iniFilePath = iniFullPath
         self._general = ['geometry', 'lastDBfilePath', 'dateFrom', 'dateTo', 'tooltipDisabled', 'autosaving']
 
-        self._screenshots = ['classFilter', 'currentDate', 'horizontalZoom', 'verticalZoom', 'linkedSliders',
+        self._screenshots = ['classFilter', 'hasAttrFilter', 'hasBlobsFilter', 'currentDate', 'horizontalZoom', 'verticalZoom', 'linkedSliders',
                              'showGrid',
                              '3Dazimuth', '3Delevation', 'currentColormap', 'showContour']
 
@@ -167,6 +167,8 @@ class Settings(QSettings):
         # screenshots
         d['currentDate'] = ''
         d['classFilter'] = 'OVER'
+        d['hasAttrFilter'] = False
+        d['hasBlobsFilter'] = False
         d['horizontalZoom'] = self.ZOOM_DEFAULT
         d['verticalZoom'] = self.ZOOM_DEFAULT
         d['linkedSliders'] = 0

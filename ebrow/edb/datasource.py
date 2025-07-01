@@ -702,6 +702,11 @@ class DataSource:
                 currentRow += 1
                 if totalRows > -1:
                     self._parent.updateProgressBar(currentRow, totalRows)
+                    print(f"Exporting {currentRow} of {totalRows} events")
+
+                if self._parent.stopRequested:
+                    destDb.commit()
+                    return False
 
                 q1.next()
         destDb.commit()
@@ -1709,6 +1714,57 @@ class DataSource:
             e = QSqlError(q.lastError())
             print("DataSource.extractShotsData() ", e.text())
         return None
+
+    def getBlobbedIDs(self) -> dict:
+        """
+               Reads all IDs from 'automatic_shots' and 'automatic_dumps' tables,
+               and returns a dictionary where keys are unique IDs and values are
+               2-element tuples indicating presence in each table.
+               The tuple is (is_in_shots: bool, is_in_dumps: bool).
+               @return: A dictionary of {ID: (bool, bool)}.
+               """
+        # Use sets to efficiently store IDs from each table
+        shotIds = set()
+        dumpIds = set()
+        allUniqueIds = set()  # To keep track of all unique IDs encountered
+
+        if self._db is not None:
+            # Process 'automatic_shots' table
+            qShots = QSqlQuery(self._db)
+            selectShots = "SELECT id FROM automatic_shots"
+            resultShots = qShots.exec(selectShots)
+
+            if resultShots:
+                while qShots.next():
+                    currentId = qShots.value(0)
+                    shotIds.add(currentId)
+                    allUniqueIds.add(currentId)
+            else:
+                errorShots = QSqlError(qShots.lastError())
+                print(f"DataSource.getUniqueIdsFromTables() - Error querying automatic_shots: {errorShots.text()}")
+
+            # Process 'automatic_dumps' table
+            qDumps = QSqlQuery(self._db)
+            selectDumps = "SELECT id FROM automatic_dumps"
+            resultDumps = qDumps.exec(selectDumps)
+
+            if resultDumps:
+                while qDumps.next():
+                    currentId = qDumps.value(0)
+                    dumpIds.add(currentId)
+                    allUniqueIds.add(currentId)
+            else:
+                errorDumps = QSqlError(qDumps.lastError())
+                print(f"DataSource.getUniqueIdsFromTables() - Error querying automatic_dumps: {errorDumps.text()}")
+
+        # Build the result dictionary
+        resultDict = {}
+        for uid in allUniqueIds:
+            is_in_shots = uid in shotIds
+            is_in_dumps = uid in dumpIds
+            resultDict[uid] = (is_in_shots, is_in_dumps)
+
+        return resultDict
 
     def extractDumpData(self, eventId: int):
         """

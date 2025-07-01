@@ -66,6 +66,7 @@ class ScreenShots:
         self._plot = None
         self._dfDetails = None
         self._dfChrono = None
+        self._blobbedIDdict = None
         self._classFilter = ''
         self._sides = ['+XY', '+XZ', '+YZ', '-XY', '-XZ', '-YZ', ]
         self._aspects = [[90, -90], [0, -90], [0, 0], [-90, 90], [0, 90], [0, 180]]
@@ -78,6 +79,9 @@ class ScreenShots:
         mkExportFolder(self._exportDir)
         self._currentColormap = self._settings.readSettingAsString('currentColormap')
         self._ui.cbCmaps.setCurrentText(self._currentColormap)
+        self._hasAttrFilter = self._settings.readSettingAsBool('hasAttrFilter')
+        self._hasBlobsFilter = self._settings.readSettingAsBool('hasBlobsFilter')
+
 
         if self._parent.currentID == 0:
             self._ui.lbID.setText('Nothing selected')
@@ -93,6 +97,12 @@ class ScreenShots:
         self._tbs = None
 
         self._ui.lbSide.setText(self._sides[self._sideIdx])
+
+        self._hasAttrFilter = self._settings.readSettingAsBool('hasAttrFilter')
+        self._ui.chkHasAttr.setChecked(self._hasAttrFilter)
+
+        self._hasBlobsFilter = self._settings.readSettingAsBool('hasBlobsFilter')
+        self._ui.chkHasBlobs.setChecked(self._hasBlobsFilter)
 
         self._linkedSliders = self._settings.readSettingAsBool('linkedSliders')
         self._ui.chkLinked.setChecked(self._linkedSliders)
@@ -165,6 +175,9 @@ class ScreenShots:
         self._ui.hsVzoom.valueChanged.connect(self._changeVzoom)
         self._ui.hsAzimuth.valueChanged.connect(self._changeAzimuth)
         self._ui.hsElevation.valueChanged.connect(self._changeElevation)
+
+        self._ui.chkHasAttr.clicked.connect(lambda checked: self._settings.writeSetting('hasAttrFilter', checked))
+        self._ui.chkHasBlobs.clicked.connect(lambda checked: self._settings.writeSetting('hasBlobsFilter', checked))
 
         self._ui.pbRefresh.clicked.connect(self._refreshPressed)
         self._ui.pbReset.clicked.connect(self._resetPressed)
@@ -309,8 +322,26 @@ class ScreenShots:
         self._parent.busy(True)
         self._ui.chkDatExport.hide()
         if not self._parent.isAutoExport:
+
+            self._hasAttrFilter = self._settings.readSettingAsBool('hasAttrFilter')
+            self._hasBlobsFilter = self._settings.readSettingAsBool('hasBlobsFilter')
+
+            if self._blobbedIDdict is None:
+                self._blobbedIDdict = self._parent.dataSource.getBlobbedIDs()
+
             df = self._parent.dataSource.getADpartialCompositeFrame(self._parent.fromDate, self._parent.toDate,
                                                                     self._classFilter)
+            if self._hasAttrFilter:
+                # shows only events provided with attributes
+                invalidValues =  ['', None, '{}']
+                dfCopy = df.copy()
+                df = dfCopy[~dfCopy['attributes'].isin(invalidValues)]
+
+            if self._hasBlobsFilter:
+                blobbedIDs = list(self._blobbedIDdict.keys())
+                dfCopy = df.copy()
+                df = dfCopy[dfCopy['id'].isin(blobbedIDs)]
+
             self._dfChrono = df
         else:
             df = self._dfChrono
@@ -960,6 +991,11 @@ class ScreenShots:
                         # checks if the current event carries image data
                         eventHasShots = False
                         eventHasDumps = False
+                        try:
+                            (eventHasShots, eventHasDumps) = self._blobbedIDdict[cId]
+                        except KeyError:
+                            pass
+                        '''
                         shotName, shotBytes, dailyNr, utcDate = self._parent.dataSource.extractShotData(cId)
                         if shotName is not None:
                             eventHasShots = True
@@ -967,6 +1003,7 @@ class ScreenShots:
                         dumpName, dumpBytes, dailyNr, utcDate = self._parent.dataSource.extractDumpData(cId)
                         if dumpName is not None:
                             eventHasDumps = True
+                        '''
 
                         self._ui.twShots.setTabEnabled(self.SSTW_THUMBNAILS, eventHasShots)
                         self._ui.twShots.setTabEnabled(self.SSTW_SSHOT, eventHasShots)

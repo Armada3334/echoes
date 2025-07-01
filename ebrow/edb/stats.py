@@ -114,6 +114,9 @@ class Stats:
         self._targetShower = 'None'
         self._ui.chkSubSB.setEnabled(False)
         self._ui.chkCompensation.setEnabled(False)
+        self._ui.sbTUsize.setEnabled(False)
+        self._ui.cbShower.setEnabled(False)
+
         self._px = plt.rcParams['figure.dpi']  # from inches to pixels
         self._szBase = None
 
@@ -177,7 +180,6 @@ class Stats:
         self._ui.hsVzoom_3.valueChanged.connect(self._changeVzoom)
         self._ui.chkLinked_3.clicked.connect(self._toggleLinkedCursors)
         self._ui.sbTUsize.valueChanged.connect(self._changeTUsize)
-        self._ui.sbRadarComp.valueChanged.connect(self._changeRadarComp)
         self._ui.cbShower.currentTextChanged.connect(self._changeTargetShower)
 
         self._showDiagramSettings(False)
@@ -449,7 +451,6 @@ class Stats:
 
             self._radarComp = self._settings.readSettingAsFloat('RadarCompensation')
 
-            self._ui.sbRadarComp.setValue(self._radarComp)
             enableSB = 0
             avgDailyStr = self._settings.readSettingAsObject('sporadicBackgroundDaily')
             if len(avgDailyStr) > 0:
@@ -976,14 +977,9 @@ class Stats:
         df = self._dataSource.getADpartialFrame(self._parent.fromDate, self._parent.toDate)
         sm = QAbstractItemView.NoSelection
 
-        self._ui.sbTUsize.setEnabled(False)
-        self._ui.cbShower.setEnabled(False)
-        self._ui.chkCompensation.setEnabled(False)
-
         # calculating statistic dataframes:
 
         if row == self.TAB_COUNTS_BY_DAY:
-            self._ui.chkCompensation.setEnabled(True)
             tuple3df = self._dataSource.dailyCountsByClassification(df,
                                                                     self._classFilter,
                                                                     self._parent.fromDate,
@@ -996,10 +992,7 @@ class Stats:
             if tuple3df is not None:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
 
-
         if row == self.TAB_COUNTS_BY_HOUR:
-            self._ui.cbShower.setEnabled(True)
-            self._ui.chkCompensation.setEnabled(True)
             tuple3df = self._dataSource.makeCountsDf(df,
                                                      self._parent.fromDate,
                                                      self._parent.toDate,
@@ -1014,8 +1007,6 @@ class Stats:
                 self._dataFrame, self._rawDataFrame, self._sbDataFrame = tuple3df
 
         if row == self.TAB_COUNTS_BY_10M:
-            self._ui.cbShower.setEnabled(True)
-            self._ui.chkCompensation.setEnabled(True)
             tuple3df = self._dataSource.makeCountsDf(df,
                                                      self._parent.fromDate,
                                                      self._parent.toDate,
@@ -1097,8 +1088,6 @@ class Stats:
                 self._dataFrame = df.filter(items=['OVER'], axis=0)
 
         if row == self.TAB_MASS_INDEX_BY_POWERS:
-            self._ui.cbShower.setEnabled(True)
-            self._ui.sbTUsize.setEnabled(True)
             tuple4df = self._calcMassIndicesDf(df, filters=self._classFilter, TUsize=self._timeUnitSize, metric='power')
             if tuple4df is not None:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
@@ -1106,8 +1095,6 @@ class Stats:
                 sm = QAbstractItemView.ExtendedSelection
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
-            self._ui.cbShower.setEnabled(True)
-            self._ui.sbTUsize.setEnabled(True)
             tuple4df = self._calcMassIndicesDf(df, filters=self._classFilter, TUsize=self._timeUnitSize,
                                                metric='lasting')
             if tuple4df is not None:
@@ -1116,24 +1103,18 @@ class Stats:
                 sm = QAbstractItemView.ExtendedSelection
 
         if row == self.TAB_POWER_DISTRIBUTION:
-            self._ui.cbShower.setEnabled(True)
             self._dataFrame = self._calculateDistributionDf(df, filters=self._classFilter, metric='power')
 
         if row == self.TAB_LASTING_DISTRIBUTION:
-            self._ui.cbShower.setEnabled(True)
             self._dataFrame = self._calculateDistributionDf(df, filters=self._classFilter, metric='lasting')
 
         if row == self.TAB_CUMULATIVE_COUNTS_BY_POWERS:
-            self._ui.cbShower.setEnabled(True)
-            self._ui.sbTUsize.setEnabled(True)
             tuple4df = self._calculateCCountsDf(df, filters=self._classFilter, TUsize=self._timeUnitSize,
                                                 metric='power')
             if tuple4df is not None:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
 
         if row == self.TAB_CUMULATIVE_COUNTS_BY_LASTINGS:
-            self._ui.cbShower.setEnabled(True)
-            self._ui.sbTUsize.setEnabled(True)
             tuple4df = self._calculateCCountsDf(df, filters=self._classFilter, TUsize=self._timeUnitSize,
                                                 metric='lasting')
             if tuple4df is not None:
@@ -1754,13 +1735,21 @@ class Stats:
         return inchWidth, inchHeight, int(pixWidth), int(pixHeight)
 
     def _tabChanged(self, row):
-
+        self._ui.sbTUsize.setEnabled(False)
+        self._ui.cbShower.setEnabled(False)
+        self._ui.chkCompensation.setEnabled(False)
         self._ui.chkSubSB.setEnabled(row != self.TAB_RMOB_MONTH)
 
         if row == self.TAB_COUNTS_BY_DAY or row == self.TAB_COUNTS_BY_HOUR or self.TAB_COUNTS_BY_10M:
             self._ui.gbDataSettings.setVisible(True)
             self._ui.gbClassFilter_2.setVisible(True)
             self._ui.gbClassFilter_2.setEnabled(True)
+            self._ui.cbShower.setEnabled(True)
+            self._ui.chkCompensation.setEnabled(True)
+
+        if row == self.TAB_MASS_INDEX_BY_POWERS or row == self.TAB_CUMULATIVE_COUNTS_BY_POWERS or row == self.TAB_MASS_INDEX_BY_LASTINGS or row == self.TAB_CUMULATIVE_COUNTS_BY_LASTINGS:
+            self._ui.sbTUsize.setEnabled(True)
+            self._ui.cbShower.setEnabled(True)
 
         if (row == self.TAB_SESSIONS_REGISTER or row == self.TAB_RMOB_MONTH or row == self.TAB_METEOR_SHOWERS or
                 row == self.TAB_POWER_DISTRIBUTION or row == self.TAB_LASTING_DISTRIBUTION):
@@ -2510,7 +2499,7 @@ class Stats:
                     patched = True
 
         # hiding timeunits when radiant was not visible. If None shower specified, skips this code
-        self._targetShower = self._settings.readSettingAsString("targetShower") #self._ui.cbShower.currentText()
+        self._targetShower = self._settings.readSettingAsString("targetShower")  #self._ui.cbShower.currentText()
         if self._targetShower != "None":
             lat = self._settings.readSettingAsFloat('latitude')
             lon = self._settings.readSettingAsFloat('longitude')

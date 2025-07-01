@@ -122,6 +122,7 @@ class MainWindow(QMainWindow):
         self._ui.pbSubset.setEnabled(False)
         self._ui.pbLastMonth.setEnabled(False)
         self._ui.pbLastYear.setEnabled(False)
+        self._ui.pbFullDB.setEnabled(False)
         self._ui.pbFullReset.setEnabled(False)
         self._ui.pbClassReset.setEnabled(False)
         self._ui.pbAttrReset.setEnabled(False)
@@ -202,6 +203,7 @@ class MainWindow(QMainWindow):
         self._ui.pbAttrReset.clicked.connect(self.deleteAttributes)
         self._ui.pbLastMonth.clicked.connect(self.coverLastMonth)
         self._ui.pbLastYear.clicked.connect(self.coverLastYear)
+        self._ui.pbFullDB.clicked.connect(self.coverFullDB)
         self._ui.dtFrom.dateChanged.connect(self.getCoverage)
         self._ui.dtTo.dateChanged.connect(self.getCoverage)
         self._ui.twMain.currentChanged.connect(self._handleTabChanges)
@@ -419,6 +421,7 @@ class MainWindow(QMainWindow):
                         self._ui.pbReset.setEnabled(True)
                         self._ui.pbLastMonth.setEnabled(True)
                         self._ui.pbLastYear.setEnabled(True)
+                        self._ui.pbFullDB.setEnabled(True)
                         self._ui.pbSave.setEnabled(True)
                         self._ui.pbSubset.setEnabled(True)
                         self._ui.pbFullReset.setEnabled(True)
@@ -620,6 +623,11 @@ class MainWindow(QMainWindow):
         self._ui.dtTo.setDate(qDateTo)
         (y, m, d) = qDateTo.getDate()
         qDateFrom.setDate(y, 1, 1)
+        self._ui.dtFrom.setDate(qDateFrom)
+
+    def coverFullDB(self):
+        (qDateFrom, qDateTo) = self.dataSource.dbQDateCoverage()
+        self._ui.dtTo.setDate(qDateTo)
         self._ui.dtFrom.setDate(qDateFrom)
 
     def deleteAttributes(self):
@@ -874,6 +882,7 @@ class MainWindow(QMainWindow):
             self._ui.pbAttrReset.setEnabled(True)
             self._ui.pbLastMonth.setEnabled(False)
             self._ui.pbLastYear.setEnabled(False)
+            self._ui.pbFullDB.setEnabled(False)
 
             # initialize the editable classifications list
             self.classifications = self.dataSource.getEventClassifications(self.fromId, self.toId)
