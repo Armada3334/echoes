@@ -2359,7 +2359,7 @@ class Stats:
             return tuple4df[0]
 
         # mass indices calculated on subtracted data are unreliable
-        if tuple4df is not None:
+        if tuple4df is not None and len(tuple4df) > 1:
             tuple4df[1].drop('Mass index', axis=1, inplace=True)
         return tuple4df
 

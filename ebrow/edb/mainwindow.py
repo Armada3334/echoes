@@ -540,12 +540,13 @@ class MainWindow(QMainWindow):
         else:
             # DB date coverage ok
             self._ui.lbDBfilename.setText("{} ".format(self.dataSource.name()))
+
+            self.fromQDate = self._ui.dtFrom.date()
+            self.toQDate = self._ui.dtTo.date()
+
             if self.fromQDate >= qDateDBfrom and self.toQDate <= qDateDBto:
                 # the required coverage is compatible with DB coverage
-                if self.dataSource.cacheNeedsUpdate:
-                    # extends the required coverage to include the latest
-                    # events loaded from DB and not yet present in cache
-                    self._ui.dtTo.setDate(qDateDBto)
+                pass
 
             elif self.fromQDate >= qDateDBfrom and self.toQDate > qDateDBto:
                 # the required coverage overlaps the DB's coverage
@@ -703,6 +704,13 @@ class MainWindow(QMainWindow):
         # then updates the datasource
         if self.dataSource is not None:
             if True in self.eventDataChanges or self.dataSource.cacheNeedsUpdate:
+
+                if self.dataSource.cacheNeedsUpdate:
+                    # extends the required coverage to include the latest
+                    # events loaded from DB and not yet present in cache
+                    (qDateDBfrom, qDateDBto) = self.dataSource.dbQDateCoverage()
+                    self._ui.dtTo.setDate(qDateDBto)
+
                 if (self._settings.readSettingAsBool('autosaving')
                         or
                         self.confirmMessage("About to save the changes on cache file.",
