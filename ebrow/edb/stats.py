@@ -92,6 +92,7 @@ class Stats:
                   "ACQ ACT": "Acquisition active"}
 
     def __init__(self, parent, ui, settings):
+        self._miKnorm = None
         self._subDataFrame = None
         self._bakClass = None
         self._ui = ui
@@ -115,7 +116,8 @@ class Stats:
         self._ui.chkSubSB.setEnabled(False)
         self._ui.chkCompensation.setEnabled(False)
         self._ui.sbTUsize.setEnabled(False)
-        self._ui.cbShower.setEnabled(False)
+        self._ui.sbKnorm.setEnabled(False)
+        self._ui.cbShower.setEnabled(True)
 
         self._px = plt.rcParams['figure.dpi']  # from inches to pixels
         self._szBase = None
@@ -180,6 +182,7 @@ class Stats:
         self._ui.hsVzoom_3.valueChanged.connect(self._changeVzoom)
         self._ui.chkLinked_3.clicked.connect(self._toggleLinkedCursors)
         self._ui.sbTUsize.valueChanged.connect(self._changeTUsize)
+        self._ui.sbKnorm.valueChanged.connect(self._changeKnorm)
         self._ui.cbShower.currentTextChanged.connect(self._changeTargetShower)
 
         self._showDiagramSettings(False)
@@ -448,6 +451,8 @@ class Stats:
         if self._ui.twMain.currentIndex() == self._parent.TWMAIN_STATISTICS:
             self._timeUnitSize = self._settings.readSettingAsInt('MItimeUnitSize')
             self._ui.sbTUsize.setValue(self._timeUnitSize)
+            self._miKnorm = self._settings.readSettingAsFloat('MIkNorm')
+            self._ui.sbKnorm.setValue(self._miKnorm)
 
             self._radarComp = self._settings.readSettingAsFloat('RadarCompensation')
 
@@ -1707,6 +1712,10 @@ class Stats:
         self._settings.writeSetting('MItimeUnitSize', val)
         self._timeUnitSize = val
 
+    def _changeKnorm(self, val):
+        self._settings.writeSetting('MIkNorm', val)
+        self._miKnorm = val
+
     def _changeRadarComp(self, val):
         self._settings.writeSetting('RadarCompensation', val)
         self._radarComp = val
@@ -1736,6 +1745,7 @@ class Stats:
 
     def _tabChanged(self, row):
         self._ui.sbTUsize.setEnabled(False)
+        self._ui.sbKnorm.setEnabled(False)
         self._ui.cbShower.setEnabled(False)
         self._ui.chkCompensation.setEnabled(False)
         self._ui.chkSubSB.setEnabled(row != self.TAB_RMOB_MONTH)
@@ -1750,6 +1760,7 @@ class Stats:
         if row == self.TAB_MASS_INDEX_BY_POWERS or row == self.TAB_CUMULATIVE_COUNTS_BY_POWERS or row == self.TAB_MASS_INDEX_BY_LASTINGS or row == self.TAB_CUMULATIVE_COUNTS_BY_LASTINGS:
             self._ui.sbTUsize.setEnabled(True)
             self._ui.cbShower.setEnabled(True)
+            self._ui.sbKnorm.setEnabled(True)
 
         if (row == self.TAB_SESSIONS_REGISTER or row == self.TAB_RMOB_MONTH or row == self.TAB_METEOR_SHOWERS or
                 row == self.TAB_POWER_DISTRIBUTION or row == self.TAB_LASTING_DISTRIBUTION):
@@ -2398,7 +2409,7 @@ class Stats:
             try:
                 # Perform linear regression using numpy.polyfit()
                 slope, intercept = np.polyfit(logThresholds, logCounts, 1)
-                k = 1
+                k = self._miKnorm
                 results[index] = 1 - (
                         ((abs(slope) - k) * 4.0) / 3.0)
             except Exception as e:

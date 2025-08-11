@@ -46,7 +46,7 @@ from .utilities import createCustomColormapsDict, cleanFolder, utcToASL
 from .reports import Report
 from .logprint import print, removeLogFile, logInit
 
-APPVERSION = "0.2"
+APPVERSION = "0.3"
 
 
 class MainWindow(QMainWindow):
