@@ -5,7 +5,7 @@
 
 # Maintainer: giuseppe massimo bertani <gmbertani@users.sourceforge.net>
 pkgname=echoes
-pkgver=0.61
+pkgver=0.62
 pkgrel=1
 epoch=
 pkgdesc="Echoes is a RF spectrograph designed for meteor scatter purposes. It relies on SoapySDR library for audio devices and SDR devices support."

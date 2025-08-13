@@ -171,6 +171,7 @@ class Control : public QObject
     Q_OBJECT
 
     QRecursiveMutex protectionMutex;
+    QMutex          sharedMemoryMutex;  //experimental code for demo station
 
     QFile *statPlot;            ///internal statistics file
     Settings* as;               ///application settings

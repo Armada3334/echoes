@@ -2378,25 +2378,42 @@ bool Control::wfdBfs()
     /*
      * experimental code for demo station
      */
-    if(shm != nullptr)
+    if (shm != nullptr)
     {
+        // Proteggi il blocco di codice con un QMutexLocker.
+        // Questo previene che più thread accedano contemporaneamente.
+        QMutexLocker locker(&sharedMemoryMutex);
+
+        // Ora che l'accesso multithread è protetto, gestiamo il lock della shared memory.
         if(shm->lock())
         {
-            char *data = (char *)shm->data();
-            QString message = QString("%1, %2, %3, %4, %5, %6, %7")
-                .arg(scans)
-                .arg(as->getInterval())
-                .arg(avgN)
-                .arg(maxDbfs)
-                .arg(maxDiff)
-                .arg(maxFreq)
-                .arg(eventDetected);
+            try
+            {
+                char *data = (char *)shm->data();
+                QString message = QString("%1, %2, %3, %4, %5, %6, %7")
+                    .arg(scans)
+                    .arg(as->getInterval())
+                    .arg(avgN)
+                    .arg(maxDbfs)
+                    .arg(maxDiff)
+                    .arg(maxFreq)
+                    .arg(eventDetected);
 
-            strncpy(data, message.toUtf8().constData(), shm->size());
+                // Aggiungi un terminatore null per evitare stringhe incomplete
+                strncpy(data, message.toUtf8().constData(), shm->size() - 1);
+                data[shm->size() - 1] = '\0';
+            }
+            catch (...)
+            {
+                // Gestisci eventuali eccezioni, ma l'importante è sbloccare la memoria.
+                qWarning() << "Eccezione durante la scrittura in shared memory.";
+            }
+
+            // Sblocca la shared memory. Il lock a livello di thread (QMutexLocker)
+            // sarà rilasciato automaticamente quando il blocco di codice termina.
             shm->unlock();
         }
     }
-
 
     //the S values are averaged too, these values
     //are used in case of automatic thresholds

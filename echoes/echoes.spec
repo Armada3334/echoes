@@ -16,13 +16,13 @@
 #
 
 Name:           echoes
-Version:        0.61
+Version:        0.62
 Release:        1
 Summary:        RF spectrograph for meteor scatter
 License:        GPL-3.0-or-later
 Group:          Productivity/Scientific/Astronomy
 Url:            https://sourceforge.net/projects/echoes
-Source:         echoes-0.61.tar.gz
+Source:         echoes-0.62.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 
