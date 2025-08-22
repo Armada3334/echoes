@@ -25,8 +25,8 @@
 
 import json
 from PyQt5.QtWidgets import QDialog
-from .ui_afdummy import Ui_afDummy
-from .logprint import print
+from edb.ui_afdummy import Ui_afDummy
+from edb.logprint import print
 
 
 class Dummy(QDialog):

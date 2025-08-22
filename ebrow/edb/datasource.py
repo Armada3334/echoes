@@ -2226,6 +2226,8 @@ class DataSource:
         if self._adf is not None:
             mask = (self._adf['id'] == eventID)
             self._adf.loc[mask, 'classification'] = classif
+            # TODO: check if this works: changing classifications must reset the relative attribute data
+            self._adf.loc[mask, 'attributes'] = ''
             try:
                 self._parent.eventDataChanges[eventID] = True
                 self._dataChangedInMemory = True

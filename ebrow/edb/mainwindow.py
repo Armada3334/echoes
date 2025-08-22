@@ -869,7 +869,7 @@ class MainWindow(QMainWindow):
                 # When attributes have been already calculated, no recalc should happen.
                 if self._settings.readSettingAsBool('afEnable'):
                     self.fromId, self.toId = self.dataSource.eventsForAttrCalc()
-                    self.updateStatusBar(f"Calculating attributes for events#{self.fromId}..{self.toId}")
+                    self.updateStatusBar(f"Calculating attributes for events #{self.fromId}..{self.toId}")
                     result = self.dataSource.attributeEvents(self.fromId, self.toId,
                                                     silent=(self.isBatchReport or self.isBatchXLSX),
                                                     overwrite=self.mustCalcAttr)

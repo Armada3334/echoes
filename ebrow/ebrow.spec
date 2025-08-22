@@ -8,7 +8,7 @@ a = Analysis(
     ['run.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('edb', 'edb')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

@@ -36,7 +36,7 @@ from PyQt5.QtGui import QColor, QIcon, QPixmap, QStandardItem, QStandardItemMode
 from PyQt5.QtCore import QDir, QIODevice, QFile
 from .logprint import print
 from .dateintervaldialog import DateIntervalDialog
-from .utilities import getFromModule
+from .utilities import getFromModule, getBaseDir
 
 
 class Prefs(QWidget):
@@ -310,14 +310,18 @@ class Prefs(QWidget):
         cwd = None
         if not self._attributeFilterNames:
             afList = list()
-            cwd = os.path.dirname(__file__)
+            cwd = getBaseDir()
+            print(f"looking for attribute filters in {cwd}")
             pyFiles = glob(os.path.join(cwd, "*.py"))
             for name in pyFiles:
                 name = os.path.basename(name)
                 if name.startswith("af"):
+                    print(f"found {name}")
                     name = name[2:-3]
                     print("adding filter: ", name)
                     afList.append(name)
+            if len(afList) == 0:
+                print("none found")
             self._attributeFilterNames = afList
 
             self._ui.cbAttribSettings.clear()
@@ -332,10 +336,13 @@ class Prefs(QWidget):
                 afClassName = self._attributeFilterNames[r]
                 # instantiate the attribute filter classes
                 afModuleName = "af" + afClassName
+                print(f"afModuleName={afModuleName}, afClassName={afClassName}")
                 afClass = getFromModule(afModuleName, afClassName)
+                print(f"afClasse={afClass}")
                 enabled = False
                 if afClass is not None:
                     af = afClass(self._parent, self._ui, self._settings)
+                    print(f"afClasse={af}")
                     self._attributeFilterObject.append(af)
                     enabled = af.isFilterEnabled()
 

@@ -26,9 +26,9 @@ import datetime
 import json
 import numpy as np
 from PyQt5.QtWidgets import QDialog, qApp
-from .ui_afhashead import Ui_afHasHead
-from .logprint import print
-from .utilities import splitASCIIdumpFile, splitBinaryDumpFile
+from edb.ui_afhashead import Ui_afHasHead
+from edb.logprint import print
+from edb.utilities import splitASCIIdumpFile, splitBinaryDumpFile
 
 import pandas as pd
 import cv2

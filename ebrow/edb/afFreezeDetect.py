@@ -25,9 +25,9 @@
 
 import json
 from PyQt5.QtWidgets import QDialog
-from .ui_affreezedetect import Ui_afFreezeDetect
-from .logprint import print
-from .utilities import splitASCIIdumpFile, splitBinaryDumpFile, timeToSeconds
+from edb.ui_affreezedetect import Ui_afFreezeDetect
+from edb.logprint import print
+from edb.utilities import splitASCIIdumpFile, splitBinaryDumpFile, timeToSeconds
 
 
 class FreezeDetect(QDialog):
@@ -121,11 +121,8 @@ class FreezeDetect(QDialog):
                 gap = self._findLargestGap(dfPower['time'])
 
                 if gap:
-                    if fallTime >= gap['start'] >= raiseTime or fallTime >= gap['end'] >= raiseTime:
-                        # store the gap only if it matches someway with the raise/fall fronts of the
-                        # event, that would mean the event is a fake. Otherwise ignores it
-                        print(f"ID: {evId} embeds a {gap['secs']} seconds long acquisition hole")
-                        return gap
+                    print(f"ID: {evId} embeds a {gap['secs']} seconds long acquisition hole")
+                    return gap
         return None
 
     def getParameters(self):

@@ -23,6 +23,7 @@
 
 """
 import os
+import sys
 import shutil
 
 from importlib import import_module
@@ -465,20 +466,7 @@ def timestamp2sidereal(ts: str) -> str:
     return siderealTime
 
 
-def getFromModule(moduleName, attrName):
-    moduleName = "edb." + moduleName
-    print("moduleName={}, attrName={}".format(moduleName, attrName))
 
-    try:
-        module = import_module(moduleName)
-    except ImportError as err:
-        print(err)
-        return None
-
-    try:
-        return getattr(module, attrName)
-    except AttributeError:
-        return None
 
 
 def addDateDelta(date: str, deltaDays: int):
@@ -618,3 +606,37 @@ def radiantAltitudeCorrection(raDeg:float, decDeg:float, utcDatetimeStr:str, lat
 
     correction = 1.0 / (math.sin(2 * radiantAltAz.alt.rad))
     return correction
+
+
+
+def getFromModule(moduleName, attrName):
+    tryModuleName = moduleName
+    try:
+        print("tryModuleName={}, attrName={}".format(tryModuleName, attrName))
+        module = import_module(tryModuleName)
+    except ImportError as err:
+        print(err)
+        try:
+            tryModuleName = "edb." + moduleName
+            print("tryModuleName={}, attrName={}".format(tryModuleName, attrName))
+            module = import_module(tryModuleName)
+        except ImportError as err:
+            print(err)
+            return None
+    try:
+        return getattr(module, attrName)
+    except AttributeError:
+        return None
+
+def getBaseDir():
+    if getattr(sys, 'frozen', False):
+        # this is a PyInstaller's exe
+        baseDir = os.path.dirname(sys.executable)
+        edbDir = os.path.join(baseDir, "edb")
+        if baseDir not in sys.path:
+            sys.path.insert(0, edbDir)
+            print(f"sys.path={sys.path}")
+        baseDir = edbDir
+    else:
+        baseDir = os.path.dirname(os.path.abspath(__file__))
+    return baseDir
