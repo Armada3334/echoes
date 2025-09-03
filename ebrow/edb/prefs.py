@@ -383,6 +383,8 @@ class Prefs(QWidget):
                                                            errors='coerce').dt.date
             self._msCalendar['end_date'] = pd.to_datetime(self._msCalendar['end_date'], format='%d/%m/%Y',
                                                           errors='coerce').dt.date
+            self._msCalendar['r'] = pd.to_numeric(self._msCalendar['r'], errors='coerce')
+            self._msCalendar['s'] = pd.to_numeric(self._msCalendar['s'], errors='coerce')
 
     def getMSC(self):
         return self._msCalendar
