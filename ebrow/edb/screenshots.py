@@ -82,7 +82,6 @@ class ScreenShots:
         self._hasAttrFilter = self._settings.readSettingAsBool('hasAttrFilter')
         self._hasBlobsFilter = self._settings.readSettingAsBool('hasBlobsFilter')
 
-
         if self._parent.currentID == 0:
             self._ui.lbID.setText('Nothing selected')
             self._ui.lbDaily.setText('------')

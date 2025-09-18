@@ -39,9 +39,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QPainter, QPixmap, QFont, QColor
-from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QInputDialog, qApp, QAbstractItemView
-from PyQt5.QtCore import Qt, QItemSelectionModel
+from PyQt5.QtGui import QPainter, QPixmap, QFont, QColor, QScreen
+from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QInputDialog, qApp, QAbstractItemView, QTableView
+from PyQt5.QtCore import Qt
 
 from .heatmap import Heatmap
 from .hm_rmob import HeatmapRMOB
@@ -1425,46 +1425,120 @@ class Stats:
         self._changeVzoom(int(self._vZoom * 10))
         self._updateTabGraph()
 
+    def _commentsEditor(self, prog: str) -> (int, int, str, str):
+        """
+        fills it the comment field with self generated text
+        returns:
+        isTable, row number, subTab, file title, commment
+        """
+        row = self._ui.lwTabs.currentRow()
+        subTab = self._ui.twTables.currentIndex()
+        comment = ""
+        defaultComment = ""
+        dialogTitle = ""
+        title = ""
+        isTable = False
+        if self._ui.twStats.currentIndex() == self.STTW_TABLES:
+            title = f"{self._ui.lwTabs.currentItem().text()}_{self._ui.twTables.tabText(subTab)}-{prog}"
+            self._dataFrame.style.set_caption(title)
+            if row == self.TAB_SESSIONS_REGISTER:
+                defaultComment = f"{title}\nfrom {self._parent.fromDate} to {self._parent.toDate},\n"
+                defaultComment += f"{self._parent.covID} sessions in total\n\n"
+            dialogTitle = "Export statistic table"
+            isTable = True
+
+        if self._ui.twStats.currentIndex() == self.STTW_DIAGRAMS:
+            title = self._ui.lwTabs.currentItem().text() + '-' + prog
+            title = title.lower().replace(' ', '_')
+            dialogTitle = "Export statistic diagram"
+
+        if defaultComment == "" and title != "":
+            filters = ''
+            fList = self._classFilter.split(',')
+            for f in fList:
+                filters += " -> {}\n".format(self.filterDesc[f], '\n')
+
+            defaultComment = f"{title}\nfrom {self._parent.fromDate} to {self._parent.toDate},\n"
+            defaultComment += f"{self._parent.covID} events in total\n"
+
+            if self._considerBackground:
+                defaultComment += "background subtraction active\n"
+            else:
+                defaultComment += "background not subtracted\n"
+
+            if self._compensation:
+                defaultComment += "counts under average are compensated with background\n"
+            else:
+                defaultComment += "counts compensation not appiied\n"
+
+            if row == self.TAB_MASS_INDEX_BY_LASTINGS or  row == self.TAB_MASS_INDEX_BY_POWERS:
+                defaultComment += f"Normalization constant K={self._miKnorm}\n"
+                defaultComment += f"Target shower: {self._targetShower}\n"
+
+            defaultComment += f"\n\nactive filters:\n{filters}\n"
+
+        if defaultComment != "" and title != "":
+            defaultComment += "\n"
+            self._parent.busy(False)
+            comment = QInputDialog.getMultiLineText(self._parent, dialogTitle,
+                                                    "Comment\n(please enter further considerations, if needed):",
+                                                    defaultComment)
+            self._parent.busy(True)
+
+        title = title.lower().replace(' ', '_')
+        return isTable, row, subTab, title, comment
+
+    def _captureFullTable(self, table: QTableView, shotFileName: str):
+        # Save original size and scrollbar policies
+        originalSize = table.size()
+        originalHScrollPolicy = table.horizontalScrollBarPolicy()
+        originalVScrollPolicy = table.verticalScrollBarPolicy()
+
+        # Disable scrollbars temporarily
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        # Resize table to fit all rows and columns
+        table.resize(
+            table.horizontalHeader().length() + table.verticalHeader().width(),
+            table.verticalHeader().length() + table.horizontalHeader().height()
+        )
+
+        table.show()
+        qApp.processEvents()  # Ensure table is fully rendered
+
+        # Capture the entire table as a pixmap
+        shot = QPixmap(table.size())
+        table.render(shot)
+        shot.save(shotFileName, "PNG")
+
+        # Restore original size and scrollbar policies
+        table.resize(originalSize)
+        table.setHorizontalScrollBarPolicy(originalHScrollPolicy)
+        table.setVerticalScrollBarPolicy(originalVScrollPolicy)
+        qApp.processEvents()
+
     def _exportPressed(self, checked):
-        self._parent.checkExportDir(self._exportDir)
+        coverageString = f"{self._parent.fromDate}_to_{self._parent.toDate}"
+        exportDir = Path(self._exportDir) / Path(coverageString)
+        self._parent.checkExportDir(exportDir)
         pngName = None
         # progressive number to make the exported files unique
         now = datetime.now()
         midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
         prog = "{}".format((now - midnight).seconds)
-        if os.path.exists(self._exportDir):
-            os.chdir(self._exportDir)
-            if self._ui.twStats.currentIndex() == self.STTW_TABLES:
-                # the displayed table is exported as csv
-                subTab = self._ui.twTables.currentIndex()
-
-                title = f"{self._ui.lwTabs.currentItem().text()}_{self._ui.twTables.tabText(subTab)}-{prog}"
-                self._dataFrame.style.set_caption(title)
-                row = self._ui.lwTabs.currentRow()
-                if row == self.TAB_SESSIONS_REGISTER:
-                    defaultComment = "{}\nfrom {} to {},\n{} sessions in total\n\n".format(
-                        title, self._parent.fromDate, self._parent.toDate, self._parent.covID)
-
-                else:
-                    filters = ''
-                    fList = self._classFilter.split(',')
-                    for f in fList:
-                        filters += " -> {}\n".format(self.filterDesc[f], '\n')
-                    defaultComment = "{}\nfrom {} to {},\n{} events in total\n\nactive filters:\n{}".format(
-                        title, self._parent.fromDate, self._parent.toDate, self._parent.covID, filters)
-
-                self._parent.busy(False)
-                comment = QInputDialog.getMultiLineText(self._parent, "Export statistic table",
-                                                        "Comment\n(please enter further considerations, if needed):",
-                                                        defaultComment)
-                self._parent.busy(True)
-                title = title.lower().replace(' ', '_')
+        if os.path.exists(exportDir):
+            os.chdir(exportDir)
+            isTable, row, subTab, title, comment = self._commentsEditor(prog)
+            if isTable:
+                # Tables are saved as csv
                 if 'sessions' in title:
                     # resolution not applicable on sessions table
                     csvName = 'stat-' + title + '-NA-Table.csv'
                 else:
                     csvName = 'stat-' + title + '-Table.csv'
 
+                # in case of multiple tables, with bg subtraction etc.
                 if subTab == 0:
                     self._dataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
 
@@ -1477,8 +1551,14 @@ class Stats:
                 if subTab == 3:
                     self._sbDataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
 
+                if self._ui.chkScreenExport.isChecked():
+                    screenTitle = title + ".png"
+                    self._captureFullTable(self._ui.tvTabs, screenTitle)
+
                 self._parent.updateStatusBar("Exported  {}".format(csvName))
                 self._ui.lbStatFilename.setText(csvName)
+
+                # comments are saved as txt
                 if len(comment[0]) > 0:
                     if 'sessions' in title:
                         # resolution not applicable on sessions table
@@ -1492,27 +1572,15 @@ class Stats:
                         self._parent.updateStatusBar("Exported  {}".format(commentsName))
                         self._ui.lbCommentsFilename.setText(commentsName)
 
-            if self._ui.twStats.currentIndex() == self.STTW_DIAGRAMS:
-                title = self._ui.lwTabs.currentItem().text() + '-' + prog
-                title = title.lower().replace(' ', '_')
-                filters = ''
-                fList = self._classFilter.split(',')
-                for f in fList:
-                    filters += " -> {}\n".format(self.filterDesc[f], '\n')
-                defaultComment = "{}\nfrom {} to {},\n{} events in total\n\nactive filters:\n{}".format(
-                    title, self._parent.fromDate, self._parent.toDate, self._parent.covID, filters)
-
-                self._parent.busy(False)
-                comment = QInputDialog.getMultiLineText(self._parent, "Export statistic diagram",
-                                                        "Comment\n(please enter further considerations, if needed):",
-                                                        defaultComment)
-                self._parent.busy(True)
-                title = title.lower().replace(' ', '_')
+            else:
+                # graphs are saved as PNG
                 className = type(self._plot).__name__
                 pngName = 'stat-' + title + '-' + className + '.png'
                 self._plot.saveToDisk(pngName)
                 self._parent.updateStatusBar("Exported  {}".format(pngName))
                 self._ui.lbStatFilename.setText(pngName)
+
+                # comments are saved as txt
                 if len(comment[0]) > 0:
                     commentsName = 'comments-' + title + '-' + className + '.txt'
                     commentsName = commentsName.replace(' ', '_')

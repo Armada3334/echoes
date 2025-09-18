@@ -227,6 +227,9 @@ class MainWindow(QMainWindow):
     # public methods:
 
     def checkExportDir(self, checkThisDir):
+        if not os.path.exists(checkThisDir):
+            os.mkdir(checkThisDir)
+
         if not self._cleanExportReq:
             self._cleanExportReq = True
             if not os.listdir(checkThisDir):

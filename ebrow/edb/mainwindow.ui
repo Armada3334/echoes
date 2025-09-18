@@ -1283,7 +1283,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                     </property>
                     <property name="minimumDateTime">
                      <datetime>
-                      <hour>8</hour>
+                      <hour>4</hour>
                       <minute>0</minute>
                       <second>0</second>
                       <year>2016</year>
@@ -2339,14 +2339,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                     </property>
                     <property name="maximumTime">
                      <time>
-                      <hour>8</hour>
+                      <hour>6</hour>
                       <minute>59</minute>
                       <second>59</second>
                      </time>
                     </property>
                     <property name="minimumTime">
                      <time>
-                      <hour>10</hour>
+                      <hour>6</hour>
                       <minute>0</minute>
                       <second>0</second>
                      </time>
@@ -4115,7 +4115,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>283</width>
+               <width>265</width>
                <height>999</height>
               </rect>
              </property>
@@ -11401,7 +11401,7 @@ font: 10pt &quot;Gauge&quot;;
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>-102</y>
+               <y>0</y>
                <width>283</width>
                <height>1106</height>
               </rect>
@@ -14966,6 +14966,44 @@ alternate-background-color: rgb(170, 0, 0);
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_14">
             <item>
+             <widget class="QPushButton" name="pbRMOB">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>60</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>100</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Exports the hourly counts in the given date  interval in the text format suited for RMOB&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="text">
+               <string>&amp;RMOB</string>
+              </property>
+              <property name="icon">
+               <iconset resource="ebrow.qrc">
+                <normaloff>:/rmob</normaloff>:/rmob</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>16</width>
+                <height>16</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="pbStatTabExp">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -15013,40 +15051,12 @@ alternate-background-color: rgb(170, 0, 0);
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pbRMOB">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>60</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>100</width>
-                <height>20</height>
-               </size>
-              </property>
+             <widget class="QCheckBox" name="chkScreenExport">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Exports the hourly counts in the given date  interval in the text format suited for RMOB&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>Check this box to export a screenshot along with the tables</string>
               </property>
               <property name="text">
-               <string>&amp;RMOB</string>
-              </property>
-              <property name="icon">
-               <iconset resource="ebrow.qrc">
-                <normaloff>:/rmob</normaloff>:/rmob</iconset>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
+               <string>Screen</string>
               </property>
              </widget>
             </item>
