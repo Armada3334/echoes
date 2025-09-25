@@ -1093,19 +1093,31 @@ class Stats:
                 self._dataFrame = df.filter(items=['OVER'], axis=0)
 
         if row == self.TAB_MASS_INDEX_BY_POWERS:
-            tuple4df = self._calcMassIndicesDf(df, filters=self._classFilter, TUsize=self._timeUnitSize, metric='power')
-            if tuple4df is not None:
+            wantRawIndices = ((not self._considerBackground) or self._targetShower == 'None')
+            tuple4df = self._calcMassIndicesDf(df, filters=self._classFilter, TUsize=self._timeUnitSize,
+                                               metric='power', finalDfOnly=wantRawIndices)
+            if tuple4df is not None and wantRawIndices is False:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
+                # allows rows and columns selection
+                sm = QAbstractItemView.ExtendedSelection
+            else:
+                self._dataFrame = tuple4df
                 # allows rows and columns selection
                 sm = QAbstractItemView.ExtendedSelection
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
+            wantRawIndices = ((not self._considerBackground) or self._targetShower == 'None')
             tuple4df = self._calcMassIndicesDf(df, filters=self._classFilter, TUsize=self._timeUnitSize,
-                                               metric='lasting')
-            if tuple4df is not None:
+                                               metric='lasting', finalDfOnly=wantRawIndices)
+            if tuple4df is not None and wantRawIndices is False:
                 self._dataFrame, self._subDataFrame, self._rawDataFrame, self._sbDataFrame = tuple4df
                 # allows rows and columns selection
                 sm = QAbstractItemView.ExtendedSelection
+            else:
+                self._dataFrame = tuple4df
+                # allows rows and columns selection
+                sm = QAbstractItemView.ExtendedSelection
+
 
         if row == self.TAB_POWER_DISTRIBUTION:
             self._dataFrame = self._calculateDistributionDf(df, filters=self._classFilter, metric='power')
