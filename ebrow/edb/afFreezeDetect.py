@@ -24,6 +24,8 @@
 """
 
 import json
+
+import pandas as pd
 from PyQt5.QtWidgets import QDialog
 from edb.ui_affreezedetect import Ui_afFreezeDetect
 from edb.logprint import print
@@ -95,7 +97,7 @@ class FreezeDetect(QDialog):
 
         return largestGap  # Returns the largest gap found, or None if no large gaps exist
 
-    def evalFilter(self, evId: int):
+    def evalFilter(self, evId: int, idx: int, df: pd.DataFrame):
 
         """
         Calculates the attributes for the given event
@@ -122,6 +124,8 @@ class FreezeDetect(QDialog):
 
                 if gap:
                     print(f"ID: {evId} embeds a {gap['secs']} seconds long acquisition hole")
+                    # marks a frozen acquisition as FAKE LONG
+                    df.loc[idx, 'classification'] = "FAKE LONG"
                     return gap
         return None
 

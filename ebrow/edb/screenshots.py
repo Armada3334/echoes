@@ -724,6 +724,9 @@ class ScreenShots:
                     print("Screenshot and/or data for event {} not found in DB, skipping it".format(idn))
                     continue
 
+                if self._blobbedIDdict is None:
+                    self._blobbedIDdict = self._parent.dataSource.getBlobbedIDs()
+
                 edf = self._parent.dataSource.getEventData(idn)
                 lastingMs = edf.loc['lasting_ms', 'FALL']
                 if lastingMs >= minLasting:

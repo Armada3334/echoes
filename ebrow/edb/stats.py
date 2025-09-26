@@ -41,7 +41,7 @@ import pandas as pd
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QPainter, QPixmap, QFont, QColor, QScreen
 from PyQt5.QtWidgets import QHBoxLayout, QScrollArea, QInputDialog, qApp, QAbstractItemView, QTableView
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QModelIndex
 
 from .heatmap import Heatmap
 from .hm_rmob import HeatmapRMOB
@@ -52,7 +52,8 @@ from .miplot import MIplot
 from .aslplot import ASLplot
 from .distplot import DistPlot
 from .pandasmodel import PandasModel
-from .utilities import notice, cryptDecrypt, mkExportFolder, addDateDelta, radiantAltitudeCorrection, utcToASL
+from .utilities import (notice, cryptDecrypt, mkExportFolder, addDateDelta, radiantAltitudeCorrection,
+                        utcToASL, getPeakCountTimeUnit)
 from .logprint import print, fprint
 
 
@@ -448,6 +449,7 @@ class Stats:
 
     def updateTabStats(self):
         self._dataSource = self._parent.dataSource
+
         if self._ui.twMain.currentIndex() == self._parent.TWMAIN_STATISTICS:
             self._timeUnitSize = self._settings.readSettingAsInt('MItimeUnitSize')
             self._ui.sbTUsize.setValue(self._timeUnitSize)
@@ -937,9 +939,13 @@ class Stats:
 
     def showDataTable(self):
         self._parent.busy(True)
+
+        maxRow = -1
+        maxCount = -1
         self._ui.gbClassFilter_2.show()
         self._ui.gbDiagrams_2.hide()
         self._dataSource = self._parent.dataSource
+        self._targetShower = self._ui.cbShower.currentText()
         colors = self._settings.readSettingAsObject('tableColorDict')
         emphasizedTextColor = colors['tableFg']
         emphasizedAltTextColor = colors['tableAltFg']
@@ -1104,6 +1110,8 @@ class Stats:
                 self._dataFrame = tuple4df
                 # allows rows and columns selection
                 sm = QAbstractItemView.ExtendedSelection
+            maxRow,maxCount = getPeakCountTimeUnit(self._dataFrame)
+            print(f"Peak count: {maxCount} found at row: {maxRow}")
 
         if row == self.TAB_MASS_INDEX_BY_LASTINGS:
             wantRawIndices = ((not self._considerBackground) or self._targetShower == 'None')
@@ -1117,7 +1125,8 @@ class Stats:
                 self._dataFrame = tuple4df
                 # allows rows and columns selection
                 sm = QAbstractItemView.ExtendedSelection
-
+            maxRow,maxCount = getPeakCountTimeUnit(self._dataFrame)
+            print(f"Peak count: {maxCount} found at row: {maxRow}")
 
         if row == self.TAB_POWER_DISTRIBUTION:
             self._dataFrame = self._calculateDistributionDf(df, filters=self._classFilter, metric='power')
@@ -1150,6 +1159,17 @@ class Stats:
             model = PandasModel(self._dataFrame, rowStyles=rowColorDict, columnStyles=columnColorDict)
             self._ui.tvTabs.setModel(model)
             self._ui.tvTabs.setSelectionMode(sm)
+
+            if maxRow > -1 and maxCount > 0:
+                # Create a QModelIndex for the row to select.
+                # We'll use column 0 as the reference point for the row.
+                selIdx = model.index(maxRow, 0)
+                self._ui.tvTabs.setSelectionBehavior(QAbstractItemView.SelectRows)
+
+                # Set the current index of the QTableView to highlight the row
+                self._ui.tvTabs.setCurrentIndex(selIdx)
+                # To ensure the selected row is visible to the user
+                self._ui.tvTabs.scrollTo(selIdx)
 
         if self._subDataFrame is not None:
             self._ui.twTables.setTabVisible(1, True)

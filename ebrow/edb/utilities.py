@@ -466,9 +466,6 @@ def timestamp2sidereal(ts: str) -> str:
     return siderealTime
 
 
-
-
-
 def addDateDelta(date: str, deltaDays: int):
     # convert string to date object
     dt = datetime.strptime(date, "%Y-%m-%d")
@@ -490,6 +487,7 @@ def timeToSeconds(timeStr: str):
     timeFormat = "%d/%m/%Y;%H:%M:%S.%f"
     dt = datetime.strptime(timeStr, timeFormat)
     return (dt - datetime(1970, 1, 1)).total_seconds()
+
 
 def utcToASL(isoUtc: str):
     """
@@ -563,8 +561,10 @@ def utcToASL(isoUtc: str):
     lat = (trueLong + nutation) % 360
     return f"{lat:.2f}"
 
-def radiantAltitudeCorrection(raDeg:float, decDeg:float, utcDatetimeStr:str, latDeg:float, lonDeg:float, elevMeters: float,
-                        limitDeg:float = 10):
+
+def radiantAltitudeCorrection(raDeg: float, decDeg: float, utcDatetimeStr: str, latDeg: float, lonDeg: float,
+                              elevMeters: float,
+                              limitDeg: float = 10):
     """
     Computes the 1/(2xsine) correction of the altitude angle of a radiant (RA, Dec) at a given UTC datetime
     and observer location.
@@ -608,7 +608,6 @@ def radiantAltitudeCorrection(raDeg:float, decDeg:float, utcDatetimeStr:str, lat
     return correction
 
 
-
 def getFromModule(moduleName, attrName):
     tryModuleName = moduleName
     try:
@@ -628,6 +627,7 @@ def getFromModule(moduleName, attrName):
     except AttributeError:
         return None
 
+
 def getBaseDir():
     if getattr(sys, 'frozen', False):
         # this is a PyInstaller's exe
@@ -640,3 +640,13 @@ def getBaseDir():
     else:
         baseDir = os.path.dirname(os.path.abspath(__file__))
     return baseDir
+
+
+def getPeakCountTimeUnit(df: pd.DataFrame) -> tuple:
+    # Get the second column by position (index 1) and find the index of the max value
+    maxIdx = df.iloc[:, 1].idxmax()
+    maxRow = df.index.get_loc(maxIdx)
+
+    # Get the value from the first column (your index column) at that location
+    maxVal = df.iloc[maxRow, 1]
+    return maxRow, maxVal

@@ -200,7 +200,8 @@ class HasHead(QDialog):
         # doppler = frequency shift = (freq0 - freq1)
         return result
 
-    def evalFilter(self, evId: int):
+    def evalFilter(self, evId: int, idx: int, df: pd.DataFrame):
+
         """
         Calculates the frequency shift of the head echo from a DATB if present.
         The results must be stored by the caller.
@@ -236,8 +237,11 @@ class HasHead(QDialog):
             offset = cfg.loc[idx, 'freq_offset']
 
             # dfMap is a table time,freq,S
-            result = self._doppler(dfMap, tune+offset, self._percentile, self._timeDelta)
-            return result
+            resultDict = self._doppler(dfMap, tune+offset, self._percentile, self._timeDelta)
+            if 'freq_shift' in resultDict.keys():
+                # fixes the broken freq_shift calculated by Echoes
+                df.loc[idx, 'freq_shift'] = int(resultDict['freq_shift'])
+            return resultDict
 
         else:
             self._parent.updateStatusBar(f"dump file for event#{evId} not available, ignoring  it.")

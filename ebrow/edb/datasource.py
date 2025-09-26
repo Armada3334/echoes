@@ -2100,21 +2100,22 @@ class DataSource:
                     # always calculate the attributes, overwriting the existing ones
                     if overOnly:
                         # only for overdense events
-                        fallRecords = df.loc[
-                            (df['event_status'] == 'Fall') & (df['classification'] == 'OVER')]
+                        fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['classification'] == 'OVER') &
+                                             (df['id'] <= highestID)]
                     else:
                         # on any event, including fakes
-                        fallRecords = df.loc[(df['event_status'] == 'Fall')]
+                        fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['id'] <= highestID)]
                 else:
                     # calculate the attributes only if not yet done before
                     if overOnly:
                         # only for overdense events
                         fallRecords = df.loc[
                             (df['event_status'] == 'Fall') & (df['attributes'] == '') & (
-                                        df['classification'] == 'OVER')]
+                                        df['classification'] == 'OVER') & (df['id'] <= highestID)]
                     else:
                         # on any event, including fakes
-                        fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['attributes'] == '')]
+                        fallRecords = df.loc[(df['event_status'] == 'Fall') & (df['attributes'] == '') & (
+                                df['id'] <= highestID)]
                 r = 0
 
                 totalRows = len(fallRecords.index)
@@ -2149,33 +2150,25 @@ class DataSource:
 
                                 if af.isFilterEnabled():
                                     startTime = time.time()
-                                    resultDict = af.evalFilter(myId)
-
-                                    #TODO: The following code should be integrated in filters by
-                                    # passing a reference to self._adf to evalFilter
+                                    resultDict = af.evalFilter(myId, idx, self._adf)
                                     if resultDict is not None:
                                         attrDict[afName] = resultDict
 
-                                        if afName == 'HasHead' and 'freq_shift' in resultDict.keys():
-                                            # fixes the broken freq_shift calculated by Echoes
-                                            self._adf.loc[idx, 'freq_shift'] = int(resultDict['freq_shift'])
-
-                                        if afName == 'FreezeDetect' and len(resultDict.keys()) > 0:
-                                            # marks a frozen acquisition as FAKE LONG
-                                            self._adf.loc[idx, 'classification'] = "FAKE LONG"
-
                                     endTime = time.time()
 
-                            if len(attrDict.keys()) > 0:
-                                print(attrDict)
-                                self._adf.loc[idx, 'attributes'] = json.dumps(attrDict)
-
+                        if len(attrDict.keys()) > 0:
+                            print(attrDict)
+                            self._adf.loc[idx, 'attributes'] = json.dumps(attrDict)
+                            print(f"Attributes set for {myId}, on row={idx}")
                             try:
                                 self._parent.eventDataChanges[myId] = True
                                 self._dataChangedInMemory = True
 
                             except IndexError:
                                 print("BUG! id=", myId)
+                        else:
+                            print(f"Empty attributes set for {myId}, on row={idx}")
+                            self._adf.loc[idx, 'attributes'] = "{}"
 
                         percent = int((currentRow / totalRows) * 100)
                         if percent > progressPercent:
@@ -2193,11 +2186,19 @@ class DataSource:
                     self._adf = self._adf[cols]
 
                     # do not leave empty attribute cells to avoid reprocessing at next json loading
-                    mask = (((self._adf['attributes'] == '') | self._adf['attributes'].isnull()) & (
-                                self._adf['id'] <= myId))
+                    if overOnly:
+                        mask = (((self._adf['attributes'] == '') | self._adf['attributes'].isnull()) & (
+                                self._adf['classification'] == 'OVER') & (
+                                self._adf['id'] <= highestID))
+                    else:
+                        mask = (((self._adf['attributes'] == '') | self._adf['attributes'].isnull()) & (
+                                self._adf['id'] <= highestID))
 
                     # the masking affects only processed events
                     self._adf.loc[mask, 'attributes'] = '{}'
+
+
+
                     self._parent.updateStatusBar(f"Last processed ID={myId - 1}")
 
                 return True
@@ -2799,12 +2800,18 @@ class DataSource:
 
     def deleteAttributes(self):
         if len(self._adf):
-            self._adf['attributes'] = ''
+            dtFrom = self._parent.fromDate
+            dtTo = self._parent.toDate
+            mask = ((self._adf['utc_date'] >= dtFrom)  & (self._adf['utc_date'] <= dtTo))
+            self._adf.loc[mask, 'attributes'] = ''
             self.cacheNeedsUpdate = True
         return self.cacheNeedsUpdate
 
     def deleteClassifications(self):
         if len(self._adf):
-            self._adf['classification'] = ''
+            dtFrom = self._parent.fromDate
+            dtTo = self._parent.toDate
+            mask = ((self._adf['utc_date'] >= dtFrom) & (self._adf['utc_date'] <= dtTo))
+            self._adf.loc[mask, 'classification'] = ''
             self.cacheNeedsUpdate = True
         return self.cacheNeedsUpdate
