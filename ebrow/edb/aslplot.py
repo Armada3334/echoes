@@ -62,13 +62,13 @@ class ASLplot(BaseGraph):
             if windowSize > y.size:
                 windowSize = y.size
 
-            print("windowsize=", windowSize)
+            print("smoothed through Savitsky-Golay filter (windowSize={}, polyOrder={})".format(windowSize, polyOrder))
 
             polyOrder = 5
             if polyOrder >= y.size:
                 polyOrder = y.size-1
             print("polyOrder=", polyOrder)
-            title += "\nsmoothed through Savitsky-Golay filter,\n (windowSize={}, polyOrder={})".format(windowSize, polyOrder)
+            title += "(smoothed)")
             y = savgol_filter(y, windowSize, polyOrder)
 
         plt.figure(figsize=(inchWidth, inchHeight))
