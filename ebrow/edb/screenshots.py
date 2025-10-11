@@ -995,17 +995,12 @@ class ScreenShots:
                         eventHasDumps = False
                         try:
                             (eventHasShots, eventHasDumps) = self._blobbedIDdict[cId]
+
+                        # ignore exceptions
                         except KeyError:
                             pass
-                        '''
-                        shotName, shotBytes, dailyNr, utcDate = self._parent.dataSource.extractShotData(cId)
-                        if shotName is not None:
-                            eventHasShots = True
-
-                        dumpName, dumpBytes, dailyNr, utcDate = self._parent.dataSource.extractDumpData(cId)
-                        if dumpName is not None:
-                            eventHasDumps = True
-                        '''
+                        except TypeError:
+                            pass
 
                         self._ui.twShots.setTabEnabled(self.SSTW_THUMBNAILS, eventHasShots)
                         self._ui.twShots.setTabEnabled(self.SSTW_SSHOT, eventHasShots)

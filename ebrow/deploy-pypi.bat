@@ -1,5 +1,5 @@
 REM building package
-rem the testPyPi token must be passed as argument
+rem the PyPi token must be passed as argument
 set PASSWORD=%1
 del /S /Q dist\*.*
 python -m build 
