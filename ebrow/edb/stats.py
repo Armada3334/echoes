@@ -377,7 +377,7 @@ class Stats:
                 "dataArgs": {"metric": 'power',
                              'filters': self._classFilter},
                 "seriesFunction": lambda df: df.set_index('S')['counts'],
-                "seriesArgs": {"xScale": "linear", "yScale": "linear"},
+                "seriesArgs": {"xScale": "linear", "yScale": "log"}, # xScale is in dB, already logarithmic
                 "yLabel": "Counts",
                 "fullScale": -1
             },
@@ -389,7 +389,7 @@ class Stats:
                 "dataArgs": {"metric": 'lasting',
                              'filters': self._classFilter},
                 "seriesFunction": lambda df: df.set_index('lasting_ms')['counts'],
-                "seriesArgs": {"xScale": "log", "yScale": "linear"},
+                "seriesArgs": {"xScale": "log", "yScale": "log"},
                 "yLabel": "Counts",
                 "fullScale": -1
             },
