@@ -1,4 +1,29 @@
-﻿25/06/2025
+﻿
+03/11/2025
+Released Ebrow 0.3
+
+This Ebrow release adds new features to the statistics section, primarily aimed at calculating and exporting mass distribution indices:
+
+1- Added a **FullDB** button to extend time coverage to the entire database.
+2- Added the **r** (IMO population indices) and **s** (mass distribution indices derived from r) columns to the meteor shower calendar.
+3- Added a setting for the **K normalization factor** for mass indices calculation previously hardcoded to 1.0.
+4- Added a **Screen** checkbox to export statistical tables as an image in addition to CSV.
+5- Statistics export: The information reported in automatic comments for mass index calculation tables has been increased by adding the **K factor**, the **target shower** and the **time unit size**.
+6- Statistics export: Files are now exported to **subdirectories** based on the time coverage set at the time of export, making them easier to locate.
+7- Mass index calculation: **Automatic selection** of the peak time unit, which remains highlighted in white at the end of the calculation.
+
+Additionally, bugs have been fixed, some of which caused crashes under certain conditions:
+
+8- Roche Herve reported a bug causing a crash that occurred under Windows when loading the database because it didn't find the attribute filters.
+9- **FreezeDetect filter bug** that occasionally missed freezing points.
+10- bug happening occasionally while generating the report - it caused crashes during automatic export.
+11- bug that causing crashes while calculating mass indices when **background subtraction and meteor shower target were not set**.
+
+Finally, I've got the first report of a genuine **RSP1a** running under Echoes (Michal Faltus) - see the thread in SourceForge Discussions.
+
+---
+
+25/06/2025
 Released Echoes 0.61 + Ebrow 0.2
 This Echoes version is mostly a bugfix release, since it fixes the bug found in 0.60 (crash at midnight UTC when working with brand new databases) and the session table management (double session starts recorded).
 
