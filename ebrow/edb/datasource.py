@@ -1147,7 +1147,7 @@ class DataSource:
                                           considerBackground: bool = False,
                                           highestAvgRow: bool = False, highestAvgColumn: bool = False) -> tuple:
         """
-        Aggregates daily metrics (count, mean of 'diff', or mean of 'lasting_ms') by classification.
+        Aggregates daily metrics (count, mean of 'diff', or mean of 'duration_ms') by classification.
 
         @param df: Input dataframe
         @param filters: Filter string for classification

@@ -42,7 +42,7 @@ class MIplot(BaseGraph):
         if metric == "power":
             self._ax.set_xlabel('Power thresholds [mW]')
         else:
-            self._ax.set_xlabel('Lasting thresholds [ms]')
+            self._ax.set_xlabel('Duration thresholds [ms]')
 
         self._ax.set_ylabel(yLabel)
 

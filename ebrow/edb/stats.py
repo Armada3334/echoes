@@ -226,7 +226,7 @@ class Stats:
                 "fullScale": -1
             },
             self.TAB_LASTINGS_BY_DAY: {
-                "title": "Average lastings in the covered dates, daily totals",
+                "title": "Average durations in the covered dates, daily totals",
                 "resolution": "day",
                 "dataFunction": self._dataSource.dailyLastingsByClassification,
                 "dataArgs": {"filters": self._classFilter,
@@ -235,7 +235,7 @@ class Stats:
                              "highestAvgColumn": True},
                 "seriesFunction": lambda df: df['Average'].squeeze(),
                 "seriesArgs": {},
-                "yLabel": "Filtered average lastings by day [ms]",
+                "yLabel": "Filtered average durations by day [ms]",
                 "fullScale": -1
             },
             self.TAB_RMOB_MONTH: {
@@ -284,7 +284,7 @@ class Stats:
                 "fullScale": -1
             },
             self.TAB_LASTINGS_BY_HOUR: {
-                "title": "Average lastings by hour",
+                "title": "Average durations by hour",
                 "resolution": "hour",
                 "dataFunction": self._dataSource.makeLastingsDf,
                 "dataArgs": {"dtStart": self._parent.fromDate,
@@ -293,7 +293,7 @@ class Stats:
                              "filters": self._classFilter},
                 "seriesFunction": self._dataSource.tableTimeSeries,
                 "seriesArgs": {"columns": range(0, 24)},
-                "yLabel": "Filtered average lastings by hour [ms]",
+                "yLabel": "Filtered average durations by hour [ms]",
                 "fullScale": -1
             },
             self.TAB_COUNTS_BY_10M: {
@@ -328,7 +328,7 @@ class Stats:
             },
 
             self.TAB_LASTINGS_BY_10M: {
-                "title": "Average lastings by 10-minute intervals",
+                "title": "Average durations by 10-minute intervals",
                 "resolution": "10m",
                 "dataFunction": self._dataSource.makeLastingsDf,
                 "dataArgs": {"dtStart": self._parent.fromDate,
@@ -337,7 +337,7 @@ class Stats:
                              "filters": self._classFilter},
                 "seriesFunction": self._dataSource.tableTimeSeries,
                 "seriesArgs": {"columns": range(0, 144)},
-                "yLabel": "Filtered average lastings by 10min. [ms]",
+                "yLabel": "Filtered average durations by 10min. [ms]",
                 "fullScale": -1
             },
 
@@ -383,7 +383,7 @@ class Stats:
             },
 
             self.TAB_LASTING_DISTRIBUTION: {
-                "title": "Events distribution by lasting",
+                "title": "Events distribution by durations",
                 "resolution": "D",
                 "dataFunction": self._calculateDistributionDf,
                 "dataArgs": {"metric": 'lasting',
@@ -409,7 +409,7 @@ class Stats:
             },
 
             self.TAB_CUMULATIVE_COUNTS_BY_LASTINGS: {
-                "title": "Cumulative events count by lasting",
+                "title": "Cumulative events count by durations",
                 "resolution": "D",
                 "dataFunction": self._calculateCCountsDf,
                 "dataArgs": {"TUsize": self._timeUnitSize,
@@ -2077,7 +2077,7 @@ class Stats:
         xLabel = None
 
         if metric == "lasting":
-            xLabel = "lasting [mS]"
+            xLabel = "duration [mS]"
         if metric == "power":
             xLabel = "power [dBfs]"
 

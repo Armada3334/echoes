@@ -2065,8 +2065,8 @@ class Report:
                         <label for="car2">Fake events (RX saturation)</label>
                     </li>
                     <li> 
-                        <input type="checkbox" id="long" name="long" value="Fake events (too long lasting)" {6} onclick="return false;">
-                        <label for="car2">Fake events (too long lasting)</label>
+                        <input type="checkbox" id="long" name="long" value="Fake events (too long duration)" {6} onclick="return false;">
+                        <label for="car2">Fake events (too long duration)</label>
                     </li>
                 </ol>
 '''.format(self._isChecked('OVER'), self._isChecked('UNDER'), self._isChecked('FAKE RFI'),

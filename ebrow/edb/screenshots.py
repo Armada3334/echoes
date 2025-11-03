@@ -370,7 +370,7 @@ class ScreenShots:
                 scroller = QScrollArea()
                 ss = QLabel()
                 pix = QPixmap()
-                pix.loadFromData(data)
+                pix.loadFromData(data)   # BUG Roche Hervé II  30ott2025 TypeError
                 self._pixWidth = int(pix.size().width() * self._hZoom)
                 self._pixHeight = int(pix.size().height() * self._vZoom)
                 newSize = QSize(self._pixWidth, self._pixHeight)
@@ -597,9 +597,9 @@ class ScreenShots:
         df = self._parent.dataSource.getEventData(self._parent.currentID)
         df.set_axis(['Raising front', 'Peak', 'Falling front'], axis=1)  # , inplace=True)
         df.set_axis(['UTC time', 'Upper threshold (calculated)', 'Lower threshold (calculated)', 'S', 'Average S',
-                     'N', 'S-N', 'Average S-N', 'Peak frequency [Hz]', 'Standard deviation', 'Event lasting [ms]',
-                     'Event lasting [scans]', 'Frequency shift [Hz]', 'Echo area', 'Interval area', 'Peaks count',
-                     'LOS speed [m/s]', 'Scan lasting [ms]', 'S-N (begin scan)', 'S-N (end scan)', 'Classification',
+                     'N', 'S-N', 'Average S-N', 'Peak frequency [Hz]', 'Standard deviation', 'Event duration [ms]',
+                     'Event duration [scans]', 'Frequency shift [Hz]', 'Echo area', 'Interval area', 'Peaks count',
+                     'LOS speed [m/s]', 'Scan duration [ms]', 'S-N (begin scan)', 'S-N (end scan)', 'Classification',
                      'Screenshot filename', 'Plot filename'],
                     axis=0)
 
