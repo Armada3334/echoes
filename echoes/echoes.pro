@@ -4,7 +4,7 @@
 #Project created by QtCreator 2015-04-22T07:21:07
 #-------------------------------------------------
 #CONFIG += app
-CONFIG += app console c++11
+CONFIG += app console c++11 lrelease
 
 QT += core gui sql
 
@@ -201,7 +201,7 @@ unix | linux-g++ {
 
     message("Building for *NIX")
     QMAKE_CXXFLAGS_THREAD += -Wno-trigraphs
-
+    QMAKE_CXXFLAGS += -Wno-deprecated-declarations
     #WARNING: must be 0.8 or higher
     INCLUDEPATH += /usr/include/SoapySDR
     exists(/usr/include/SoapySDR/Device.hpp) {
@@ -250,8 +250,7 @@ unix | linux-g++ {
     target.path = $$BIN_INSTALL_DIR
 
     aux.path = $$AUX_INSTALL_DIR/echoes
-    aux.files +=  langs/Italian.qm \
-        langs/English.qm \
+    aux.files +=  langs/*.qm \
         docs/tests/*.rts \
         docs/*.pdf \
         docs/README.txt \
@@ -303,8 +302,16 @@ RESOURCES += \
 
 
 TRANSLATIONS = \
+    langs/English.ts \
     langs/Italian.ts \
-    langs/English.ts
+    langs/German.ts \
+    langs/French.ts \
+    langs/Portuguese.ts \
+    langs/Spanish.ts \
+    langs/Russian.ts \
+    langs/Ukrainian.ts \
+    langs/Chinese.ts \
+    langs/Japanese.ts 
 
 CONFIG(debug, debug|release) {
     DEFINES += _DEBUG

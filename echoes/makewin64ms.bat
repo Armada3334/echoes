@@ -13,7 +13,7 @@ SET deploy=\Qt\5.15.2\msvc2019_64\bin\windeployqt.exe
 SET qtenv=\Qt\5.15.2\msvc2019_64\bin\qtenv2.bat
 SET vcvarsall=\"program files (x86)\Microsoft Visual Studio"\2019\Community\VC\Auxiliary\Build\vcvarsall amd64
 SET nsis=%nsispath%\makensisw.exe
-SET APP_VERSION=0.61
+SET APP_VERSION=0.62
 
 REM ----- CUSTOMIZE END ---------------------------------------------
 
