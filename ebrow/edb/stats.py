@@ -2472,6 +2472,14 @@ class Stats:
         # mass indices calculated on subtracted data are unreliable
         if tuple4df is not None and len(tuple4df) > 1:
             tuple4df[1].drop('Mass index', axis=1, inplace=True)
+
+        # add on the final df the average mass index
+        avgMI = round(tuple4df[0].iloc[:, -1].mean(), 2)
+        newRow = pd.Series([np.nan] * (len(tuple4df[0].columns) - 1) + [avgMI],
+                               index=tuple4df[0].columns,
+                               name='Average')
+        df = pd.concat([tuple4df[0], newRow.to_frame().T])
+        tuple4df = (df,) + tuple4df[1:]
         return tuple4df
 
     def _calculateMassIndex(self, df: pd.DataFrame, thresholds: list):
