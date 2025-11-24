@@ -302,7 +302,6 @@ okSoapySDR:
     file "${SRCDIR}\icons\echoes_logo.png"
     file "${SRCDIR}\sounds\ping.wav"
     file "${SRCDIR}\fonts\*.ttf"   
-    file "${SRCDIR}\langs\*.qm"
     file "${SRCDIR}\*.qss"
     
     file "${DOCSDIR}\${LICENSE}"
@@ -312,6 +311,7 @@ okSoapySDR:
     
     file "${EXEDIR}\${EXENAME}"
     file /r "${EXEDIR}\*.dll"
+    file "${EXEDIR}\translations\*.qm"
    
    
     # libliquid is already present in PothosSDR but Echoes needs version 1.3.2++

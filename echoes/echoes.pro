@@ -304,14 +304,17 @@ RESOURCES += \
 TRANSLATIONS = \
     langs/English.ts \
     langs/Italian.ts \
-    langs/German.ts \
-    langs/French.ts \
-    langs/Portuguese.ts \
-    langs/Spanish.ts \
-    langs/Russian.ts \
-    langs/Ukrainian.ts \
-    langs/Chinese.ts \
-    langs/Japanese.ts 
+
+#    langs/German.ts \
+#    langs/French.ts \
+#    langs/Portuguese.ts \
+#    langs/Spanish.ts \
+#    langs/Russian.ts \
+#    langs/Ukrainian.ts \
+#    langs/Chinese.ts \
+#    langs/Japanese.ts \
+#    langs/Dutch.ts
+
 
 CONFIG(debug, debug|release) {
     DEFINES += _DEBUG

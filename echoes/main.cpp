@@ -842,14 +842,21 @@ int main(int argc, char *argv[])
         QString entry;
         QTranslator *t = nullptr;
         QMap<QString,QTranslator *> tMap;
-
+        QStringList filenames;
         if(*langFile == "")
         {
             //if no language file specified in command line
             //loads the local language, if file exists
-            *langFile = loc.languageToString( loc.language() );
-            *langFile += ".qm";
+            QString localeName = loc.name();
 
+            filenames.append(QString("qt_") + localeName + QString(".qm"));
+            QString langCode = localeName.section('_', 0, 0);
+            filenames.append("qt_" + langCode + ".qm");
+            QString langName = loc.languageToString(loc.language()).toLower();
+            filenames.append(langName + ".qm");
+            langName[0] = langName[0].toUpper();
+            filenames.append(langName + ".qm");
+            MYDEBUG << "Checking " << filenames;
         }
 
         for (int i = 0; i < dirList.size(); ++i)
@@ -861,15 +868,41 @@ int main(int argc, char *argv[])
                 MY_ASSERT( nullptr != t)
                 t->load( entry, prgDir->absolutePath() );
                 tMap[entry] = t;
-                MYDEBUG << entry;
-                if(langFile == entry)
+                MYDEBUG << "looking: " << entry;
+                bool found = false;
+
+                if(*langFile != "" && *langFile == entry)
                 {
-                    specApp->installTranslator( t );
-                    MYINFO << entry << " : installed.";
+                    found = true;
+                    MYDEBUG << "found: " << entry;
+                }
+                else
+                {
+                    foreach (QString test,  filenames)
+                    {
+                        if(test == entry)
+                        {
+                            found = true;
+                            MYDEBUG << "found: " << entry;
+                            break;
+                        }
+                    }
+                }
+
+                if(found)
+                {
+                    if(specApp->installTranslator( t ))
+                    {
+                        MYINFO << entry << " : installed.";
+                        break;
+                    }
+                    else
+                    {
+                        MYWARNING << entry << " : failed installing!";
+                    }
                 }
             }
         }
-        MYDEBUG << "Found total " << tMap.count() << " language files in " << prgDir->absolutePath() ;
 
 
         //the GUI run in main thread

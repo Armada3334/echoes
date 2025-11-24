@@ -306,7 +306,6 @@ okSoapySDR:
     file "${SRCDIR}\icons\echoes_logo.png"
     file "${SRCDIR}\sounds\ping.wav"
     file "${SRCDIR}\fonts\*.ttf"   
-    file "${SRCDIR}\langs\*.qm"
     file "${SRCDIR}\*.qss"
     
     file "${DOCSDIR}\${LICENSE}"
@@ -316,6 +315,7 @@ okSoapySDR:
     
     file "${EXEDIR}\${EXENAME}"
     file /r "${EXEDIR}\*.dll"
+    file "${EXEDIR}\translations\*.qm"
     
     # The FULL installer includes RMOBclient and Ebrow and its link for desktop
     file "${RMOBDIR}\src\release\RMOBclient.exe"
