@@ -1571,21 +1571,27 @@ class Stats:
                     csvName = 'stat-' + title + '-Table.csv'
 
                 # in case of multiple tables, with bg subtraction etc.
+                table = None
                 if subTab == 0:
                     self._dataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
+                    table = self._ui.tvTabs
 
                 if subTab == 1:
                     self._subDataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
+                    table = self._ui.tvTabsSub
 
                 if subTab == 2:
                     self._rawDataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
+                    table = self._ui.tvTabsRaw
 
                 if subTab == 3:
                     self._sbDataFrame.to_csv(csvName, index=True, sep=self._settings.dataSeparator())
+                    table = self._ui.tvTabsBg
 
                 if self._ui.chkScreenExport.isChecked():
                     screenTitle = title + ".png"
-                    self._captureFullTable(self._ui.tvTabs, screenTitle)
+
+                    self._captureFullTable(table, screenTitle)
 
                 self._parent.updateStatusBar("Exported  {}".format(csvName))
                 self._ui.lbStatFilename.setText(csvName)
