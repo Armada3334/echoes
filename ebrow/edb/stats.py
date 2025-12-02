@@ -2460,8 +2460,9 @@ class Stats:
         if self._considerBackground:
             # calculates a dataframe with sporadic background by thresholds
             # the sporadic is calculated starting from a base of an entire year of data
+
             oneYearAgo = addDateDelta(self._parent.fromDate, -366)
-            fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._parent.toDate)
+            fullSbf = self._dataSource.getADpartialFrame(oneYearAgo, self._dataSource.newestRecordDate)
             sbf = self._sporadicAveragesByThresholds(fullSbf, filters, TUsize=TUsize, metric=metric,
                                                      aggregateSporadic=True, radarComp=self._radarComp)
 
@@ -2756,10 +2757,18 @@ class Stats:
 
         # Filter by event_status and date range
         shortDf = df[df['event_status'] == eventStatusFilter].copy()
+        if len(shortDf) == 0:
+            raise ValueError("No fall lines in df.")
         if dateFrom:
             shortDf = shortDf[pd.to_datetime(shortDf['utc_date']) >= dateFrom]
+            if len(shortDf) == 0:
+                print(df)
+                raise ValueError(f"No lines older than {dateFrom} in df.")
         if dateTo:
             shortDf = shortDf[pd.to_datetime(shortDf['utc_date']) <= dateTo]
+            if len(shortDf) == 0:
+                print(df)
+                raise ValueError(f"No lines younger than {dateTo} in df.")
 
         # Filter by classification
         if filters:

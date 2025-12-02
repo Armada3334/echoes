@@ -169,11 +169,12 @@ class Prefs(QWidget):
 
         self._mscReload()
         showers = self._msCalendar['name']
+        ts = self._ui.cbShower.currentText()
         self._ui.cbShower.clear()
         self._ui.cbShower.addItem("None")
         self._ui.cbShower.addItems(showers.astype(str).tolist())
-
-        ts = self._settings.readSettingAsString('targetShower')
+        if ts == "None":
+            ts = self._settings.readSettingAsString('targetShower')
         if ts:
             self._ui.cbShower.setCurrentText(ts)
 

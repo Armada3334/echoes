@@ -81,6 +81,8 @@ class DataSource:
         self.avgDailyDict = dict()
         self.avgHourDf = None
         self.avg10minDf = None
+        self.newestRecordID = 0
+        self.newestRecordDate = None
 
     def _getDailyNrFromID(self, eventId: int):
         """
@@ -127,14 +129,14 @@ class DataSource:
             df = pd.read_json(self._adPath, orient='records', convert_dates=False)
             oldestRecordID = df['id'].min()
             oldestRecordDate = df['utc_date'].min()
-            newestRecordID = df['id'].max()
-            newestRecordDate = df['utc_date'].max()
+            self.newestRecordID = df['id'].max()
+            self.newestRecordDate = df['utc_date'].max()
             self._adf = df
             self._parent.updateStatusBar("Reading newer events from DB")
             # self._parent.busy(False)
 
-            self._loadPartialAutoDataTableFromDB(oldestRecordID, oldestRecordDate, newestRecordID,
-                                                 newestRecordDate)
+            self._loadPartialAutoDataTableFromDB(oldestRecordID, oldestRecordDate, self.newestRecordID,
+                                                 self.newestRecordDate)
         else:
             self._parent.updateStatusBar(
                 "Cache file {} not existing, loading the DB to rebuild it".format(self._adPath))
