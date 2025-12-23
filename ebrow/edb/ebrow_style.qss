@@ -51,6 +51,14 @@ QWidget::disabled {
     border: 1px solid rgb(127, 127, 127); /* visible border */
 }
 
+QDoubleSpinbox::disabled {
+    background-color: rgb(40, 40, 40);
+    font: 8pt "Gauge";
+    color:rgb(127, 127, 127);
+    border-radius: 6px;
+    border: 1px solid rgb(127, 127, 127); /* visible border */
+}
+
 
 QTabWidget, QGroupBox {
     background-color: rgb(40, 40, 40);
@@ -114,8 +122,9 @@ QGroupBox::title {
 }
 
 /* personalization for input widgets */
-QLineEdit, QPlainTextEdit, QDateTimeEdit, QAbstractSpinBox, QComboBox, QLCDNumber {
-    background-color: rgb(10, 10, 10); 
+QLineEdit, QPlainTextEdit, QDateTimeEdit, QSpinBox, QDoubleSpinbox, QComboBox, QLCDNumber {
+/*    background-color: rgb(10, 10, 10);  */
+    background-color: rgb(10, 0, 0); 
     color: rgb(0, 255, 0);
     selection-background-color: rgb(85, 85, 255);
     selection-color: rgb(0, 255, 255);

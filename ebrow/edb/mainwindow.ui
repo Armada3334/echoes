@@ -92,50 +92,20 @@ QListWidget, QListView, QTableView, QTableWidget, QScrollArea {
 
 }
 
-QCheckBox:disabled {
-	border: none;
-}
-
-QCheckBox:enabled {
-	border: yellow;
-}
-
-QLabel {
-	margin: 0 0;
-}
-
-QLabel:disabled {
-	border: none;
-}
-
-
-QListWidget::item:selected:active {
+QListWidget::item:selected {
     color: black;
-	font-weight: bold;
     background-color: yellow;
-}
-
-QListWidget::item:selected:!active  {
-    color:rgb(255, 255, 127);
-    background-color: green; /*rgb(40, 40, 40);*/
-	font-weight: normal;
-}
-
-QListWidget::item:normal  {
-    color:rgb(255, 255, 127);
-    background-color: rgb(40, 40, 40);
-	font-weight: normal;
 }
 
 
 QTableView, QTableWidget {
-    alternate-background-color: rgb(60, 60, 60);
+    alternate-background-color: rgb(70, 70, 70);
     color:rgb(255, 255, 127);
     gridline-color:  rgb(156, 156, 156);
     border-radius: 4px;
 }
 
-QGroupBox, QLabel {
+QGroupBox {
     margin-top: 10px;
     
 }
@@ -170,8 +140,9 @@ QGroupBox::title {
 }
 
 /* personalization for input widgets */
-QLineEdit, QPlainTextEdit, QDateTimeEdit, QAbstractSpinBox, QComboBox, QLCDNumber {
-    background-color: rgb(10, 10, 10); 
+QLineEdit, QPlainTextEdit, QDateTimeEdit, QSpinBox, QDoubleSpinBox, QComboBox, QLCDNumber {
+/*    background-color: rgb(10, 10, 10);  */
+    background-color: rgb(10, 0, 0); 
     color: rgb(0, 255, 0);
     selection-background-color: rgb(85, 85, 255);
     selection-color: rgb(0, 255, 255);
@@ -956,8 +927,8 @@ QSlider::handle:horizontal {
                         <brush brushstyle="SolidPattern">
                          <color alpha="255">
                           <red>10</red>
-                          <green>10</green>
-                          <blue>10</blue>
+                          <green>0</green>
+                          <blue>0</blue>
                          </color>
                         </brush>
                        </colorrole>
@@ -983,8 +954,8 @@ QSlider::handle:horizontal {
                         <brush brushstyle="SolidPattern">
                          <color alpha="255">
                           <red>10</red>
-                          <green>10</green>
-                          <blue>10</blue>
+                          <green>0</green>
+                          <blue>0</blue>
                          </color>
                         </brush>
                        </colorrole>
@@ -992,8 +963,8 @@ QSlider::handle:horizontal {
                         <brush brushstyle="SolidPattern">
                          <color alpha="255">
                           <red>10</red>
-                          <green>10</green>
-                          <blue>10</blue>
+                          <green>0</green>
+                          <blue>0</blue>
                          </color>
                         </brush>
                        </colorrole>
@@ -1066,8 +1037,8 @@ QSlider::handle:horizontal {
                         <brush brushstyle="SolidPattern">
                          <color alpha="255">
                           <red>10</red>
-                          <green>10</green>
-                          <blue>10</blue>
+                          <green>0</green>
+                          <blue>0</blue>
                          </color>
                         </brush>
                        </colorrole>
@@ -1093,8 +1064,8 @@ QSlider::handle:horizontal {
                         <brush brushstyle="SolidPattern">
                          <color alpha="255">
                           <red>10</red>
-                          <green>10</green>
-                          <blue>10</blue>
+                          <green>0</green>
+                          <blue>0</blue>
                          </color>
                         </brush>
                        </colorrole>
@@ -1102,8 +1073,8 @@ QSlider::handle:horizontal {
                         <brush brushstyle="SolidPattern">
                          <color alpha="255">
                           <red>10</red>
-                          <green>10</green>
-                          <blue>10</blue>
+                          <green>0</green>
+                          <blue>0</blue>
                          </color>
                         </brush>
                        </colorrole>
@@ -1283,7 +1254,7 @@ alternate-background-color: rgb(170, 0, 0);</string>
                     </property>
                     <property name="minimumDateTime">
                      <datetime>
-                      <hour>4</hour>
+                      <hour>0</hour>
                       <minute>0</minute>
                       <second>0</second>
                       <year>2016</year>
@@ -2005,8 +1976,8 @@ alternate-background-color: rgb(170, 0, 0);</string>
                         <brush brushstyle="SolidPattern">
                          <color alpha="255">
                           <red>10</red>
-                          <green>10</green>
-                          <blue>10</blue>
+                          <green>0</green>
+                          <blue>0</blue>
                          </color>
                         </brush>
                        </colorrole>
@@ -2032,8 +2003,8 @@ alternate-background-color: rgb(170, 0, 0);</string>
                         <brush brushstyle="SolidPattern">
                          <color alpha="255">
                           <red>10</red>
-                          <green>10</green>
-                          <blue>10</blue>
+                          <green>0</green>
+                          <blue>0</blue>
                          </color>
                         </brush>
                        </colorrole>
@@ -2041,8 +2012,8 @@ alternate-background-color: rgb(170, 0, 0);</string>
                         <brush brushstyle="SolidPattern">
                          <color alpha="255">
                           <red>10</red>
-                          <green>10</green>
-                          <blue>10</blue>
+                          <green>0</green>
+                          <blue>0</blue>
                          </color>
                         </brush>
                        </colorrole>
@@ -2115,8 +2086,8 @@ alternate-background-color: rgb(170, 0, 0);</string>
                         <brush brushstyle="SolidPattern">
                          <color alpha="255">
                           <red>10</red>
-                          <green>10</green>
-                          <blue>10</blue>
+                          <green>0</green>
+                          <blue>0</blue>
                          </color>
                         </brush>
                        </colorrole>
@@ -2142,8 +2113,8 @@ alternate-background-color: rgb(170, 0, 0);</string>
                         <brush brushstyle="SolidPattern">
                          <color alpha="255">
                           <red>10</red>
-                          <green>10</green>
-                          <blue>10</blue>
+                          <green>0</green>
+                          <blue>0</blue>
                          </color>
                         </brush>
                        </colorrole>
@@ -2151,8 +2122,8 @@ alternate-background-color: rgb(170, 0, 0);</string>
                         <brush brushstyle="SolidPattern">
                          <color alpha="255">
                           <red>10</red>
-                          <green>10</green>
-                          <blue>10</blue>
+                          <green>0</green>
+                          <blue>0</blue>
                          </color>
                         </brush>
                        </colorrole>
@@ -2339,14 +2310,14 @@ alternate-background-color: rgb(170, 0, 0);</string>
                     </property>
                     <property name="maximumTime">
                      <time>
-                      <hour>6</hour>
+                      <hour>4</hour>
                       <minute>59</minute>
                       <second>59</second>
                      </time>
                     </property>
                     <property name="minimumTime">
                      <time>
-                      <hour>6</hour>
+                      <hour>2</hour>
                       <minute>0</minute>
                       <second>0</second>
                      </time>
@@ -4115,8 +4086,8 @@ alternate-background-color: rgb(170, 0, 0);</string>
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>265</width>
-               <height>999</height>
+               <width>283</width>
+               <height>936</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -11403,7 +11374,7 @@ font: 10pt &quot;Gauge&quot;;
                <x>0</x>
                <y>0</y>
                <width>283</width>
-               <height>1106</height>
+               <height>1096</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_10">
@@ -12058,8 +12029,8 @@ font: 10pt &quot;Gauge&quot;;
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
                            <red>10</red>
-                           <green>10</green>
-                           <blue>10</blue>
+                           <green>0</green>
+                           <blue>0</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -12112,8 +12083,8 @@ font: 10pt &quot;Gauge&quot;;
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
                            <red>10</red>
-                           <green>10</green>
-                           <blue>10</blue>
+                           <green>0</green>
+                           <blue>0</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -12121,8 +12092,8 @@ font: 10pt &quot;Gauge&quot;;
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
                            <red>10</red>
-                           <green>10</green>
-                           <blue>10</blue>
+                           <green>0</green>
+                           <blue>0</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -12195,8 +12166,8 @@ font: 10pt &quot;Gauge&quot;;
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
                            <red>10</red>
-                           <green>10</green>
-                           <blue>10</blue>
+                           <green>0</green>
+                           <blue>0</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -12249,8 +12220,8 @@ font: 10pt &quot;Gauge&quot;;
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
                            <red>10</red>
-                           <green>10</green>
-                           <blue>10</blue>
+                           <green>0</green>
+                           <blue>0</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -12258,8 +12229,8 @@ font: 10pt &quot;Gauge&quot;;
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
                            <red>10</red>
-                           <green>10</green>
-                           <blue>10</blue>
+                           <green>0</green>
+                           <blue>0</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -12322,9 +12293,9 @@ font: 10pt &quot;Gauge&quot;;
                         <colorrole role="WindowText">
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
-                           <red>0</red>
-                           <green>255</green>
-                           <blue>0</blue>
+                           <red>127</red>
+                           <green>127</green>
+                           <blue>127</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -12367,18 +12338,18 @@ font: 10pt &quot;Gauge&quot;;
                         <colorrole role="Text">
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
-                           <red>0</red>
-                           <green>255</green>
-                           <blue>0</blue>
+                           <red>127</red>
+                           <green>127</green>
+                           <blue>127</blue>
                           </color>
                          </brush>
                         </colorrole>
                         <colorrole role="ButtonText">
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
-                           <red>0</red>
-                           <green>255</green>
-                           <blue>0</blue>
+                           <red>127</red>
+                           <green>127</green>
+                           <blue>127</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -12461,9 +12432,7 @@ font: 10pt &quot;Gauge&quot;;
                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter the normalization constant k here for calculating mass indices. &lt;br/&gt;This constant should initially be set to 1. &lt;br/&gt;Then, calculate the mass index &lt;span style=&quot; font-style:italic;&quot;&gt;S_my&lt;/span&gt; based on the peak time unit of a known shower, for which the most recent mass index &lt;span style=&quot; font-style:italic;&quot;&gt;S_off&lt;/span&gt; must be known from official sources. &lt;br/&gt;Therefore, k is equal to&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;k = S_off / S_my&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Substitute this new value for the previous one.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                      </property>
                      <property name="styleSheet">
-                      <string notr="true">color: rgb(0, 255, 0);
-alternate-background-color: rgb(170, 0, 0);
-</string>
+                      <string notr="true"/>
                      </property>
                      <property name="readOnly">
                       <bool>false</bool>
@@ -16038,8 +16007,8 @@ font-size: 10pt;</string>
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
                            <red>10</red>
-                           <green>10</green>
-                           <blue>10</blue>
+                           <green>0</green>
+                           <blue>0</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -16092,8 +16061,8 @@ font-size: 10pt;</string>
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
                            <red>10</red>
-                           <green>10</green>
-                           <blue>10</blue>
+                           <green>0</green>
+                           <blue>0</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -16101,8 +16070,8 @@ font-size: 10pt;</string>
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
                            <red>10</red>
-                           <green>10</green>
-                           <blue>10</blue>
+                           <green>0</green>
+                           <blue>0</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -16175,8 +16144,8 @@ font-size: 10pt;</string>
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
                            <red>10</red>
-                           <green>10</green>
-                           <blue>10</blue>
+                           <green>0</green>
+                           <blue>0</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -16229,8 +16198,8 @@ font-size: 10pt;</string>
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
                            <red>10</red>
-                           <green>10</green>
-                           <blue>10</blue>
+                           <green>0</green>
+                           <blue>0</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -16238,8 +16207,8 @@ font-size: 10pt;</string>
                          <brush brushstyle="SolidPattern">
                           <color alpha="255">
                            <red>10</red>
-                           <green>10</green>
-                           <blue>10</blue>
+                           <green>0</green>
+                           <blue>0</blue>
                           </color>
                          </brush>
                         </colorrole>
@@ -24897,8 +24866,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -24951,8 +24920,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -24960,8 +24929,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -25034,8 +25003,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -25088,8 +25057,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -25097,8 +25066,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -25965,8 +25934,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -26019,8 +25988,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -26028,8 +25997,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -26102,8 +26071,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -26156,8 +26125,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -26165,8 +26134,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -27017,8 +26986,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -27071,8 +27040,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -27080,8 +27049,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -27154,8 +27123,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -27208,8 +27177,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -27217,8 +27186,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -28048,8 +28017,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -28102,8 +28071,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -28111,8 +28080,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -28185,8 +28154,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -28239,8 +28208,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -28248,8 +28217,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -29081,8 +29050,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -29135,8 +29104,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -29144,8 +29113,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -29218,8 +29187,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -29272,8 +29241,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -29281,8 +29250,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -30111,8 +30080,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -30165,8 +30134,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -30174,8 +30143,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -30248,8 +30217,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -30302,8 +30271,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -30311,8 +30280,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -30891,8 +30860,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -30945,8 +30914,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -30954,8 +30923,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -31028,8 +30997,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -31082,8 +31051,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -31091,8 +31060,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -31921,8 +31890,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -31975,8 +31944,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -31984,8 +31953,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -32058,8 +32027,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -32112,8 +32081,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -32121,8 +32090,8 @@ alternate-background-color: rgb(170, 0, 0);
                        <brush brushstyle="SolidPattern">
                         <color alpha="255">
                          <red>10</red>
-                         <green>10</green>
-                         <blue>10</blue>
+                         <green>0</green>
+                         <blue>0</blue>
                         </color>
                        </brush>
                       </colorrole>
@@ -33374,8 +33343,8 @@ border-radius: 6px;
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -33428,8 +33397,8 @@ border-radius: 6px;
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -33437,8 +33406,8 @@ border-radius: 6px;
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -33511,8 +33480,8 @@ border-radius: 6px;
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -33565,8 +33534,8 @@ border-radius: 6px;
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -33574,8 +33543,8 @@ border-radius: 6px;
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -34143,8 +34112,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -34197,8 +34166,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -34206,8 +34175,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -34280,8 +34249,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -34334,8 +34303,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -34343,8 +34312,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -34909,8 +34878,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -34963,8 +34932,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -34972,8 +34941,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -35046,8 +35015,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -35100,8 +35069,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -35109,8 +35078,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -35684,8 +35653,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -35738,8 +35707,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -35747,8 +35716,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -35821,8 +35790,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -35875,8 +35844,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -35884,8 +35853,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -36453,8 +36422,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -36507,8 +36476,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -36516,8 +36485,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -36590,8 +36559,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -36644,8 +36613,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -36653,8 +36622,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -37219,8 +37188,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -37273,8 +37242,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -37282,8 +37251,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -37356,8 +37325,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -37410,8 +37379,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>
@@ -37419,8 +37388,8 @@ alternate-background-color: rgb(170, 0, 0);
                      <brush brushstyle="SolidPattern">
                       <color alpha="255">
                        <red>10</red>
-                       <green>10</green>
-                       <blue>10</blue>
+                       <green>0</green>
+                       <blue>0</blue>
                       </color>
                      </brush>
                     </colorrole>

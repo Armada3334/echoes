@@ -1860,7 +1860,6 @@ class Stats:
             self._ui.gbDataSettings.setVisible(True)
             self._ui.gbClassFilter_2.setVisible(True)
             self._ui.gbClassFilter_2.setEnabled(True)
-            self._ui.cbShower.setEnabled(True)
             self._ui.chkCompensation.setEnabled(True)
 
         if row == self.TAB_MASS_INDEX_BY_POWERS or row == self.TAB_CUMULATIVE_COUNTS_BY_POWERS or row == self.TAB_MASS_INDEX_BY_LASTINGS or row == self.TAB_CUMULATIVE_COUNTS_BY_LASTINGS:
