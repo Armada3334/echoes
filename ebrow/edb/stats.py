@@ -978,7 +978,7 @@ class Stats:
         row = self._ui.lwTabs.currentRow()
         self._ui.tvTabs.setEnabled(False)
 
-        if self._classFilter == '':
+        if self._classFilter == '' and row != self.TAB_METEOR_SHOWERS:
             # nothing to show
             self._parent.infoMessage('Statistic diagrams:',
                                      'No class filters set, nothing to show')
@@ -1434,7 +1434,7 @@ class Stats:
     def _resetPressed(self, checked):
         self._linkedSliders = False
         self._smoothPlots = False
-        self._showGrid = False
+        self._showGrid = True
         self._showValues = False
 
         self._settings.writeSetting('linkedSlidersStat', self._linkedSliders)
@@ -1861,6 +1861,7 @@ class Stats:
             self._ui.gbClassFilter_2.setVisible(True)
             self._ui.gbClassFilter_2.setEnabled(True)
             self._ui.chkCompensation.setEnabled(True)
+            self._ui.cbShower.setEnabled(True)
 
         if row == self.TAB_MASS_INDEX_BY_POWERS or row == self.TAB_CUMULATIVE_COUNTS_BY_POWERS or row == self.TAB_MASS_INDEX_BY_LASTINGS or row == self.TAB_CUMULATIVE_COUNTS_BY_LASTINGS:
             self._ui.sbTUsize.setEnabled(True)
