@@ -70,7 +70,7 @@ def excepthook(excType, excValue, tracebackobj):
     try:
         f = open(logFile, "w")
         f.write(msg)
-        f.write(versionInfo)
+        # f.write(versionInfo)
         f.close()
     except IOError:
         pass

@@ -1592,13 +1592,14 @@ class DataSource:
             revisions = self._adf['revision'].unique()
         return revisions
 
-    def getEchoesVersion(self, rev: int):
+    def getEchoesVersion(self, rev: int) -> str :
         df = self.loadTableConfig('cfg_prefs', rev)
         df.set_index('id', inplace=True)
         if len(df) > 1:
-            verFloat = df.loc[rev, 'echoes_ver']
-        verFloat = df.iloc[0]['echoes_ver']
-        return f"{verFloat:.2f}"  # Forces 2 decimals release
+            verString = df.loc[rev, 'echoes_ver']
+        else:
+            verString = df.iloc[0]['echoes_ver']
+        return verString
 
     def getEchoesSamplingInterval(self):
         outDf = self.loadTableConfig('cfg_output')
