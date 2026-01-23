@@ -11,7 +11,6 @@ Build-Depends:
  libgl1-mesa-dev,
  qtbase5-dev (>= 5.3),
  libqt5charts5-dev (>= 5.7.1),
- qttools5-dev-tools | libqt5-qttools-devel | qttools6-dev-tools,
  libsoapysdr-dev (>= 0.6),
  libusb-1.0-0-dev (>= 2:1.0.8),
  qtchooser,
